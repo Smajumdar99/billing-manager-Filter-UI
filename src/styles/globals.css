@@ -1,0 +1,47 @@
+@import './fonts.css';
+
+@layer components {
+  .skeleton-pulse {
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    @apply bg-muted/60;
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+@keyframes slideUpAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUpAndFade {
+  animation: slideUpAndFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slideDownAndFade {
+  animation: slideDownAndFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+} 

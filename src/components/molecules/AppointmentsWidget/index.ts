@@ -1,0 +1,1 @@
+export { AppointmentsWidget } from './appointments-widget' 

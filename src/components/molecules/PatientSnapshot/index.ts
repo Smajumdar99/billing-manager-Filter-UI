@@ -1,0 +1,1 @@
+export { PatientSnapshot } from './patient-snapshot'; 
