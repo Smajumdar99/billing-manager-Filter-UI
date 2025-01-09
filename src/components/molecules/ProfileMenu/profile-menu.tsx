@@ -12,7 +12,8 @@ import {
   ArrowRightOnRectangleIcon,
   BookOpenIcon,
   ChevronLeftIcon,
-  UserCircleIcon
+  UserCircleIcon,
+  IdentificationIcon
 } from '@heroicons/react/24/outline'
 import { signOut } from '@/services/auth'
 
@@ -24,6 +25,21 @@ interface ProfileMenuProps {
     avatar?: string
   }
 }
+
+const getRoleLabel = (roleValue: string): string => {
+  const roles = {
+    billing_specialist: 'Billing Specialist',
+    billing_manager: 'Billing Manager',
+    clinician: 'Clinician',
+    front_desk: 'Front Desk',
+    clinic_admin: 'Clinic Admin/Supervisor',
+    cfo: 'CFO',
+    practice_manager: 'Practice Manager',
+    ccbhc: 'CCBHC',
+    supervisor: 'Supervisor'
+  };
+  return roles[roleValue as keyof typeof roles] || roleValue;
+};
 
 export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
   const navigate = useNavigate()
@@ -115,6 +131,34 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
           align="end"
           sideOffset={5}
         >
+          {/* User Info Section */}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              {userInfo?.avatar ? (
+                <img
+                  src={userInfo.avatar}
+                  alt={userInfo.name}
+                  className="h-10 w-10 rounded-full ring-1 ring-gray-200"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <UserCircleIcon className="h-6 w-6 text-primary" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-gray-900">
+                  {userInfo?.name || 'Guest User'}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <IdentificationIcon className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-medium text-primary">
+                    {userInfo?.role ? getRoleLabel(userInfo.role) : 'No Role'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {!showRoles ? (
             // Main Menu
             menuItems.map((item, index) => (
@@ -161,37 +205,32 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
                 </button>
               </div>
               <div className="px-2 py-2">
-                <div className="flex items-center gap-3 px-2 py-2 border-b border-gray-100">
-                  {userInfo?.avatar ? (
-                    <img
-                      src={userInfo.avatar}
-                      alt={userInfo.name}
-                      className="h-10 w-10 rounded-full"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                      <UserCircleIcon className="h-6 w-6 text-gray-500" />
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-sm font-medium">Front Desk Officer</div>
-                    <div className="text-xs text-gray-500">Logged in as</div>
-                  </div>
-                </div>
                 {roles.map((role, index) => (
                   <DropdownMenu.Item
                     key={index}
                     className={cn(
                       "flex items-center justify-between w-full px-2 py-2.5",
-                      "text-sm text-gray-900 cursor-pointer",
-                      "hover:bg-gray-50 rounded-md"
+                      "text-sm cursor-pointer",
+                      "hover:bg-gray-50 rounded-md",
+                      userInfo?.role === role.value ? "text-primary font-medium bg-primary/5" : "text-gray-900"
                     )}
                     onSelect={() => {
                       console.log(`Switching to role: ${role.value}`)
                       setShowRoles(false)
                     }}
                   >
-                    {role.label}
+                    <div className="flex items-center gap-2">
+                      <IdentificationIcon className={cn(
+                        "w-4 h-4",
+                        userInfo?.role === role.value ? "text-primary" : "text-gray-400"
+                      )} />
+                      {role.label}
+                      {userInfo?.role === role.value && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                          Current
+                        </span>
+                      )}
+                    </div>
                     <ChevronRightIcon className="w-4 h-4 text-gray-400" />
                   </DropdownMenu.Item>
                 ))}

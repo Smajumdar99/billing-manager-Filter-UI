@@ -44,4 +44,94 @@
 
 .animate-slideDownAndFade {
   animation: slideDownAndFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* React Resizable Styles */
+.react-resizable {
+  position: relative;
+}
+
+.react-resizable-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: none;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.react-resizable:hover .react-resizable-handle {
+  opacity: 1;
+}
+
+.react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: background-color 0.2s;
+}
+
+.react-resizable-handle:hover::after {
+  background-color: #94a3b8;
+}
+
+.react-resizable-handle-sw {
+  bottom: 2px;
+  left: 2px;
+  cursor: sw-resize;
+}
+
+.react-resizable-handle-se {
+  bottom: 2px;
+  right: 2px;
+  cursor: se-resize;
+}
+
+.react-resizable-handle-nw {
+  top: 2px;
+  left: 2px;
+  cursor: nw-resize;
+}
+
+.react-resizable-handle-ne {
+  top: 2px;
+  right: 2px;
+  cursor: ne-resize;
+}
+
+.react-resizable-handle-w,
+.react-resizable-handle-e {
+  top: 50%;
+  margin-top: -5px;
+  cursor: ew-resize;
+}
+
+.react-resizable-handle-w {
+  left: 2px;
+}
+
+.react-resizable-handle-e {
+  right: 2px;
+}
+
+.react-resizable-handle-n,
+.react-resizable-handle-s {
+  left: 50%;
+  margin-left: -5px;
+  cursor: ns-resize;
+}
+
+.react-resizable-handle-n {
+  top: 2px;
+}
+
+.react-resizable-handle-s {
+  bottom: 2px;
 } 

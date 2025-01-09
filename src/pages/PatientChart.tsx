@@ -5,6 +5,14 @@ import { Header } from '@/components/organisms/Header';
 import { navigation } from '@/components/organisms/SidebarMenu';
 import { Breadcrumb } from '@/components/atoms/Breadcrumb/breadcrumb';
 import { PatientChartNav } from '@/components/organisms/PatientChartNav';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { NotificationCenter } from '@/components/widgets/NotificationCenter';
+import { getWidgetsByRole, hasWidgetPermission } from '@/config/widgets';
+import type { UserRole } from '@/types/user';
+import type { Layout } from 'react-grid-layout';
+import GridLayout from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
 // Mock patient data - in a real app, this would come from an API
 const mockPatientInfo = {
@@ -21,9 +29,67 @@ const mockPatientInfo = {
   auditorTimestamp: '01/01/2021 4:23 PM'
 };
 
+const PatientChartSkeleton = () => {
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Sidebar Skeleton */}
+      <div className="w-64 bg-white border-r">
+        <div className="p-6">
+          <div className="h-6 w-20 bg-gray-200 rounded-md skeleton-pulse" />
+        </div>
+        <div className="px-4 space-y-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-10 bg-gray-200 rounded-md skeleton-pulse" />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header Skeleton */}
+        <div className="h-16 bg-white border-b px-4">
+          <div className="h-full flex items-center">
+            <div className="h-8 w-64 bg-gray-200 rounded-md skeleton-pulse" />
+          </div>
+        </div>
+
+        <div className="flex-1 flex overflow-hidden p-2">
+          {/* Left Nav Skeleton */}
+          <div className="w-64 bg-white rounded-2xl shadow-sm mr-2">
+            <div className="p-4 space-y-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="h-10 bg-gray-200 rounded-md skeleton-pulse" />
+              ))}
+            </div>
+          </div>
+
+          {/* Main Content Skeleton */}
+          <main className="flex-1 bg-white rounded-sm p-4">
+            {/* Breadcrumb Skeleton */}
+            <div className="flex items-center gap-2 mb-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center">
+                  {i > 0 && <span className="mx-2 text-gray-400">/</span>}
+                  <div className="h-4 w-20 bg-gray-200 rounded skeleton-pulse" />
+                </div>
+              ))}
+            </div>
+
+            {/* Widget Skeleton */}
+            <div className="mt-4">
+              <div className="h-[400px] bg-gray-100 rounded-lg border skeleton-pulse" />
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PatientChart: FC = () => {
   const { patientId } = useParams();
   const [navPosition, setNavPosition] = useState<'left' | 'right'>('left');
+  const { user, loading } = useCurrentUser();
+  const [layouts, setLayouts] = useState<Layout[]>([]);
   
   const breadcrumbItems = [
     { label: 'Patient Care', href: '/patient-care' },
@@ -31,14 +97,43 @@ const PatientChart: FC = () => {
     { label: 'Patient Chart' },
   ];
 
+  if (loading) {
+    return <PatientChartSkeleton />;
+  }
+
+  // Get available widgets for the user's role
+  const availableWidgets = user?.role ? getWidgetsByRole(user.role) : [];
+  const notificationWidget = availableWidgets.find(w => w.type === 'notification_center');
+  const userRole = user?.role as UserRole | undefined;
+
+  // Initialize layouts if not set and widgets are available
+  if (layouts.length === 0 && notificationWidget?.defaultPosition) {
+    setLayouts([
+      {
+        i: notificationWidget.id,
+        x: notificationWidget.defaultPosition.x,
+        y: notificationWidget.defaultPosition.y,
+        w: notificationWidget.defaultPosition.w,
+        h: notificationWidget.defaultPosition.h,
+        minW: 4,
+        minH: 3
+      }
+    ]);
+  }
+
+  const handleLayoutChange = (newLayout: Layout[]) => {
+    setLayouts(newLayout);
+    // Here you could save the layout to user preferences
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar 
         logo={<span className="text-xl font-bold">LOGO</span>}
         navigation={navigation}
         userInfo={{
-          name: "Olivia Rhye",
-          role: "Front Desk Officer"
+          name: user?.displayName || '',
+          role: user?.role || ''
         }}
       />
       <div className="flex-1 flex flex-col min-w-0">
@@ -50,38 +145,50 @@ const PatientChart: FC = () => {
           onAddClick={() => console.log('Add clicked')}
           onResetLayout={() => console.log('Reset layout')}
           onMobileMenuClick={() => console.log('Mobile menu clicked')}
-          userInfo={{
-            name: "Olivia Rhye",
-            role: "Front Desk Officer",
-            avatar: "https://ui-avatars.com/api/?name=Olivia+Rhye&background=random"
-          }}
           patientInfo={mockPatientInfo}
         />
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden p-2">
           {navPosition === 'left' && (
-            <PatientChartNav
-              position="left"
-              onPositionChange={setNavPosition}
-              className="border-r"
-            />
+            <div className="bg-white rounded-2xl shadow-sm mr-2">
+              <PatientChartNav
+                position="left"
+                onPositionChange={setNavPosition}
+                className="border-0"
+              />
+            </div>
           )}
-          <main className="flex-1 p-6 overflow-y-auto">
-            <div className="mb-6">
+          <main className="flex-1 overflow-y-auto bg-white rounded-sm p-0 pt-4">
+            <div className="mb-0 px-4">
               <Breadcrumb items={breadcrumbItems} />
-              <h1 className="text-2xl font-semibold text-gray-900 mt-4">Patient Chart</h1>
-              <p className="text-sm text-gray-500">Patient ID: {patientId}</p>
             </div>
             
-            <div className="flex items-center justify-center h-[calc(100vh-300px)]">
-              <p className="text-xl text-gray-500">Coming Soon</p>
-            </div>
+            {/* Widgets Section */}
+            {notificationWidget && userRole && hasWidgetPermission(notificationWidget, userRole) && layouts.length > 0 && (
+              <GridLayout
+                className="layout"
+                layout={layouts}
+                cols={12}
+                rowHeight={100}
+                width={1200}
+                onLayoutChange={handleLayoutChange}
+                draggableHandle=".cursor-move"
+                margin={[16, 16]}
+                isResizable={false}
+              >
+                <div key={notificationWidget.id}>
+                  <NotificationCenter />
+                </div>
+              </GridLayout>
+            )}
           </main>
           {navPosition === 'right' && (
-            <PatientChartNav
-              position="right"
-              onPositionChange={setNavPosition}
-              className="border-l"
-            />
+            <div className="bg-white rounded-2xl shadow-sm ml-2">
+              <PatientChartNav
+                position="right"
+                onPositionChange={setNavPosition}
+                className="border-0"
+              />
+            </div>
           )}
         </div>
       </div>

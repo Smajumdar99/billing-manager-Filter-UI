@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { HomePage } from '@/pages/home'
+import { SignupPage } from '@/pages/signup'
 import { DashboardPage } from '@/pages/dashboard'
 import { NotFoundPage } from '@/pages/NotFound'
 import { AuthProvider } from '@/context/AuthContext'
@@ -35,6 +36,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/signup" element={<SignupPage />} />
       <Route 
         path="/dashboard" 
         element={

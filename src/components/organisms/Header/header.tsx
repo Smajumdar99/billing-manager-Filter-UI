@@ -1,16 +1,16 @@
 import { FC } from 'react'
 import { 
-  MagnifyingGlassIcon, 
   BellIcon, 
   Bars3Icon,
   UserCircleIcon,
-  PlusIcon
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/atoms/Button'
-import { ShimmerButton } from '@/components/atoms/ShimmerButton'
 import { ProfileMenu } from '@/components/molecules/ProfileMenu/profile-menu'
-import { PatientSnapshot } from '@/components/molecules/PatientSnapshot/index'
+import { PatientSnapshot } from '@/components/molecules/PatientSnapshot'
+import { SearchBar } from '@/components/molecules/SearchBar'
 import { cn } from '@/lib/utils'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { Skeleton } from '@/components/atoms/Skeleton'
 
 interface HeaderProps {
   variant?: 'default' | 'patient-chart'
@@ -41,6 +41,16 @@ interface HeaderProps {
   }
 }
 
+const UserProfileSkeleton: FC = () => (
+  <div className="flex items-center gap-3">
+    <div className="hidden md:flex flex-col items-end mr-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-3 w-16 mt-1" />
+    </div>
+    <Skeleton className="h-10 w-10 rounded-full" />
+  </div>
+)
+
 export const Header: FC<HeaderProps> = ({
   variant = 'default',
   notificationCount,
@@ -54,7 +64,7 @@ export const Header: FC<HeaderProps> = ({
 }) => {
   if (variant === 'patient-chart' && patientInfo) {
     return (
-      <header className="sticky top-0 z-30 flex h-16 w-full items-center border-b bg-white/80 px-0">
+      <header className="sticky top-0 z-30 flex h-16 w-full items-center px-2">
         <Button
           variant="ghost"
           size="icon"
@@ -68,36 +78,27 @@ export const Header: FC<HeaderProps> = ({
           patient={patientInfo}
           variant="header"
           className="min-w-[900px]"
-          onNewEncounter={() => console.log('New encounter')}
-          onViewChart={() => console.log('View chart')}
         />
 
-        <div className="hidden md:flex relative ml-4 w-[280px]">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder="Search..."
-            className={cn(
-              "h-9 w-full rounded-full border bg-white pl-9 pr-4 text-sm",
-              "placeholder:text-muted-foreground/60",
-              "focus:outline-none focus:ring-2 focus:ring-primary/20",
-              "transition-all duration-200"
-            )}
-            onChange={(e) => onSearch?.(e.target.value)}
+        <div className="ml-4 bg-white rounded-full shadow-sm border">
+          <SearchBar
+            width="w-[280px]"
+            className="[&>div]:border-0 [&>div]:shadow-none"
+            onSearch={onSearch}
           />
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 bg-white rounded-full shadow-sm border px-2">
           <Button
             variant="ghost"
             size="icon"
             className={cn(
               "relative transition-colors duration-200",
-              "hover:bg-gray-200/90",
-              "active:bg-gray-300",
+              "hover:bg-gray-100",
+              "active:bg-gray-200",
               "focus-visible:ring-2 focus-visible:ring-primary/20",
               "rounded-full p-3",
-              "h-14 w-14"
+              "h-12 w-12"
             )}
             onClick={onNotificationClick}
           >
@@ -117,11 +118,11 @@ export const Header: FC<HeaderProps> = ({
                 className={cn(
                   "flex items-center gap-3",
                   "px-4 py-2 rounded-full",
-                  "hover:bg-gray-200/90",
-                  "active:bg-gray-300",
+                  "hover:bg-gray-100",
+                  "active:bg-gray-200",
                   "focus-visible:ring-2 focus-visible:ring-primary/20",
                   "transition-all duration-200",
-                  "h-14"
+                  "h-12"
                 )}
               >
                 <div className="hidden md:flex flex-col items-end mr-2">
@@ -136,11 +137,11 @@ export const Header: FC<HeaderProps> = ({
                   <img
                     src={userInfo.avatar}
                     alt={userInfo.name}
-                    className="h-10 w-10 rounded-full ring-1 ring-border object-cover"
+                    className="h-8 w-8 rounded-full ring-1 ring-border object-cover"
                   />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <UserCircleIcon className="h-6 w-6 text-primary" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <UserCircleIcon className="h-5 w-5 text-primary" />
                   </div>
                 )}
               </Button>
@@ -153,7 +154,7 @@ export const Header: FC<HeaderProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center border-b bg-white px-4">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center border-b bg-background px-4">
       <Button
         variant="ghost"
         size="icon"
@@ -163,59 +164,26 @@ export const Header: FC<HeaderProps> = ({
         <Bars3Icon className="h-5 w-5" />
       </Button>
 
-      <div className="hidden md:flex relative max-w-[400px] flex-1 px-4">
-        <MagnifyingGlassIcon className="absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="search"
-          placeholder="Search..."
-          className={cn(
-            "h-9 w-full rounded-full border bg-white pl-9 pr-4 text-sm",
-            "placeholder:text-muted-foreground/60",
-            "focus:outline-none focus:ring-2 focus:ring-primary/20",
-            "transition-all duration-200"
-          )}
-          onChange={(e) => onSearch?.(e.target.value)}
-        />
-      </div>
+      {variant === 'default' && (
+        <div className="ml-4 flex-1 lg:max-w-sm bg-white rounded-full shadow-sm border">
+          <SearchBar 
+            onSearch={onSearch}
+            className="[&>div]:border-0 [&>div]:shadow-none"
+          />
+        </div>
+      )}
 
-      <div className="ml-auto flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden hover:bg-gray-100"
-          onClick={() => console.log('Mobile search')}
-        >
-          <MagnifyingGlassIcon className="h-5 w-5" />
-        </Button>
-
-        <ShimmerButton
-          size="sm"
-          className={cn(
-            "flex items-center gap-2",
-            "px-4 py-2 rounded-full",
-            "bg-primary hover:bg-primary/90",
-            "text-white font-medium",
-            "transition-all duration-200",
-            "h-10"
-          )}
-          background="hsl(var(--primary))"
-          onClick={onAddClick}
-          shimmerDuration="2s"
-          shimmerSize="0.1em"
-        >
-          <PlusIcon className="h-4 w-4" />
-        </ShimmerButton>
-
+      <div className="ml-auto flex items-center gap-2 bg-white rounded-full shadow-sm border px-2">
         <Button
           variant="ghost"
           size="icon"
           className={cn(
             "relative transition-colors duration-200",
-            "hover:bg-gray-200/90",
-            "active:bg-gray-300",
+            "hover:bg-gray-100",
+            "active:bg-gray-200",
             "focus-visible:ring-2 focus-visible:ring-primary/20",
             "rounded-full p-3",
-            "h-14 w-14"
+            "h-12 w-12"
           )}
           onClick={onNotificationClick}
         >
@@ -235,11 +203,11 @@ export const Header: FC<HeaderProps> = ({
               className={cn(
                 "flex items-center gap-3",
                 "px-4 py-2 rounded-full",
-                "hover:bg-gray-200/90",
-                "active:bg-gray-300",
+                "hover:bg-gray-100",
+                "active:bg-gray-200",
                 "focus-visible:ring-2 focus-visible:ring-primary/20",
                 "transition-all duration-200",
-                "h-14"
+                "h-12"
               )}
             >
               <div className="hidden md:flex flex-col items-end mr-2">
@@ -254,11 +222,11 @@ export const Header: FC<HeaderProps> = ({
                 <img
                   src={userInfo.avatar}
                   alt={userInfo.name}
-                  className="h-10 w-10 rounded-full ring-1 ring-border object-cover"
+                  className="h-8 w-8 rounded-full ring-1 ring-border object-cover"
                 />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <UserCircleIcon className="h-6 w-6 text-primary" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                  <UserCircleIcon className="h-5 w-5 text-primary" />
                 </div>
               )}
             </Button>
