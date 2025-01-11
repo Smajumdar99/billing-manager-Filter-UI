@@ -1,15 +1,6 @@
 import { Layouts } from './layout'
 
-export type UserRole = 
-  | 'billing_specialist'
-  | 'billing_manager'
-  | 'clinician'
-  | 'front_desk'
-  | 'clinic_admin'
-  | 'cfo'
-  | 'practice_manager'
-  | 'ccbhc'
-  | 'supervisor'
+export type UserRole = 'admin' | 'doctor' | 'nurse' | 'patient' | 'clinician';
 
 export interface User {
   id: string
@@ -17,8 +8,8 @@ export interface User {
   displayName: string
   role: UserRole
   avatar?: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
   lastLoginAt?: Date
   isActive: boolean
   permissions?: string[]

@@ -23,7 +23,7 @@ const buttonVariants = cva(
           "hover:brightness-110 dark:hover:brightness-125",
         ],
         outline: [
-          "border border-input bg-background",
+          "border border-input border-primary bg-background text-primary bg-white",
           "hover:bg-accent hover:text-accent-foreground",
         ],
         secondary: [
@@ -41,7 +41,7 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
+        sm: "h-7 rounded-md px-3 text-xs",
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
       },

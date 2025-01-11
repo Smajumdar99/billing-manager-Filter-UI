@@ -1,34 +1,25 @@
 import { UserRole } from './user'
 
 export type WidgetType = 
+  | 'patient_performance'
   | 'notification_center'
-  | 'appointments'
-  | 'billing'
-  | 'clinical_notes'
-  | 'medications'
-  | 'insurance'
-  | 'lab_results'
   | 'vital_signs'
-  | 'documents'
-  | 'treatment_plans'
-  | 'assessments'
+  | 'clinical_notes'
+  | 'medications';
+
+export interface WidgetPosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type WidgetPositions = Record<WidgetType, WidgetPosition>;
 
 export interface Widget {
-  id: string
-  type: WidgetType
-  title: string
-  description?: string
-  permissions: {
-    view: UserRole[]
-    edit?: UserRole[]
-  }
-  defaultPosition?: {
-    x: number
-    y: number
-    w: number
-    h: number
-  }
-  settings?: Record<string, any>
+  id: string;
+  type: WidgetType;
+  title: string;
 }
 
 export interface RoleWidgetConfig {

@@ -19,6 +19,7 @@ import { NotificationsDrawer } from '@/components/organisms/NotificationsDrawer/
 import { Layouts, WidgetLayout } from '@/types/layout'
 import { SidebarMenu } from '@/components/organisms/SidebarMenu'
 import { Skeleton } from "@/components/atoms/Skeleton/skeleton"
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 
 const navigation: NavSection[] = [
   {
@@ -724,6 +725,7 @@ const DashboardSkeleton: FC = () => {
 
 export const DashboardPage: FC = () => {
   useDocumentTitle('Dashboard')
+  const { user } = useCurrentUser()
   const [isLoading, setIsLoading] = useState(true)
   const [layouts, setLayouts] = useState(defaultLayouts)
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
@@ -731,7 +733,7 @@ export const DashboardPage: FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   
-  const userId = 'current-user-id'
+  const userId = user?.id || 'current-user-id'
 
   useEffect(() => {
     const loadUserSettings = async () => {
@@ -939,8 +941,8 @@ export const DashboardPage: FC = () => {
             logo={<span className="text-xl font-bold">LOGO</span>}
             navigation={navigation}
             userInfo={{
-              name: "Olivia Rhye",
-              role: "Front Desk Officer"
+              name: user?.displayName || 'Guest User',
+              role: user?.role || 'No Role'
             }}
             defaultCollapsed={isSidebarCollapsed}
             onCollapsedChange={handleSidebarCollapse}
@@ -955,17 +957,12 @@ export const DashboardPage: FC = () => {
               onAddClick={() => console.log('Add clicked')}
               onResetLayout={handleResetClick}
               onMobileMenuClick={() => setIsMobileMenuOpen(true)}
-              userInfo={{
-                name: "Olivia Rhye",
-                role: "Front Desk Officer",
-                avatar: "https://ui-avatars.com/api/?name=Olivia+Rhye&background=random"
-              }}
             />
             <main className="flex-1 overflow-hidden relative">
               <div className="h-full overflow-x-hidden overflow-y-auto px-2">
                 <div className="flex items-center justify-between mb-0 pt-0">
                   <h1 className="text-2xl pl-4 font-semibold text-foreground">
-                    Welcome back, Olivia
+                    Welcome back, {user?.displayName || 'Guest'}
                   </h1>
                   <div className="flex items-center gap-2  pr-2">
                     <Button

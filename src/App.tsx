@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Loader } from '@/components/atoms/Loader'
 import { Suspense } from 'react'
 import { ThemeProvider } from '@/context/ThemeContext'
+import { FontProvider } from '@/contexts/FontContext'
 import AllPatients from './pages/AllPatients'
 import PatientChart from './pages/PatientChart'
 
@@ -55,13 +56,15 @@ const AppRoutes = () => {
 const App = () => {
   return (
     <ThemeProvider defaultTheme="system" storageKey="drcloud-theme">
-      <AuthProvider>
-        <BrowserRouter>
-          <Suspense fallback={<Loader />}>
-            <AppRoutes />
-          </Suspense>
-        </BrowserRouter>
-      </AuthProvider>
+      <FontProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Suspense fallback={<Loader />}>
+              <AppRoutes />
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </FontProvider>
     </ThemeProvider>
   )
 }

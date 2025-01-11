@@ -1,8 +1,10 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Sidebar } from '@/components/organisms/Sidebar';
 import { Header } from '@/components/organisms/Header';
 import { navigation } from '@/components/organisms/SidebarMenu';
 import { PatientTable } from '@/components/organisms/PatientTable';
+import { Skeleton } from '@/components/atoms/Skeleton';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const mockPatients = [
   {
@@ -160,11 +162,165 @@ const mockPatients = [
     status: 'Active',
     adminPrograms: ['Preventive Care', 'Women\'s Health'],
     insurance: 'UnitedHealthcare',
+  },
+  {
+    id: '13',
+    name: 'Thomas Rodriguez',
+    dateOfBirth: '1983-03-14',
+    gender: 'Male',
+    phoneNumber: '(555) 234-5678',
+    email: 'thomas.r@email.com',
+    lastEncounter: '2024-01-20',
+    nextAppointment: '2024-02-22',
+    status: 'Active',
+    adminPrograms: ['Diabetes Care'],
+    insurance: 'Aetna',
+  },
+  {
+    id: '14',
+    name: 'Sandra Kim',
+    dateOfBirth: '1991-07-30',
+    gender: 'Female',
+    phoneNumber: '(555) 345-6789',
+    email: 'sandra.k@email.com',
+    lastEncounter: '2024-01-18',
+    nextAppointment: '2024-02-25',
+    status: 'Active',
+    adminPrograms: ['Wellness Program'],
+    insurance: 'Blue Shield',
+  },
+  {
+    id: '15',
+    name: 'Kevin Chen',
+    dateOfBirth: '1988-12-05',
+    gender: 'Male',
+    phoneNumber: '(555) 456-7890',
+    email: 'kevin.c@email.com',
+    lastEncounter: '2024-01-15',
+    nextAppointment: null,
+    status: 'Pending',
+    adminPrograms: ['Mental Health'],
+    insurance: 'Kaiser Permanente',
+  },
+  {
+    id: '16',
+    name: 'Rachel Green',
+    dateOfBirth: '1994-09-18',
+    gender: 'Female',
+    phoneNumber: '(555) 567-8901',
+    email: 'rachel.g@email.com',
+    lastEncounter: '2024-01-22',
+    nextAppointment: '2024-02-28',
+    status: 'Active',
+    adminPrograms: ['Nutrition Counseling'],
+    insurance: 'Humana',
+  },
+  {
+    id: '17',
+    name: 'Daniel Park',
+    dateOfBirth: '1976-11-25',
+    gender: 'Male',
+    phoneNumber: '(555) 678-9012',
+    email: 'daniel.p@email.com',
+    lastEncounter: '2024-01-19',
+    nextAppointment: '2024-02-23',
+    status: 'Active',
+    adminPrograms: ['Cardiac Care'],
+    insurance: 'Medicare',
+  },
+  {
+    id: '18',
+    name: 'Michelle Wong',
+    dateOfBirth: '1989-04-12',
+    gender: 'Female',
+    phoneNumber: '(555) 789-0123',
+    email: 'michelle.w@email.com',
+    lastEncounter: '2024-01-21',
+    nextAppointment: '2024-02-26',
+    status: 'Active',
+    adminPrograms: ['Women\'s Health'],
+    insurance: 'Cigna',
+  },
+  {
+    id: '19',
+    name: 'Christopher Lee',
+    dateOfBirth: '1984-08-08',
+    gender: 'Male',
+    phoneNumber: '(555) 890-1234',
+    email: 'chris.l@email.com',
+    lastEncounter: '2024-01-16',
+    nextAppointment: null,
+    status: 'Inactive',
+    adminPrograms: [],
+    insurance: 'UnitedHealthcare',
+  },
+  {
+    id: '20',
+    name: 'Amanda Martinez',
+    dateOfBirth: '1992-06-20',
+    gender: 'Female',
+    phoneNumber: '(555) 901-2345',
+    email: 'amanda.m@email.com',
+    lastEncounter: '2024-01-23',
+    nextAppointment: '2024-02-27',
+    status: 'Active',
+    adminPrograms: ['Preventive Care'],
+    insurance: 'Anthem',
   }
 ];
 
+const PatientTableSkeleton: FC = () => {
+  return (
+    <div className="space-y-4">
+      {/* Table Header Skeleton */}
+      <div className="bg-card rounded-lg border shadow-sm">
+        <div className="flex items-center p-4 border-b">
+          <div className="flex-1">
+            <Skeleton className="h-8 w-48" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-[200px]" /> {/* Search bar */}
+            <Skeleton className="h-9 w-9 rounded-lg" /> {/* Filter button */}
+            <Skeleton className="h-9 w-[120px] rounded-lg" /> {/* Add button */}
+          </div>
+        </div>
+        
+        {/* Table Body Skeleton */}
+        <div className="p-4">
+          <div className="space-y-4">
+            {[...Array(20)].map((_, index) => (
+              <div key={index} className="flex items-center gap-4 p-2">
+                <Skeleton className="h-8 w-8 rounded" /> {/* Checkbox */}
+                <Skeleton className="h-8 w-8 rounded-full" /> {/* Avatar */}
+                <Skeleton className="h-4 w-32" /> {/* Name */}
+                <Skeleton className="h-4 w-24" /> {/* DOB */}
+                <Skeleton className="h-4 w-20" /> {/* Gender */}
+                <Skeleton className="h-4 w-32" /> {/* Phone */}
+                <Skeleton className="h-4 w-40" /> {/* Email */}
+                <Skeleton className="h-4 w-24" /> {/* Last Encounter */}
+                <Skeleton className="h-4 w-24" /> {/* Next Appointment */}
+                <Skeleton className="h-6 w-20 rounded-full" /> {/* Status */}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AllPatients: FC = () => {
+  const { user } = useCurrentUser();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []); // Empty dependency array means this runs once on mount
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -177,8 +333,8 @@ const AllPatients: FC = () => {
         logo={<span className="text-xl font-bold">LOGO</span>}
         navigation={navigation}
         userInfo={{
-          name: "Olivia Rhye",
-          role: "Front Desk Officer"
+          name: user?.displayName || 'Guest User',
+          role: user?.role || 'No Role'
         }}
       />
       <div className="flex-1 flex flex-col min-w-0">
@@ -197,10 +353,15 @@ const AllPatients: FC = () => {
           </div>
           
           <div style={{ height: 'calc(100vh - 240px)' }}>
-            <PatientTable 
-              patients={mockPatients} 
-              className="h-full"
-            />
+            {isLoading ? (
+              <PatientTableSkeleton />
+            ) : (
+              <PatientTable 
+                patients={mockPatients} 
+                className="h-full"
+                defaultPageSize={20}
+              />
+            )}
           </div>
         </main>
       </div>

@@ -1,5 +1,6 @@
 import { FC, useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/atoms/Button';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -18,14 +19,14 @@ interface PatientSnapshotProps {
     name: string;
     avatar?: string;
     gender: string;
-    age: number;
-    bloodGroup: string;
-    insuranceProvider: string;
-    admittedTo: string;
-    language: string;
-    mobile: string;
-    programAuditor: string;
-    auditorTimestamp: string;
+    age?: number;
+    bloodGroup?: string;
+    insuranceProvider?: string;
+    admittedTo?: string;
+    language?: string;
+    mobile?: string;
+    programAuditor?: string;
+    auditorTimestamp?: string;
   };
   onClose?: () => void;
   onNewEncounter?: () => void;
@@ -128,7 +129,9 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
             <span className="text-gray-500 text-xs">{patient.name.split(' ')[1]}</span>
           </div>
           <p className="text-[11px] text-gray-500">
-            Gender: {patient.gender}, Age: {patient.age} years, Blood group: {patient.bloodGroup}
+            Gender: {patient.gender}
+            {patient.age && `, Age: ${patient.age} years`}
+            {patient.bloodGroup && `, Blood group: ${patient.bloodGroup}`}
           </p>
         </div>
       </div>
@@ -149,22 +152,26 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
         <div>
           <div className="flex items-center gap-1">
             <span className="text-[11px] text-gray-500">Admitted:</span>
-            <span className="text-[11px] text-gray-700">{patient.admittedTo}</span>
+            <span className="text-[11px] text-gray-700">{patient.admittedTo || 'Not Admitted'}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] text-gray-500">Program Auditor:</span>
-            <span className="text-[11px] text-gray-700">{patient.auditorTimestamp}</span>
-          </div>
+          {patient.programAuditor && patient.auditorTimestamp && (
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-gray-500">Program Auditor:</span>
+              <span className="text-[11px] text-gray-700">{patient.auditorTimestamp}</span>
+            </div>
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onNewEncounter}
-            className="px-3 py-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded"
+            className="px-3 py-1.5"
           >
             New Encounter
-          </button>
+          </Button>
           <button 
             onClick={handleExpand}
             className="text-gray-400 hover:text-gray-600"
@@ -226,7 +233,9 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
           <div>
             <h3 className="font-semibold text-gray-900">{patient.name}</h3>
             <p className="text-xs text-gray-500">
-              Gender: {patient.gender}, Age: {patient.age} years, Blood group: {patient.bloodGroup}
+              Gender: {patient.gender}
+              {patient.age && `, Age: ${patient.age} years`}
+              {patient.bloodGroup && `, Blood group: ${patient.bloodGroup}`}
             </p>
           </div>
         </div>
@@ -254,24 +263,32 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
       <div className="p-3 space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500">Insurance:</span>
-              <span className="text-primary font-medium truncate">{patient.insuranceProvider}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500">Admitted:</span>
-              <span className="font-medium">{patient.admittedTo}</span>
-            </div>
+            {patient.insuranceProvider && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500">Insurance:</span>
+                <span className="text-primary font-medium truncate">{patient.insuranceProvider}</span>
+              </div>
+            )}
+            {patient.admittedTo && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500">Admitted:</span>
+                <span className="font-medium">{patient.admittedTo}</span>
+              </div>
+            )}
           </div>
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <LanguageIcon className="w-4 h-4 text-gray-400" />
-              <span className="font-medium">{patient.language}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <PhoneIcon className="w-4 h-4 text-gray-400" />
-              <span className="font-medium">{patient.mobile}</span>
-            </div>
+            {patient.language && (
+              <div className="flex items-center gap-2 text-sm">
+                <LanguageIcon className="w-4 h-4 text-gray-400" />
+                <span className="font-medium">{patient.language}</span>
+              </div>
+            )}
+            {patient.mobile && (
+              <div className="flex items-center gap-2 text-sm">
+                <PhoneIcon className="w-4 h-4 text-gray-400" />
+                <span className="font-medium">{patient.mobile}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -295,6 +312,7 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
         >
           View Chart
         </button>
+        
         <button
           onClick={onNewEncounter}
           className="px-3 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-md flex items-center gap-1 transition-colors"

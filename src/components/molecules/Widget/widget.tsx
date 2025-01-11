@@ -1,5 +1,5 @@
 import React, { FC, ReactNode, useState } from 'react'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, X } from 'lucide-react'
 import { Cog6ToothIcon, ArrowsPointingOutIcon } from '@heroicons/react/24/outline'
 import { Button } from '@/components/atoms/Button'
 import { Dialog, DialogContent } from '@/components/atoms/Dialog/dialog'
@@ -67,8 +67,17 @@ export const Widget: FC<WidgetProps> = ({
       <Dialog open={isMaximized} onOpenChange={setIsMaximized}>
         <DialogContent className="max-w-6xl w-[90vw] h-[90vh] p-0">
           <div className="flex flex-col h-full">
-            <div className="px-6 py-4 border-b">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="text-lg font-semibold">{title}</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMaximized(false)}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Close dialog"
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
             <div className="p-6 flex-1 overflow-auto">
               {children}

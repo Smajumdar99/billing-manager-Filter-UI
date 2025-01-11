@@ -1,15 +1,21 @@
-export interface WidgetLayout {
-  i: string
-  x: number
-  y: number
-  w: number
-  h: number
-  minW: number
-  minH: number
+export type WidgetType = 
+  | 'patient_performance'
+  | 'notification_center'
+  | 'vital_signs'
+  | 'clinical_notes'
+  | 'medications';
+
+export interface WidgetPosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
-export interface Layouts {
-  lg: WidgetLayout[]
-  md: WidgetLayout[]
-  sm: WidgetLayout[]
+export type WidgetPositions = Record<WidgetType, WidgetPosition>;
+
+export interface Widget {
+  id: string;
+  type: WidgetType;
+  title: string;
 } 

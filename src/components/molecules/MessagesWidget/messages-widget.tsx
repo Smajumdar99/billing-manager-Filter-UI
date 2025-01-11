@@ -47,7 +47,7 @@ export const MessagesWidget: FC<MessagesWidgetProps> = ({
                       </span>
                       <span className={cn(
                         "text-xs px-2 py-0.5 rounded-full",
-                        message.sender.type === 'Patient' ? "text-purple-600" : "text-blue-600"
+                        message.sender.type === 'Patient' ? "text-secondary" : "text-primary"
                       )}>
                         {message.sender.type}
                       </span>
@@ -61,8 +61,8 @@ export const MessagesWidget: FC<MessagesWidgetProps> = ({
                       {message.time}
                     </span>
                     {message.unreadCount && (
-                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
-                        <span className="text-xs text-white font-medium">
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                        <span className="text-xs text-primary-foreground font-medium">
                           {message.unreadCount}
                         </span>
                       </div>

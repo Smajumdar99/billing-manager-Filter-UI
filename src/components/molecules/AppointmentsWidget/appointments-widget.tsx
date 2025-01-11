@@ -49,9 +49,9 @@ const getTimeSlotColors = (time: string) => {
   switch (time) {
     case '7':
       return {
-        bg: "bg-blue-50/50",
-        border: "border-l-blue-500",
-        text: "text-blue-700"
+        bg: "bg-primary/5",
+        border: "border-l-primary",
+        text: "text-primary"
       }
     case '8':
       return {
@@ -225,7 +225,7 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({
                 >
                   <span className={cn(
                     "text-[8px] uppercase font-medium",
-                    isToday && "text-[#4318FF]",
+                    isToday && "text-primary",
                     !isToday && !isSelected && "text-gray-600",
                     isSelected && !isToday && "text-gray-600"
                   )}>
@@ -234,8 +234,8 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({
                   <span className={cn(
                     "relative inline-flex items-center justify-center",
                     "w-6 h-6 rounded-full",
-                    isToday && "bg-[#4318FF] text-white",
-                    isSelected && !isToday && "bg-[#4318FF]/10 text-[#4318FF]",
+                    isToday && "bg-primary text-primary-foreground",
+                    isSelected && !isToday && "bg-primary/10 text-primary",
                     !isToday && !isSelected && "text-gray-900"
                   )}>
                     <span className="text-base leading-none">

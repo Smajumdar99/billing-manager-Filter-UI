@@ -39,6 +39,7 @@ interface HeaderProps {
     programAuditor: string
     auditorTimestamp: string
   }
+  children?: React.ReactNode
 }
 
 const UserProfileSkeleton: FC = () => (
@@ -60,9 +61,10 @@ export const Header: FC<HeaderProps> = ({
   onResetLayout,
   onMobileMenuClick,
   userInfo,
-  patientInfo
+  patientInfo,
+  children
 }) => {
-  if (variant === 'patient-chart' && patientInfo) {
+  if (variant === 'patient-chart') {
     return (
       <header className="sticky top-0 z-30 flex h-16 w-full items-center px-2">
         <Button
@@ -74,11 +76,13 @@ export const Header: FC<HeaderProps> = ({
           <Bars3Icon className="h-5 w-5" />
         </Button>
 
-        <PatientSnapshot
-          patient={patientInfo}
-          variant="header"
-          className="min-w-[900px]"
-        />
+        {children || (patientInfo && (
+          <PatientSnapshot
+            patient={patientInfo}
+            variant="header"
+            className="min-w-[900px]"
+          />
+        ))}
 
         <div className="ml-4 bg-white rounded-full shadow-sm border">
           <SearchBar
