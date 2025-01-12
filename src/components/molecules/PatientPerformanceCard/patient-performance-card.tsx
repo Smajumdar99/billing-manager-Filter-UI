@@ -19,7 +19,7 @@ export const PatientPerformanceCard: FC<PatientPerformanceCardProps> = ({
 
   return (
     <div className={cn(
-      "bg-transparent p-0 pt-2",
+      "bg-transparent p-0 pt-1",
       className
     )}>
       <div className="flex items-start gap-4">
@@ -45,10 +45,10 @@ export const PatientPerformanceCard: FC<PatientPerformanceCardProps> = ({
             />
 
             {/* Labels */}
-            <text x="20" y="95" className="text-[10px] font-medium fill-[#1e3a8a]" textAnchor="middle">POOR</text>
-            <text x="50" y="15" className="text-[10px] font-medium fill-[#1e3a8a]" textAnchor="middle">FAIR</text>
-            <text x="120" y="20" className="text-[10px] font-medium fill-[#1e3a8a]" textAnchor="middle">GOOD</text>
-            <text x="140" y="95" className="text-[10px] font-medium fill-[#1e3a8a]" textAnchor="middle">EXCELLENT</text>
+            <text x="20" y="105" className="text-[12px] font-medium fill-[#1e3a8a]" textAnchor="middle">POOR</text>
+            <text x="50" y="15" className="text-[12px] font-medium fill-[#1e3a8a]" textAnchor="middle">FAIR</text>
+            <text x="120" y="15" className="text-[12px] font-medium fill-[#1e3a8a]" textAnchor="middle">GOOD</text>
+            <text x="140" y="105" className="text-[12px] font-medium fill-[#1e3a8a]" textAnchor="middle">EXCELLENT</text>
 
             {/* Needle */}
             <g transform={`rotate(${needleRotation}, 80, 80)`}>
@@ -65,7 +65,7 @@ export const PatientPerformanceCard: FC<PatientPerformanceCardProps> = ({
 
         {/* Content */}
         <div className="flex flex-col gap-1">
-          <h3 className="text-[10px] font-medium text-gray-500">Patient Performance</h3>
+          <h3 className="text-[12px] font-medium text-gray-500">Patient Performance</h3>
           <div className="flex items-center gap-0.5">
             {[...Array(5)].map((_, i) => (
               <Star

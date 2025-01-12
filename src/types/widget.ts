@@ -3,7 +3,19 @@ export type WidgetType =
   | 'notification_center'
   | 'vital_signs'
   | 'clinical_notes'
-  | 'medications';
+  | 'medications'
+  | 'diagnosis'
+  | 'allergies'
+  | 'lab_results'
+  | 'appointments'
+  | 'documents'
+  | 'patient_timeline'
+  | 'insurance'
+  | 'billing'
+  | 'disclosures'
+  | 'demographics'
+  | 'implantable_devices'
+  | 'identified_needs';
 
 export interface WidgetPosition {
   x: number;
