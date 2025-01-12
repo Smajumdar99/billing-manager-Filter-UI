@@ -1,6 +1,16 @@
 import { Layouts } from './layout'
 
-export type UserRole = 'admin' | 'doctor' | 'nurse' | 'patient' | 'clinician';
+export type UserRole = 
+  | 'billing_specialist'
+  | 'billing_manager'
+  | 'clinician'
+  | 'front_desk'
+  | 'clinic_admin'
+  | 'cfo'
+  | 'practice_manager'
+  | 'ccbhc'
+  | 'supervisor'
+  | 'doctor';
 
 export interface User {
   id: string

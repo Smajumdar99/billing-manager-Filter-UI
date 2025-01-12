@@ -11,4 +11,9 @@ export interface Patient {
   mobile?: string;
   programAuditor?: string;
   auditorTimestamp?: string;
+  status?: string;
+  adminPrograms?: string[];
+  email?: string;
+  lastEncounter?: string;
+  nextAppointment?: string | null;
 } 

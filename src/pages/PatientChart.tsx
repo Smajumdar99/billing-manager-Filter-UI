@@ -21,6 +21,8 @@ import { LabResultsWidget } from '@/components/widgets/LabResultsWidget/lab-resu
 import { AppointmentsWidget } from '@/components/widgets/AppointmentsWidget/appointments-widget';
 import { PatientPerformanceCard } from '@/components/molecules/PatientPerformanceCard/patient-performance-card';
 import type { Patient } from '@/types/patient';
+import { mockPatients, type MockPatient } from '@/data/mockPatients';
+import { calculateAge } from '@/utils/date';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import { 
   ArrowsPointingOutIcon, 
@@ -62,18 +64,114 @@ const PatientChart: FC = () => {
   const userRole = user?.role || 'doctor' as UserRole;
   const availableWidgets: Widget[] = getWidgetsByRole(userRole);
 
-  // Define default widgets that should always be shown
-  const defaultWidgetTypes: WidgetType[] = [
-    'patient_performance',
-    'notification_center',
-    'vital_signs',
-    'diagnosis',
-    'clinical_notes',
-    'allergies',
-    'medications',
-    'lab_results',
-    'appointments'
-  ];
+  // Define default widgets based on role
+  const defaultWidgetTypes: WidgetType[] = (() => {
+    switch (userRole) {
+      case 'billing_specialist':
+        return [
+          'patient_performance',
+          'notification_center',
+          'insurance',
+          'billing',
+          'demographics'
+        ];
+      case 'billing_manager':
+        return [
+          'patient_performance',
+          'notification_center',
+          'insurance',
+          'billing',
+          'demographics',
+          'documents'
+        ];
+      case 'clinician':
+        return [
+          'patient_performance',
+          'notification_center',
+          'vital_signs',
+          'clinical_notes',
+          'medications',
+          'diagnosis',
+          'allergies',
+          'lab_results'
+        ];
+      case 'front_desk':
+        return [
+          'patient_performance',
+          'notification_center',
+          'appointments',
+          'demographics',
+          'insurance',
+          'documents'
+        ];
+      case 'clinic_admin':
+        return [
+          'patient_performance',
+          'notification_center',
+          'appointments',
+          'demographics',
+          'insurance',
+          'billing',
+          'documents',
+          'patient_timeline'
+        ];
+      case 'cfo':
+        return [
+          'patient_performance',
+          'notification_center',
+          'insurance',
+          'billing',
+          'demographics',
+          'documents'
+        ];
+      case 'practice_manager':
+        return [
+          'patient_performance',
+          'notification_center',
+          'appointments',
+          'demographics',
+          'insurance',
+          'billing',
+          'documents',
+          'patient_timeline'
+        ];
+      case 'ccbhc':
+        return [
+          'patient_performance',
+          'notification_center',
+          'vital_signs',
+          'clinical_notes',
+          'medications',
+          'diagnosis',
+          'allergies',
+          'lab_results',
+          'identified_needs'
+        ];
+      case 'supervisor':
+        return [
+          'patient_performance',
+          'notification_center',
+          'appointments',
+          'demographics',
+          'insurance',
+          'billing',
+          'documents',
+          'patient_timeline'
+        ];
+      case 'doctor':
+      default:
+        return [
+          'patient_performance',
+          'notification_center',
+          'vital_signs',
+          'clinical_notes',
+          'medications',
+          'diagnosis',
+          'allergies',
+          'lab_results'
+        ];
+    }
+  })();
 
   const [activeWidgets, setActiveWidgets] = useState<WidgetType[]>(defaultWidgetTypes);
 
@@ -105,29 +203,68 @@ const PatientChart: FC = () => {
   useEffect(() => {
     const fetchPatient = async () => {
       try {
-        // Simulate API call
-        const mockPatient: Patient = {
-          id: patientId,
-          name: 'John Doe',
-          dob: '1990-01-01',
-          gender: 'Male',
-          age: 33,
-          bloodGroup: 'O+',
-          insuranceProvider: 'Blue Cross',
-          admittedTo: 'General Ward',
-          language: 'English',
-          mobile: '+1234567890',
-          programAuditor: 'Dr. Smith',
-          auditorTimestamp: new Date().toISOString(),
-        };
-        
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setPatient(mockPatient);
+        // Try to get patient data from sessionStorage first
+        const storedPatient = sessionStorage.getItem('selectedPatient');
+        if (storedPatient) {
+          const parsedPatient = JSON.parse(storedPatient);
+          if (parsedPatient.id === patientId) {
+            setPatient(parsedPatient as Patient);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // Find patient in mockPatients if not in sessionStorage
+        const mockPatient = mockPatients.find((p: MockPatient) => p.id === patientId);
+        if (mockPatient) {
+          const patientData: Patient = {
+            id: mockPatient.id,
+            name: mockPatient.name,
+            gender: mockPatient.gender,
+            age: calculateAge(mockPatient.dateOfBirth),
+            dob: mockPatient.dateOfBirth,
+            bloodGroup: 'O+',
+            insuranceProvider: mockPatient.insurance,
+            admittedTo: 'General Ward',
+            language: 'English',
+            mobile: mockPatient.phoneNumber,
+            programAuditor: 'Dr. Smith',
+            auditorTimestamp: new Date().toISOString(),
+            status: mockPatient.status,
+            adminPrograms: mockPatient.adminPrograms,
+            email: mockPatient.email,
+            lastEncounter: mockPatient.lastEncounter,
+            nextAppointment: mockPatient.nextAppointment
+          };
+          setPatient(patientData);
+          // Store in session storage for future use
+          sessionStorage.setItem('selectedPatient', JSON.stringify(patientData));
+        } else {
+          const unknownPatient: Patient = {
+            id: patientId,
+            name: 'Unknown Patient',
+            dob: '1990-01-01',
+            gender: 'Not specified',
+            age: 0,
+            bloodGroup: 'Unknown',
+            insuranceProvider: 'Unknown',
+            admittedTo: 'Unknown',
+            language: 'Unknown',
+            mobile: 'Unknown',
+            programAuditor: 'Unknown',
+            auditorTimestamp: new Date().toISOString(),
+            status: 'Unknown',
+            adminPrograms: [],
+            email: 'Unknown',
+            lastEncounter: 'Unknown',
+            nextAppointment: null
+          };
+          setPatient(unknownPatient);
+        }
         setIsLoading(false);
-        } catch (error) {
+      } catch (error) {
         console.error('Error fetching patient:', error);
-          setIsLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -431,12 +568,11 @@ const PatientChart: FC = () => {
     }
 
     setActiveWidgets(prev => {
-      const newActiveWidgets = prev.includes(widgetType)
-        ? prev.filter(w => w !== widgetType)
-        : [...prev, widgetType];
-      
-      // If we're adding a widget, update its position
-      if (!prev.includes(widgetType)) {
+      if (prev.includes(widgetType)) {
+        // Removing widget
+        return prev.filter(w => w !== widgetType);
+      } else {
+        // Adding widget
         // Find the lowest y-coordinate and available x-coordinate
         let maxY = 0;
         let usedPositions = new Set<string>();
@@ -476,6 +612,7 @@ const PatientChart: FC = () => {
           newY = maxY + 20;
         }
         
+        // Update widget position
         setWidgetPositions(prevPositions => ({
           ...prevPositions,
           [widgetType]: {
@@ -486,9 +623,10 @@ const PatientChart: FC = () => {
             height: 400
           }
         }));
+
+        // Add the widget to active widgets
+        return [...prev, widgetType];
       }
-      
-      return newActiveWidgets;
     });
   };
 

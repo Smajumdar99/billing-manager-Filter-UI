@@ -5,6 +5,7 @@ import { navigation } from '@/components/organisms/SidebarMenu';
 import { PatientTable } from '@/components/organisms/PatientTable';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useNavigate } from 'react-router-dom';
 
 const mockPatients = [
   {
@@ -313,6 +314,7 @@ const AllPatients: FC = () => {
   const { user } = useCurrentUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Simulate loading
   useEffect(() => {
@@ -325,6 +327,30 @@ const AllPatients: FC = () => {
   const handleSearch = (term: string) => {
     setSearchTerm(term);
     console.log('Searching for:', term);
+  };
+
+  const handlePatientClick = (patient: any) => {
+    // Store patient data in sessionStorage for persistence
+    sessionStorage.setItem('selectedPatient', JSON.stringify({
+      id: patient.id,
+      name: patient.name,
+      gender: patient.gender || 'Not specified',
+      age: calculateAge(patient.dateOfBirth),
+      dob: patient.dateOfBirth,
+      bloodGroup: 'O+', // This should come from your patient data
+      insuranceProvider: patient.insurance,
+      admittedTo: patient.admittedTo || 'General Ward',
+      language: patient.language || 'English',
+      mobile: patient.phoneNumber,
+      programAuditor: patient.programAuditor || 'Dr. Smith',
+      auditorTimestamp: new Date().toISOString(),
+      status: patient.status,
+      adminPrograms: patient.adminPrograms,
+      email: patient.email,
+      lastEncounter: patient.lastEncounter,
+      nextAppointment: patient.nextAppointment
+    }));
+    navigate(`/patient-care/patient-chart/${patient.id}`);
   };
 
   return (
@@ -360,6 +386,7 @@ const AllPatients: FC = () => {
                 patients={mockPatients} 
                 className="h-full"
                 defaultPageSize={20}
+                onPatientClick={handlePatientClick}
               />
             )}
           </div>
@@ -367,6 +394,18 @@ const AllPatients: FC = () => {
       </div>
     </div>
   );
+};
+
+// Helper function to calculate age from date of birth
+const calculateAge = (dateOfBirth: string): number => {
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
 };
 
 export default AllPatients; 
