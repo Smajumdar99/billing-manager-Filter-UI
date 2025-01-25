@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/atoms/ScrollArea/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs';
 import { formatDistanceToNow } from 'date-fns';
 import { CalendarIcon, ClockIcon, UserIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { Button } from '@/components/atoms/Button/button';
 
 interface AppointmentsWidgetProps {
   patientId: string;
@@ -71,9 +72,9 @@ const mockAppointments: Appointment[] = [
   }
 ];
 
-export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({ patientId, className }) => {
+export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({ patientId, className = '' }) => {
   return (
-    <Tabs defaultValue="upcoming" className="flex h-full flex-col">
+    <Tabs defaultValue="upcoming" className={`flex h-full flex-col ${className}`}>
       <TabsList className="pl-2 shrink-0 w-full justify-start gap-2">
         <TabsTrigger value="upcoming">
           Upcoming
@@ -97,7 +98,7 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({ patientId, cla
 
       {(['upcoming', 'past', 'all'] as const).map(tabValue => (
         <TabsContent key={tabValue} value={tabValue} className="flex-1 min-h-0">
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full pb-14">
             <div className="space-y-4 p-4">
               {mockAppointments
                 .filter(appointment => {
@@ -174,6 +175,17 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({ patientId, cla
           </ScrollArea>
         </TabsContent>
       ))}
+      
+      <div className="absolute bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75 border-t border-slate-100">
+        <div className="flex h-full items-center justify-between gap-4 px-4">
+          <Button variant="link" className="h-8 text-xs">
+            View All Appointments
+          </Button>
+          <Button variant="link" className="h-8 text-xs">
+            Schedule New Appointment
+          </Button>
+        </div>
+      </div>
     </Tabs>
   );
 }; 

@@ -1,28 +1,26 @@
 import { Layouts } from './layout'
 
 export type UserRole = 
-  | 'billing_specialist'
-  | 'billing_manager'
+  | 'doctor'
+  | 'nurse'
   | 'clinician'
   | 'front_desk'
   | 'clinic_admin'
+  | 'billing_specialist'
+  | 'billing_manager'
   | 'cfo'
   | 'practice_manager'
   | 'ccbhc'
-  | 'supervisor'
-  | 'doctor';
+  | 'supervisor';
 
 export interface User {
-  id: string
-  email: string
-  displayName: string
-  role: UserRole
-  avatar?: string
-  createdAt: string
-  updatedAt: string
-  lastLoginAt?: Date
-  isActive: boolean
-  permissions?: string[]
+  uid: string;
+  id: string;
+  displayName: string | null;
+  email: string | null;
+  role: UserRole;
+  photoURL: string | null;
+  phoneNumber: string | null;
 }
 
 export interface UserSettings {
@@ -30,6 +28,10 @@ export interface UserSettings {
   userId: string
   dashboardLayout?: Layouts
   sidebarCollapsed?: boolean
+  patientChartNavSettings?: {
+    position: 'left' | 'right'
+    isCollapsed: boolean
+  }
   theme?: 'light' | 'dark'
   createdAt: Date
   updatedAt: Date

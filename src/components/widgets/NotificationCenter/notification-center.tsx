@@ -82,6 +82,114 @@ const mockNotifications: Notification[] = [
     isRead: false,
     category: 'Vitals',
     actionRequired: true
+  },
+  {
+    id: '6',
+    type: 'golden-thread',
+    priority: 'high',
+    title: 'Medication Interaction Alert',
+    message: 'Potential severe interaction detected between Warfarin and new prescription',
+    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    isRead: false,
+    category: 'Medications',
+    actionRequired: true
+  },
+  {
+    id: '7',
+    type: 'message',
+    priority: 'medium',
+    title: 'Prior Authorization Update',
+    message: 'Insurance approved MRI authorization request',
+    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    isRead: false,
+    sender: 'Insurance Dept',
+    category: 'Insurance'
+  },
+  {
+    id: '8',
+    type: 'task',
+    priority: 'high',
+    title: 'Documentation Update Required',
+    message: 'Complete missing elements in latest progress note',
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    isRead: false,
+    category: 'Documentation',
+    actionRequired: true
+  },
+  {
+    id: '9',
+    type: 'reminder',
+    priority: 'medium',
+    title: 'Immunization Due',
+    message: 'Patient due for Tdap booster',
+    timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+    isRead: false,
+    category: 'Immunizations'
+  },
+  {
+    id: '10',
+    type: 'message',
+    priority: 'low',
+    title: 'Patient Portal Message',
+    message: 'New secure message from patient regarding prescription refill',
+    timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+    isRead: false,
+    sender: 'Patient Portal',
+    category: 'Messages'
+  },
+  {
+    id: '11',
+    type: 'task',
+    priority: 'medium',
+    title: 'Lab Order Review',
+    message: 'Review and sign pending lab orders',
+    timestamp: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
+    isRead: false,
+    category: 'Lab Orders',
+    actionRequired: true
+  },
+  {
+    id: '12',
+    type: 'golden-thread',
+    priority: 'high',
+    title: 'Care Gap Alert',
+    message: 'Overdue for diabetic foot exam and HbA1c test',
+    timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+    isRead: false,
+    category: 'Care Gaps',
+    actionRequired: true
+  },
+  {
+    id: '13',
+    type: 'reminder',
+    priority: 'medium',
+    title: 'Referral Follow-up',
+    message: 'Check status of cardiology referral sent last week',
+    timestamp: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
+    isRead: false,
+    category: 'Referrals'
+  },
+  {
+    id: '14',
+    type: 'message',
+    priority: 'medium',
+    title: 'Care Team Update',
+    message: 'New specialist added to patient\'s care team',
+    timestamp: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
+    isRead: false,
+    sender: 'Care Coordinator',
+    category: 'Care Team'
+  },
+  {
+    id: '15',
+    type: 'task',
+    priority: 'high',
+    title: 'Discharge Summary Pending',
+    message: 'Complete discharge summary for recent hospital stay',
+    timestamp: new Date(Date.now() - 1000 * 60 * 480).toISOString(),
+    isRead: false,
+    category: 'Documentation',
+    actionRequired: true
   }
 ];
 

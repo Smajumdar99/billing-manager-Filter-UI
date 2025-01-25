@@ -2,9 +2,10 @@ import { FC, useEffect, useState } from 'react'
 import { Link, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { motion } from "framer-motion"
 import { Input } from "@/components/atoms/Input"
 import { Checkbox } from "@/components/atoms/Checkbox"
-import { WarpBackground } from "@/components/atoms/WarpBackground"
+import { MedicalBackground } from "@/components/atoms/MedicalBackground"
 import { ChevronDownIcon, ArrowPathIcon } from "@heroicons/react/24/outline"
 import {
   Form,
@@ -33,22 +34,22 @@ const FeatureCard: FC<FeatureCardProps> = ({ title, icon, features }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
-    <div className="bg-background/80 dark:bg-card rounded-lg shadow-sm border border-border/50">
+    <div className="bg-white/5 backdrop-blur-lg dark:bg-white/5 rounded-lg border border-white/10 shadow-lg">
       <button 
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center p-3 text-left lg:cursor-default"
       >
         <div className="flex items-center gap-2 flex-1">
-          <div className="p-1.5 rounded-md bg-primary/10 dark:bg-primary/20 shrink-0">
+          <div className="p-1.5 rounded-md bg-blue-500/20 dark:bg-blue-500/20 shrink-0">
             {icon}
           </div>
-          <h3 className="text-sm font-medium text-foreground">
+          <h3 className="text-sm font-medium text-white/90 dark:text-white/90">
             {title}
           </h3>
         </div>
         <ChevronDownIcon 
           className={cn(
-            "w-4 h-4 text-muted-foreground transition-transform lg:hidden",
+            "w-4 h-4 text-white/60 dark:text-white/60 transition-transform lg:hidden",
             isExpanded && "rotate-180"
           )} 
         />
@@ -64,8 +65,8 @@ const FeatureCard: FC<FeatureCardProps> = ({ title, icon, features }) => {
           <div className="px-3 pb-3 pt-1 space-y-1">
             {features.map((item) => (
               <div key={item} className="flex items-center gap-2">
-                <div className="w-1 h-1 rounded-full bg-primary/60" />
-                <span className="text-xs text-muted-foreground">{item}</span>
+                <div className="w-1 h-1 rounded-full bg-blue-400/60 dark:bg-blue-400/60" />
+                <span className="text-xs text-white/70 dark:text-white/70">{item}</span>
               </div>
             ))}
           </div>
@@ -143,6 +144,29 @@ export const HomePage: FC = () => {
     }
   ]
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    }
+  }
+
   return (
     <>
       {isTransitioning ? (
@@ -152,63 +176,95 @@ export const HomePage: FC = () => {
           <div className="min-h-screen flex flex-col lg:flex-row">
             {/* Left Section - Hero */}
             <div className="w-full lg:w-[55%] relative min-h-[50vh] lg:min-h-screen">
-              {/* Mobile Background - Full Width */}
-              <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-background lg:hidden dark:from-blue-950/20 dark:to-background" />
+              {/* Mobile Background */}
+              <div className="absolute inset-0 lg:hidden">
+                <MedicalBackground />
+              </div>
               
-              {/* Desktop Animation Background - Full Width */}
+              {/* Desktop Background */}
               <div className="hidden lg:block absolute inset-0">
-                <WarpBackground
-                  className="absolute inset-0 !p-0 !border-0 !rounded-none bg-gradient-to-br from-blue-50/80 via-background/90 to-blue-50/80 dark:from-blue-950/20 dark:via-background/90 dark:to-blue-950/20"
-                  containerClassName="!mask-image:none"
-                  beamsPerSide={6}
-                  beamSize={8}
-                  beamDuration={3}
-                  perspective={1200}
-                  gridColor="rgba(var(--primary), 0.08)"
-                />
+                <MedicalBackground />
               </div>
 
               {/* Content Container with Padding */}
               <div className="relative z-10 flex items-center min-h-[50vh] lg:min-h-screen">
-                <div className="w-full max-w-2xl mx-auto lg:mx-auto px-4 lg:px-16 xl:px-24">
+                <motion.div 
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="w-full max-w-2xl mx-auto lg:mx-auto px-4 lg:px-16 xl:px-24"
+                >
                   {/* Logo */}
-                  <div className="flex justify-center lg:justify-start">
+                  <motion.div 
+                    variants={itemVariants}
+                    className="flex justify-center lg:justify-start mb-12"
+                  >
                     <img 
                       src="/logo.svg"
                       alt="DrCloud EHR" 
                       className="w-20 sm:w-24 lg:w-32 h-auto"
                     />
-                  </div>
+                  </motion.div>
                   
-                  {/* Hero Content - Mobile Optimized */}
-                  <div className="space-y-4">
-                    <h1 className="text-2xl sm:text-3xl lg:text-5xl font-manrope font-bold tracking-tight text-foreground text-center lg:text-left">
-                      <span className="lg:hidden">
-                        Empowering Healthcare Through Digital Excellence
-                      </span>
-                      <span className="hidden lg:block">
-                        Empowering <br />
-                        <span className="text-primary">Healthcare</span> Through <br />
-                        Digital Excellence
-                      </span>
-                    </h1>
-                    <p className="text-sm sm:text-base lg:text-lg text-muted-foreground text-center lg:text-left">
-                      A comprehensive EHR solution for meaningful use stage 3 and value-based care delivery
-                    </p>
-                  </div>
+                  {/* Hero Content */}
+                  <div className="space-y-8">
+                    <motion.div variants={itemVariants} className="space-y-4">
+                      <h1 className="text-2xl sm:text-3xl lg:text-5xl font-manrope font-bold tracking-tight text-white dark:text-white text-center lg:text-left">
+                        <span className="lg:hidden">
+                          Empowering Healthcare Through Digital Excellence
+                        </span>
+                        <span className="hidden lg:block">
+                          Empowering <br />
+                          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400">Healthcare</span> Through <br />
+                          Digital Excellence
+                        </span>
+                      </h1>
+                      <p className="text-sm sm:text-base lg:text-lg text-white/70 dark:text-white/70 text-center lg:text-left">
+                        Experience the future of healthcare management with our comprehensive EHR solution
+                      </p>
+                    </motion.div>
 
-                  {/* Feature Cards - Mobile Optimized with Expand/Collapse */}
-                  <div className="grid grid-cols-1 gap-4">
-                    {featureCards.map((card) => (
-                      <FeatureCard
-                        key={card.title}
-                        title={card.title}
-                        icon={card.icon}
-                        features={card.features}
-                      />
-                    ))}
+                    {/* Feature Cards */}
+                    <motion.div 
+                      variants={itemVariants}
+                      className="grid grid-cols-1 gap-4 relative"
+                    >
+                      {featureCards.map((card) => (
+                        <FeatureCard
+                          key={card.title}
+                          title={card.title}
+                          icon={card.icon}
+                          features={card.features}
+                        />
+                      ))}
+                    </motion.div>
+
+                    {/* Trust Indicators */}
+                    <motion.div 
+                      variants={itemVariants}
+                      className="pt-6 flex flex-col items-center lg:items-start space-y-3"
+                    >
+                      <p className="text-sm font-medium text-white/70 dark:text-white/70">Trusted by Healthcare Providers</p>
+                      <div className="flex items-center gap-6">
+                        <div className="w-12 h-12 rounded-full bg-blue-500/20 dark:bg-blue-500/20 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-blue-400 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-blue-500/20 dark:bg-blue-500/20 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-blue-400 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-blue-500/20 dark:bg-blue-500/20 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-blue-400 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                        </div>
+                      </div>
+                    </motion.div>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
 
@@ -217,7 +273,7 @@ export const HomePage: FC = () => {
               <div className="w-full max-w-md mx-auto px-4 py-8 lg:py-0 lg:px-12 xl:px-16">
                 <div className="flex items-center justify-between mb-8">
                   <div className="space-y-2">
-                    <h2 className="text-2xl sm:text-3xl font-manrope font-semibold tracking-tight">
+                    <h2 className="text-2xl sm:text-2xl font-manrope font-semibold tracking-tight">
                       Login to your account
                     </h2>
                     <p className="text-xs sm:text-base text-muted-foreground">

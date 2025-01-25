@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,8 +12,9 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 }
 
-// Initialize Firebase only if it hasn't been initialized
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0]
+// Initialize Firebase only if no apps exist
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
-// Initialize Firestore
-export const db = getFirestore(app) 
+// Initialize Firestore and Auth
+export const db = getFirestore(app)
+export const auth = getAuth(app) 

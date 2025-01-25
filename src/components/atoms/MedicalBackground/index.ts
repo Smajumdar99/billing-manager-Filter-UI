@@ -1,0 +1,1 @@
+export { MedicalBackground } from './medical-background' 

@@ -5,52 +5,88 @@ import { Button } from '@/components/atoms/Button/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs';
 import { ScrollArea } from '@/components/atoms/ScrollArea/scroll-area';
 import { cn } from '@/lib/utils';
-
-interface VitalSign {
-  timestamp: string;
-  systolic: number;
-  diastolic: number;
-  heartRate: number;
-  temperature: number;
-  respiratoryRate: number;
-  spO2: number;
-  painScore: number;
-  weight?: number;
-  height?: number;
-  bmi?: number;
-}
+import { 
+  VitalSign, 
+  VitalsData, 
+  VitalRanges, 
+  VITAL_RANGES,
+  vitalsDataSchema 
+} from '@/types/vitals';
 
 interface VitalsWidgetProps {
   patientId: string;
   className?: string;
 }
 
-const mockVitals: VitalSign[] = Array.from({ length: 50 }, (_, i) => {
-  const date = new Date();
-  date.setMinutes(date.getMinutes() - i * 30); // Each entry 30 minutes apart
-  return {
-    timestamp: date.toISOString(),
-    systolic: 120 + Math.sin(i * 0.5) * 5,
-    diastolic: 80 + Math.sin(i * 0.5) * 3,
-    heartRate: 72 + Math.sin(i * 0.3) * 4,
-    temperature: 98.6 + Math.sin(i * 0.2) * 0.2,
-    respiratoryRate: 16 + Math.sin(i * 0.4) * 2,
-    spO2: 98 + Math.sin(i * 0.3),
-    painScore: 2 + Math.floor(Math.sin(i * 0.8) * 2),
-    weight: 70,
-    height: 170,
-    bmi: 24.2
-  };
-});
+const generateMockVitalsData = (patientId: string): VitalsData => {
+  const readings: VitalSign[] = Array.from({ length: 50 }, (_, i) => {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - i * 30); // Each entry 30 minutes apart
+    return {
+      timestamp: date.toISOString(),
+      systolic: 120 + Math.sin(i * 0.5) * 5,
+      diastolic: 80 + Math.sin(i * 0.5) * 3,
+      heartRate: 72 + Math.sin(i * 0.3) * 4,
+      temperature: 98.6 + Math.sin(i * 0.2) * 0.2,
+      respiratoryRate: 16 + Math.sin(i * 0.4) * 2,
+      spO2: 98 + Math.sin(i * 0.3),
+      painScore: 2 + Math.floor(Math.sin(i * 0.8) * 2),
+      weight: 70,
+      height: 170,
+      bmi: 24.2
+    };
+  });
 
-const getVitalStatus = (vital: number, ranges: { normal: [number, number], warning: [number, number] }): 'normal' | 'warning' | 'critical' => {
+  const mockData: VitalsData = {
+    patientId,
+    readings,
+    clinicalContext: {
+      baselineVitals: {
+        bloodPressure: {
+          systolic: 118,
+          diastolic: 78
+        },
+        heartRate: 68,
+        recordedAt: new Date().toISOString()
+      },
+      relevantConditions: [
+        {
+          name: 'HTN',
+          diagnosedDate: '2020-01-01',
+          status: 'Active'
+        },
+        {
+          name: 'DM Type 2',
+          diagnosedDate: '2019-06-15',
+          status: 'Well-controlled'
+        }
+      ]
+    },
+    criticalAlerts: [
+      {
+        type: 'warning',
+        message: 'SpO2 below 95%',
+        recommendation: 'Consider supplemental oxygen assessment',
+        timestamp: new Date().toISOString()
+      }
+    ],
+    lastUpdated: new Date().toISOString()
+  };
+
+  // Validate the mock data against the schema
+  vitalsDataSchema.parse(mockData);
+
+  return mockData;
+};
+
+const getVitalStatus = (vital: number, ranges: VitalRanges): 'normal' | 'warning' | 'critical' => {
   if (vital >= ranges.normal[0] && vital <= ranges.normal[1]) return 'normal';
   if (vital >= ranges.warning[0] && vital <= ranges.warning[1]) return 'warning';
   return 'critical';
 };
 
 export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) => {
-  const [vitals, setVitals] = useState<VitalSign[]>(mockVitals);
+  const [vitalsData, setVitalsData] = useState<VitalsData>(generateMockVitalsData(patientId));
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
   const [isRealTime, setIsRealTime] = useState(true);
   const [activeTab, setActiveTab] = useState('current');
@@ -60,7 +96,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
     if (!isRealTime) return;
 
     const interval = setInterval(() => {
-      const lastVital = vitals[0];
+      const lastVital = vitalsData.readings[0];
       const newVital: VitalSign = {
         timestamp: new Date().toISOString(),
         systolic: lastVital.systolic + Math.random() * 6 - 3,
@@ -74,19 +110,24 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
         height: lastVital.height,
         bmi: lastVital.bmi
       };
-      setVitals(prev => [newVital, ...prev].slice(0, 100));
+
+      setVitalsData(prev => ({
+        ...prev,
+        readings: [newVital, ...prev.readings].slice(0, 100),
+        lastUpdated: new Date().toISOString()
+      }));
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isRealTime, vitals]);
+  }, [isRealTime, vitalsData]);
 
-  const currentVitals = vitals[0];
+  const currentVitals = vitalsData.readings[0];
 
   const renderVitalCard = (
     label: string,
     value: number,
     unit: string,
-    ranges: { normal: [number, number], warning: [number, number] },
+    ranges: VitalRanges,
     trend?: number,
     secondaryValue?: number
   ) => {
@@ -112,7 +153,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
               <Badge 
                 variant="outline" 
                 className={cn(
-                  "rounded-md px-1 py-0.5 text-[10px] font-medium ml-1 whitespace-nowrap",
+                  "rounded-md px-1 py-0.5 text-[8px] font-medium ml-1 whitespace-nowrap",
                   statusColors[status]
                 )}
               >
@@ -120,14 +161,14 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
               </Badge>
             </div>
             <div className="flex items-baseline gap-0.5 mt-0.5">
-              <span className="text-sm font-semibold tracking-tight leading-none">{value.toFixed(1)}</span>
+              <span className="text-sm font-medium tracking-tight leading-none">{value.toFixed(1)}</span>
               {secondaryValue && (
                 <>
                   <span className="text-slate-300 mx-0.5">/</span>
-                  <span className="text-sm font-semibold tracking-tight leading-none">{secondaryValue.toFixed(1)}</span>
+                  <span className="text-sm font-medium tracking-tight leading-none">{secondaryValue.toFixed(1)}</span>
                 </>
               )}
-              <span className="text-[10px] text-slate-500 ml-0.5 whitespace-nowrap">{unit}</span>
+              <span className="text-[8px] text-slate-500 ml-0.5 whitespace-nowrap">{unit}</span>
             </div>
           </div>
         </div>
@@ -177,7 +218,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                     "Blood Pressure",
                     currentVitals.systolic,
                     "mmHg",
-                    { normal: [90, 120], warning: [120, 140] },
+                    VITAL_RANGES.bloodPressure,
                     0,
                     currentVitals.diastolic
                   )}
@@ -185,35 +226,35 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                     "Heart Rate",
                     currentVitals.heartRate,
                     "bpm",
-                    { normal: [60, 100], warning: [50, 120] },
+                    VITAL_RANGES.heartRate,
                     2.0
                   )}
                   {renderVitalCard(
                     "Temperature",
                     currentVitals.temperature,
                     "°F",
-                    { normal: [97.0, 99.0], warning: [99.0, 100.4] },
+                    VITAL_RANGES.temperature,
                     0.1
                   )}
                   {renderVitalCard(
                     "SpO2",
                     currentVitals.spO2,
                     "%",
-                    { normal: [95, 100], warning: [94, 95] },
+                    VITAL_RANGES.spO2,
                     0
                   )}
                   {renderVitalCard(
                     "Respiratory Rate",
                     currentVitals.respiratoryRate,
                     "breaths/min",
-                    { normal: [12, 20], warning: [10, 24] },
+                    VITAL_RANGES.respiratoryRate,
                     1.0
                   )}
                   {renderVitalCard(
                     "Pain Score",
                     currentVitals.painScore,
                     "/10",
-                    { normal: [0, 3], warning: [4, 7] },
+                    VITAL_RANGES.painScore,
                     0
                   )}
                 </div>
@@ -222,13 +263,15 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                   <div className="space-y-1.5">
                     <h4 className="text-xs font-semibold text-slate-900">Critical Alerts</h4>
                     <div className="space-y-1.5">
-                      <div className="flex items-start gap-2.5 p-2.5 rounded-md bg-white border">
-                        <div className="h-2 w-2 rounded-full bg-rose-500 mt-[3px] flex-shrink-0" />
-                        <div className="flex-1 text-[11px] leading-4">
-                          <span className="text-slate-900">SpO2 below 95% - </span>
-                          <span className="text-slate-500">Consider supplemental oxygen assessment</span>
+                      {vitalsData.criticalAlerts.map((alert, index) => (
+                        <div key={index} className="flex items-start gap-2.5 p-2.5 rounded-md bg-white border">
+                          <div className="h-2 w-2 rounded-full bg-rose-500 mt-[3px] flex-shrink-0" />
+                          <div className="flex-1 text-[11px] leading-4">
+                            <span className="text-slate-900">{alert.message} - </span>
+                            <span className="text-slate-500">{alert.recommendation}</span>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
 
@@ -240,25 +283,28 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                         <div className="space-y-1">
                           <div className="flex items-baseline justify-between gap-2">
                             <span className="text-[11px] text-slate-500">BP</span>
-                            <span className="text-[11px] font-medium">118/78 mmHg</span>
+                            <span className="text-[11px] font-medium">
+                              {vitalsData.clinicalContext.baselineVitals.bloodPressure.systolic}/
+                              {vitalsData.clinicalContext.baselineVitals.bloodPressure.diastolic} mmHg
+                            </span>
                           </div>
                           <div className="flex items-baseline justify-between gap-2">
                             <span className="text-[11px] text-slate-500">HR</span>
-                            <span className="text-[11px] font-medium">68 bpm</span>
+                            <span className="text-[11px] font-medium">
+                              {vitalsData.clinicalContext.baselineVitals.heartRate} bpm
+                            </span>
                           </div>
                         </div>
                       </div>
                       <div className="rounded-md border border-slate-200 p-2">
                         <h5 className="text-[11px] font-medium text-slate-700 mb-1">Relevant Conditions</h5>
                         <div className="space-y-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-[11px] text-slate-500">HTN</span>
-                            <span className="text-[11px] font-medium">Diagnosed 2020</span>
-                          </div>
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-[11px] text-slate-500">DM Type 2</span>
-                            <span className="text-[11px] font-medium">Well-controlled</span>
-                          </div>
+                          {vitalsData.clinicalContext.relevantConditions.map((condition, index) => (
+                            <div key={index} className="flex items-baseline justify-between gap-2">
+                              <span className="text-[11px] text-slate-500">{condition.name}</span>
+                              <span className="text-[11px] font-medium">{condition.status}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -273,7 +319,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                   <h3 className="text-xs font-medium text-slate-900 mb-2">Blood Pressure Trend</h3>
                   <div className="h-[140px] sm:h-[180px]">
                     <LineChart
-                      data={vitals.map(v => ({
+                      data={vitalsData.readings.map(v => ({
                         timestamp: new Date(v.timestamp),
                         systolic: v.systolic,
                         diastolic: v.diastolic
@@ -289,7 +335,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                   <h3 className="text-xs font-medium text-slate-900 mb-2">Heart Rate & SpO2 Trend</h3>
                   <div className="h-[140px] sm:h-[180px]">
                     <LineChart
-                      data={vitals.map(v => ({
+                      data={vitalsData.readings.map(v => ({
                         timestamp: new Date(v.timestamp),
                         "Heart Rate": v.heartRate,
                         "SpO2": v.spO2
@@ -305,7 +351,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                   <h3 className="text-xs font-medium text-slate-900 mb-2">Temperature Trend</h3>
                   <div className="h-[140px] sm:h-[180px]">
                     <LineChart
-                      data={vitals.map(v => ({
+                      data={vitalsData.readings.map(v => ({
                         timestamp: new Date(v.timestamp),
                         Temperature: v.temperature
                       }))}
@@ -320,7 +366,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                   <h3 className="text-xs font-medium text-slate-900 mb-2">Respiratory Rate Trend</h3>
                   <div className="h-[140px] sm:h-[180px]">
                     <LineChart
-                      data={vitals.map(v => ({
+                      data={vitalsData.readings.map(v => ({
                         timestamp: new Date(v.timestamp),
                         "Respiratory Rate": v.respiratoryRate
                       }))}
@@ -335,7 +381,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                   <h3 className="text-xs font-medium text-slate-900 mb-2">Pain Score Trend</h3>
                   <div className="h-[140px] sm:h-[180px]">
                     <LineChart
-                      data={vitals.map(v => ({
+                      data={vitalsData.readings.map(v => ({
                         timestamp: new Date(v.timestamp),
                         "Pain Score": v.painScore
                       }))}
@@ -364,7 +410,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {vitals.slice(0, 30).map((vital) => (
+                      {vitalsData.readings.slice(0, 30).map((vital) => (
                         <tr key={vital.timestamp} className="hover:bg-slate-50/50">
                           <td className="py-2 px-3">
                             <div className="flex flex-col gap-0.5">
@@ -412,7 +458,7 @@ export const VitalsWidget: FC<VitalsWidgetProps> = ({ patientId, className }) =>
                   </table>
                 </div>
 
-                {vitals.length > 30 && (
+                {vitalsData.readings.length > 30 && (
                   <div className="flex justify-center mt-2 pb-2">
                     <Button 
                       variant="outline" 

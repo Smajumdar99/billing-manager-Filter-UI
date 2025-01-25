@@ -60,7 +60,7 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
 
   const roles = [
     { label: 'Billing Specialist', value: 'billing_specialist' },
-    { label: 'Billing Manager', value: 'billing_manager' },
+    { label: 'Billing Manager', value: 'Billing Manager' },
     { label: 'Clinician', value: 'clinician' },
     { label: 'Front Desk', value: 'front_desk' },
     { label: 'Clinic Admin/Supervisor', value: 'clinic_admin' },

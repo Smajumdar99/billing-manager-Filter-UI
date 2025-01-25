@@ -1,27 +1,34 @@
-import { ChevronRight, Home } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { FC } from 'react'
+import { Link } from 'react-router-dom'
+import { ChevronRightIcon, HomeIcon } from '@heroicons/react/24/outline'
+import { cn } from '@/lib/utils'
 
-interface BreadcrumbItem {
-  label: string;
-  href?: string;
+export interface BreadcrumbItem {
+  label: string
+  href?: string
 }
 
 interface BreadcrumbProps {
-  items: BreadcrumbItem[];
+  items: BreadcrumbItem[]
+  className?: string
 }
 
-export const Breadcrumb = ({ items }: BreadcrumbProps) => {
+export const Breadcrumb: FC<BreadcrumbProps> = ({ items, className }) => {
   return (
-    <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
+    <nav 
+      aria-label="Breadcrumb"
+      className={cn("flex items-center space-x-1 text-sm text-muted-foreground", className)}
+    >
       <Link
         to="/"
         className="overflow-hidden text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-1"
       >
-        <Home className="h-4 w-4" />
+        <HomeIcon className="h-4 w-4" />
       </Link>
+
       {items.map((item, index) => (
         <div key={index} className="flex items-center">
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRightIcon className="h-4 w-4" />
           {item.href ? (
             <Link
               to={item.href}
@@ -35,5 +42,5 @@ export const Breadcrumb = ({ items }: BreadcrumbProps) => {
         </div>
       ))}
     </nav>
-  );
-}; 
+  )
+} 

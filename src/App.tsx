@@ -11,6 +11,7 @@ import { ThemeProvider } from '@/context/ThemeContext'
 import { FontProvider } from '@/contexts/FontContext'
 import AllPatients from './pages/AllPatients'
 import PatientChart from './pages/PatientChart'
+import Settings from './pages/Settings'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -48,6 +49,14 @@ const AppRoutes = () => {
       />
       <Route path="/patient-care/all-patients" element={<AllPatients />} />
       <Route path="/patient-chart/:patientId" element={<PatientChart />} />
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )

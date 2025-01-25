@@ -1,30 +1,107 @@
-import { FC } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Star } from 'lucide-react'
+import { 
+  Star, 
+  CheckCircle2, 
+  Circle,
+  Stethoscope,
+  FileEdit,
+  Activity,
+  Pill,
+  Calendar,
+  TestTube,
+  FileText,
+  ClipboardList,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react'
 
 interface PatientPerformanceCardProps {
   className?: string
   totalObjectives: number
   metObjectives: number
+  onAction?: (action: string) => void
 }
+
+interface QuickAction {
+  id: string
+  label: string
+  icon: React.ReactNode
+  action: string
+}
+
+const clinicianQuickActions: QuickAction[] = [
+  { id: '1', label: 'New Encounter', icon: <Stethoscope className="w-4 h-4" />, action: 'new_encounter' },
+  { id: '2', label: 'Add Note', icon: <FileEdit className="w-4 h-4" />, action: 'add_note' },
+  { id: '3', label: 'Add Vitals', icon: <Activity className="w-4 h-4" />, action: 'add_vitals' },
+  { id: '4', label: 'Add Medication', icon: <Pill className="w-4 h-4" />, action: 'add_medication' },
+  { id: '5', label: 'Schedule Visit', icon: <Calendar className="w-4 h-4" />, action: 'schedule_visit' },
+  { id: '6', label: 'Lab Results', icon: <TestTube className="w-4 h-4" />, action: 'view_labs' },
+  { id: '7', label: 'Add Diagnosis', icon: <FileText className="w-4 h-4" />, action: 'add_diagnosis' },
+  { id: '8', label: 'Care Plan', icon: <ClipboardList className="w-4 h-4" />, action: 'care_plan' },
+]
 
 export const PatientPerformanceCard: FC<PatientPerformanceCardProps> = ({
   className,
   totalObjectives,
-  metObjectives
+  metObjectives,
+  onAction
 }) => {
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
   const percentageComplete = Math.round((metObjectives / totalObjectives) * 100)
   const starRating = Math.round((percentageComplete / 100) * 5)
   const needleRotation = -90 + (percentageComplete / 100) * 180
 
-  return (
-    <div className={cn(
-      "bg-transparent p-0 pt-1",
-      className
-    )}>
-      <div className="flex items-start gap-4">
+  // Auto-rotate carousel
+  useEffect(() => {
+    if (isPaused) return
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev === 0 ? 1 : 0))
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [isPaused])
+
+  const handlePrevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? 1 : 0))
+  }
+
+  const handleNextSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? 1 : 0))
+  }
+
+  const handleActionClick = (actionType: string) => {
+    onAction?.(actionType)
+  }
+
+  const renderQuickActions = () => (
+    <div className="flex flex-col h-full">
+      <div className="grid grid-cols-4 gap-4 px-6 h-full place-content-center">
+        {clinicianQuickActions.map((action) => (
+          <button
+            key={action.id}
+            onClick={() => handleActionClick(action.action)}
+            className="flex flex-col items-center justify-center p-0 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="w-7 h-7 flex items-center justify-center rounded-full bg-primary/10 text-primary mb-1">
+              {action.icon}
+            </div>
+            <span className="text-[9px] text-gray-600 text-center leading-tight">
+              {action.label}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderPerformanceMetrics = () => (
+    <div className="flex items-center justify-between w-full h-full px-6">
+      <div className="flex items-center gap-4">
         {/* Gauge */}
-        <div className="relative w-24 h-16">
+        <div className="relative w-24 h-20 flex-shrink-0">
           <svg className="w-full h-full" viewBox="0 0 160 100">
             <defs>
               <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -77,10 +154,63 @@ export const PatientPerformanceCard: FC<PatientPerformanceCardProps> = ({
               />
             ))}
           </div>
-          <span className="text-sm font-semibold text-[#1e3a8a]">
+          <span className="text-sm font-semibold text-green-700">
             Good Progress
           </span>
         </div>
+      </div>
+
+      {/* Objectives Status */}
+      <div className="flex flex-col items-end gap-1 pr-4">
+        <h4 className="text-[12px] font-medium text-gray-500">Objectives</h4>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            <span className="text-xs font-medium">{metObjectives}</span>
+          </div>
+          <span className="text-xs text-gray-400">/</span>
+          <div className="flex items-center gap-1">
+            <Circle className="w-4 h-4 text-gray-300" />
+            <span className="text-sm font-medium">{totalObjectives}</span>
+          </div>
+        </div>
+        <span className="text-xs text-gray-400">{percentageComplete}% Complete</span>
+      </div>
+    </div>
+  )
+
+  return (
+    <div 
+      className={cn("bg-transparent p-0 relative min-h-[100px] h-full", className)}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <div className="relative overflow-hidden h-full">
+        <div 
+          className="transition-transform duration-500 ease-in-out flex h-full"
+          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+        >
+          <div className="min-w-full">
+            {renderQuickActions()}
+          </div>
+          <div className="min-w-full">
+            {renderPerformanceMetrics()}
+          </div>
+        </div>
+
+        {/* Navigation Arrows */}
+        <button
+          onClick={handlePrevSlide}
+          className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4 text-gray-600" />
+        </button>
+        <button
+          onClick={handleNextSlide}
+          className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
+        >
+          <ChevronRight className="w-4 h-4 text-gray-600" />
+        </button>
       </div>
     </div>
   )

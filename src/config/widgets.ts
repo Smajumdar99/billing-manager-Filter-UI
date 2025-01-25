@@ -13,6 +13,17 @@ const defaultWidgets: Widget[] = [
     title: 'Notifications'
   },
   {
+    id: 'activity',
+    type: 'activity',
+    title: 'Recent Activity'
+  },
+  {
+    id: 'clinical-insights-carousel',
+    type: 'clinical_insights_carousel',
+    title: 'Clinical Insights',
+    description: 'Key clinical insights and trends for the patient'
+  },
+  {
     id: 'vital-signs',
     type: 'vital_signs',
     title: 'Vital Signs'
@@ -68,6 +79,41 @@ const defaultWidgets: Widget[] = [
     title: 'Billing'
   },
   {
+    id: 'billing-payment-receipts',
+    type: 'billing_payment_receipts',
+    title: 'Payment Receipts'
+  },
+  {
+    id: 'billing-statement',
+    type: 'billing_statement',
+    title: 'Billing Statement'
+  },
+  {
+    id: 'billing-prior-auth',
+    type: 'billing_prior_auth',
+    title: 'Prior Authorization'
+  },
+  {
+    id: 'billing-new-payment',
+    type: 'billing_new_payment',
+    title: 'New Payment'
+  },
+  {
+    id: 'billing-credit-cards',
+    type: 'billing_credit_cards',
+    title: 'Credit Cards'
+  },
+  {
+    id: 'billing-write-off',
+    type: 'billing_write_off',
+    title: 'Write Off'
+  },
+  {
+    id: 'billing-notes',
+    type: 'billing_notes',
+    title: 'Billing Notes'
+  },
+  {
     id: 'disclosures',
     type: 'disclosures',
     title: 'Disclosures & Amendments'
@@ -86,35 +132,61 @@ const defaultWidgets: Widget[] = [
     id: 'identified_needs',
     type: 'identified_needs',
     title: 'Identified Needs'
+  },
+  {
+    id: 'id-card-photos',
+    type: 'id_card_photos',
+    title: 'ID/Card Photos',
+    description: 'View and manage patient ID cards and photos'
   }
 ];
 
 const widgetPermissions: Record<string, WidgetType[]> = {
   admin: [
-    'patient_performance', 'notification_center', 'vital_signs', 'clinical_notes', 
+    'patient_performance', 'notification_center', 'activity', 
     'medications', 'diagnosis', 'allergies', 'lab_results', 'appointments',
     'documents', 'patient_timeline', 'insurance', 'billing', 'disclosures',
-    'demographics', 'implantable_devices', 'identified_needs'
+    'demographics', 'implantable_devices', 'identified_needs', 'id_card_photos'
+  ],
+  front_desk: [
+    'patient_performance', 'notification_center', 'appointments', 
+    'demographics', 'insurance', 'documents', 'id_card_photos'
   ],
   doctor: [
-    'patient_performance', 'vital_signs', 'clinical_notes', 'medications', 
-    'diagnosis', 'allergies', 'lab_results', 'appointments', 'documents',
-    'patient_timeline', 'insurance', 'billing', 'disclosures', 'demographics',
-    'implantable_devices', 'identified_needs'
-  ],
-  nurse: [
-    'vital_signs', 'clinical_notes', 'medications', 'diagnosis', 'allergies', 
-    'lab_results', 'appointments', 'documents', 'patient_timeline'
-  ],
-  patient: [
-    'vital_signs', 'medications', 'diagnosis', 'allergies', 'lab_results',
-    'appointments', 'documents'
-  ],
-  clinician: [
-    'patient_performance', 'notification_center', 'vital_signs', 'clinical_notes', 
+    'patient_performance', 'notification_center', 'activity', 'clinical_insights_carousel', 'vital_signs', 'clinical_notes', 
     'medications', 'diagnosis', 'allergies', 'lab_results', 'appointments',
     'documents', 'patient_timeline', 'insurance', 'billing', 'disclosures',
-    'demographics', 'implantable_devices', 'identified_needs'
+    'demographics', 'implantable_devices', 'identified_needs', 'id_card_photos'
+  ],
+  nurse: [
+    'vital_signs', 'notification_center', 'activity', 'clinical_insights_carousel', 'clinical_notes', 'medications', 
+    'diagnosis', 'allergies', 'lab_results', 'appointments', 'documents', 
+    'patient_timeline', 'id_card_photos'
+  ],
+  patient: [
+    'vital_signs', 'activity', 'medications', 'diagnosis', 'allergies', 'lab_results',
+    'appointments', 'documents', 'id_card_photos'
+  ],
+  clinician: [
+    'patient_performance', 'notification_center', 'activity', 'clinical_insights_carousel', 'vital_signs', 'clinical_notes', 
+    'medications', 'diagnosis', 'allergies', 'lab_results', 'appointments',
+    'documents', 'patient_timeline', 'insurance', 'billing', 'disclosures',
+    'demographics', 'implantable_devices', 'identified_needs', 'id_card_photos'
+  ],
+  billing_specialist: [
+    'patient_performance',
+    'notification_center',
+    'insurance',
+    'billing',
+    'billing_payment_receipts',
+    'billing_statement',
+    'billing_prior_auth',
+    'billing_new_payment',
+    'billing_credit_cards',
+    'billing_write_off',
+    'billing_notes',
+    'demographics',
+    'id_card_photos'
   ]
 };
 
