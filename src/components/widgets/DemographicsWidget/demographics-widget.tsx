@@ -108,7 +108,7 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ patientId, isF
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-gray-100/80 p-0.5 h-6 rounded-lg grid w-full grid-cols-3 gap-1 sticky top-0 z-10">
+        <TabsList className="bg-gray-100/80 p-0.5 h-8 rounded-lg grid w-full grid-cols-3 gap-1 sticky top-0 z-10">
           <TabsTrigger value="basic" className="text-[10px] rounded data-[state=active]:bg-white">Basic</TabsTrigger>
           <TabsTrigger value="contact" className="text-[10px] rounded data-[state=active]:bg-white">Contact</TabsTrigger>
           <TabsTrigger value="ids" className="text-[10px] rounded data-[state=active]:bg-white">IDs</TabsTrigger>

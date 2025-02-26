@@ -434,6 +434,40 @@ export const PatientChartNav: FC<PatientChartNavProps> = ({
                     </TooltipContent>
                   )}
                 </TooltipRoot>
+
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleClick('Disclosures')}
+                      className="flex items-center w-full px-2 py-1.5 text-sm text-gray-600 rounded-md hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      <DocumentDuplicateIcon className="w-4 h-4 shrink-0" />
+                      {!isCollapsed && <span className="ml-3">Disclosures</span>}
+                    </button>
+                  </TooltipTrigger>
+                  {isCollapsed && (
+                    <TooltipContent side={position === 'left' ? 'right' : 'left'} sideOffset={10}>
+                      Disclosures
+                    </TooltipContent>
+                  )}
+                </TooltipRoot>
+
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleClick('Amendments')}
+                      className="flex items-center w-full px-2 py-1.5 text-sm text-gray-600 rounded-md hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      <DocumentDuplicateIcon className="w-4 h-4 shrink-0" />
+                      {!isCollapsed && <span className="ml-3">Amendments</span>}
+                    </button>
+                  </TooltipTrigger>
+                  {isCollapsed && (
+                    <TooltipContent side={position === 'left' ? 'right' : 'left'} sideOffset={10}>
+                      Amendments
+                    </TooltipContent>
+                  )}
+                </TooltipRoot>
               </div>
             </div>
 

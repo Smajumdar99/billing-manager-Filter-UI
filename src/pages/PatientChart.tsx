@@ -23,6 +23,9 @@ import { AllergiesWidget } from '@/components/widgets/AllergiesWidget/allergies-
 import { LabResultsWidget } from '@/components/widgets/LabResultsWidget/lab-results-widget';
 import { AppointmentsWidget } from '@/components/widgets/AppointmentsWidget/appointments-widget';
 import { PatientPerformanceCard } from '@/components/molecules/PatientPerformanceCard/patient-performance-card';
+import { DisclosuresWidget } from '@/components/widgets/DisclosuresWidget/disclosures-widget';
+import { PrescriptionsWidget } from '@/components/widgets/PrescriptionsWidget/prescriptions-widget';
+import { ImplantableDevicesWidget } from '@/components/widgets/ImplantableDevicesWidget/implantable-devices-widget';
 import type { Patient } from '@/types/patient';
 import { mockPatients, type MockPatient } from '@/data/mockPatients';
 import { calculateAge } from '@/utils/date';
@@ -50,7 +53,25 @@ import {
   BanknotesIcon,
   CreditCardIcon,
   PencilSquareIcon,
-  ArchiveBoxXMarkIcon
+  ArchiveBoxXMarkIcon,
+  HeartIcon,
+  BellIcon,
+  UserIcon,
+  ClipboardIcon,
+  BeakerIcon,
+  ExclamationTriangleIcon,
+  IdentificationIcon,
+  CalendarIcon,
+  DocumentIcon,
+  ChartPieIcon,
+  DeviceTabletIcon,
+  DocumentDuplicateIcon,
+  ClockIcon as ClockIconOutline,
+  StarIcon,
+  InformationCircleIcon,
+  BuildingOfficeIcon,
+  RectangleStackIcon,
+  SquaresPlusIcon
 } from '@heroicons/react/24/outline';
 import { Dialog, DialogContent } from '@/components/atoms/Dialog/dialog';
 import { PatientSnapshot } from '@/components/molecules/PatientSnapshot/patient-snapshot';
@@ -71,6 +92,8 @@ import { DemographicsWidget } from '@/components/widgets/DemographicsWidget/demo
 import { ClinicalInsightsCarousel } from '@/components/widgets/ClinicalInsightsCarousel/clinical-insights-carousel';
 import { BillingWidget } from '@/components/widgets/BillingWidget/billing-widget';
 import { IDCardPhotosWidget } from '@/components/widgets/IDCardPhotosWidget/id-card-photos-widget';
+import { AmendmentsWidget } from '@/components/widgets/AmendmentsWidget/amendments-widget';
+import { DocumentsWidget } from '@/components/widgets/DocumentsWidget/documents-widget';
 
 const PatientChart: FC = () => {
   const { patientId = '' } = useParams();
@@ -135,21 +158,18 @@ const PatientChart: FC = () => {
           'demographics',
           'insurance',
           'billing',
-          'documents'
+          'id_card_photos'
         ];
       case 'clinic_admin':
         return [
           'patient_performance',
-          'notification_center',
-          'activity',
-          'clinical_insights_carousel',
-          'appointments',
-          'demographics',
-          'insurance',
-          'billing',
-          'documents',
-          'patient_timeline'
+          'notification_center'
         ];
+      case 'clinical_admin':
+          return [
+            'patient_performance',
+            'notification_center'
+          ];  
       case 'cfo':
         return [
           'patient_performance',
@@ -222,35 +242,35 @@ const PatientChart: FC = () => {
   // Define default positions
   const defaultPositions: WidgetPositions = {
     patient_performance: { x: 20, y: 20, width: 400, height: 150 },
-    notification_center: { x: 20, y: 140, width: 400, height: 700 },
+    notification_center: { x: 20, y: 190, width: 400, height: 600 },
     activity: { x: 20, y: 860, width: 400, height: 420 },
-    clinical_insights_carousel: { x: 1220, y: 1080, width: 800, height: 400 },
+    clinical_insights_carousel: { x: 1220, y: 1080, width: 1200, height: 400 },
     vital_signs: { x: 440, y: 440, width: 390, height: 400 },
     diagnosis: { x: 440, y: 860, width: 390, height: 400 },
     clinical_notes: { x: 850, y: 440, width: 350, height: 400 },
     allergies: { x: 850, y: 860, width: 350, height: 400 },
     medications: { x: 1220, y: 440, width: 350, height: 400 },
     lab_results: { x: 1220, y: 860, width: 350, height: 400 },
-    appointments: { x: 20, y: 920, width: 400, height: 400 },
-    billing: { x: 440, y: 20, width: 390, height: 400 },
-    billing_payment_receipts: { x: 440, y: 440, width: 390, height: 400 },
-    billing_statement: { x: 440, y: 860, width: 390, height: 400 },
-    billing_prior_auth: { x: 850, y: 20, width: 350, height: 400 },
-    billing_new_payment: { x: 850, y: 440, width: 350, height: 400 },
-    billing_credit_cards: { x: 850, y: 860, width: 350, height: 400 },
-    billing_write_off: { x: 1220, y: 20, width: 350, height: 400 },
-    billing_notes: { x: 1220, y: 440, width: 350, height: 400 },
-    documents: { x: 0, y: 0, width: 0, height: 0 },
+    appointments: { x: 440, y: 20, width: 390, height: 400 },
+    billing: { x: 850, y: 440, width: 350, height: 400 },
+    billing_payment_receipts: { x: 440, y: 860, width: 390, height: 400 },
+    billing_statement: { x: 850, y: 860, width: 350, height: 400 },
+    billing_prior_auth: { x: 1220, y: 860, width: 350, height: 400 },
+    billing_new_payment: { x: 440, y: 1280, width: 390, height: 400 },
+    billing_credit_cards: { x: 850, y: 1280, width: 350, height: 400 },
+    billing_write_off: { x: 1220, y: 1280, width: 350, height: 400 },
+    billing_notes: { x: 440, y: 1700, width: 390, height: 400 },
+    documents: { x: 1220, y: 20, width: 350, height: 400 },
     patient_timeline: { x: 0, y: 0, width: 0, height: 0 },
-    insurance: { x: 0, y: 0, width: 0, height: 0 },
+    insurance: { x: 850, y: 20, width: 350, height: 400 },
     disclosures: { x: 0, y: 0, width: 0, height: 0 },
-    demographics: { x: 0, y: 0, width: 0, height: 0 },
+    demographics: { x: 440, y: 440, width: 390, height: 400 },
     implantable_devices: { x: 0, y: 0, width: 0, height: 0 },
     identified_needs: { x: 0, y: 0, width: 0, height: 0 },
     problems: { x: 0, y: 0, width: 0, height: 0 },
     procedures: { x: 0, y: 0, width: 0, height: 0 },
     immunizations: { x: 0, y: 0, width: 0, height: 0 },
-    id_card_photos: { x: 1220, y: 1200, width: 350, height: 400 },
+    id_card_photos: { x: 1220, y: 440, width: 350, height: 400 },
     clinical_reminders: { x: 0, y: 0, width: 0, height: 0 },
     inbox_reminders: { x: 0, y: 0, width: 0, height: 0 },
     notes: { x: 0, y: 0, width: 0, height: 0 },
@@ -273,11 +293,7 @@ const PatientChart: FC = () => {
   // Load widget positions from Firestore
   useEffect(() => {
     const loadWidgetPositions = async () => {
-      if (authLoading) {
-        return; // Wait for auth loading to complete
-      }
-      
-      if (!authUser?.uid) {
+      if (authLoading || !authUser?.uid) {
         setIsWidgetsLoading(false);
         return;
       }
@@ -286,62 +302,62 @@ const PatientChart: FC = () => {
         const docRef = doc(db, 'userSettings', authUser.uid);
         const docSnap = await getDoc(docRef);
         
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.patientChartLayout?.lg) {
-            // Convert layout array to positions object
-            const savedPositions = data.patientChartLayout.lg.reduce((acc: WidgetPositions, item: any) => {
-              acc[item.i] = {
-                x: item.x,
-                y: item.y,
-                width: item.w,
-                height: item.h
-              };
-              return acc;
-            }, {});
+        // Initialize with default widgets for the role
+        let initialWidgets = defaultWidgetTypes;
+        let initialPositions = { ...defaultPositions };
+        
+        if (docSnap.exists() && docSnap.data().patientChartLayout?.lg) {
+          const savedLayout = docSnap.data().patientChartLayout.lg;
+          
+          // Convert layout array to positions object while preserving default positions
+          const savedPositions = savedLayout.reduce((acc: WidgetPositions, item: any) => {
+            acc[item.i] = {
+              x: item.x,
+              y: item.y,
+              width: item.w,
+              height: item.h
+            };
+            return acc;
+          }, {});
 
-            setWidgetPositions(prev => ({
-              ...defaultPositions,
-              ...savedPositions
-            }));
+          // Merge saved positions with defaults, prioritizing saved positions
+          initialPositions = {
+            ...defaultPositions,
+            ...savedPositions
+          };
 
-            // Set active widgets from the layout
-            const activeWidgetTypes = data.patientChartLayout.lg.map((item: any) => item.i as WidgetType);
-            setActiveWidgets(activeWidgetTypes);
-          }
+          // Get widget types from saved layout
+          const savedWidgets = savedLayout.map((item: any) => item.i as WidgetType);
+          
+          // Merge saved widgets with defaults, ensuring all default widgets are included
+          initialWidgets = Array.from(new Set([...defaultWidgetTypes, ...savedWidgets]));
+        } else {
+          // If no saved layout exists, save the default layout
+          await saveWidgetPositions(initialPositions, initialWidgets);
         }
+
+        setWidgetPositions(initialPositions);
+        setActiveWidgets(initialWidgets);
       } catch (error) {
         console.error('Error loading widget positions:', error);
+        // Fallback to defaults on error
+        setWidgetPositions(defaultPositions);
+        setActiveWidgets(defaultWidgetTypes);
       } finally {
         setIsWidgetsLoading(false);
       }
     };
 
     loadWidgetPositions();
-  }, [authUser?.uid, authLoading]);
+  }, [authUser?.uid, authLoading, defaultWidgetTypes]);
 
   // Save widget positions to Firestore with debounce
   const saveWidgetPositions = async (positions: WidgetPositions, active: WidgetType[]) => {
-    console.log('Save widget positions called', {
-      authLoading,
-      authUid: authUser?.uid
-    });
-    
-    if (authLoading) {
-      console.log('Auth still loading, skipping save');
-      return;
-    }
-    
-    if (!authUser?.uid) {
-      console.log('No auth user ID available, skipping save');
+    if (authLoading || !authUser?.uid || isWidgetsLoading) {
       return;
     }
     
     try {
-      console.log('Saving widget positions for user:', authUser.uid);
-      console.log('Active widgets:', active);
-      console.log('Current positions:', positions);
-
       // Convert positions object to layout array format
       const layoutItems = active.map(widgetType => ({
         i: widgetType,
@@ -356,23 +372,7 @@ const PatientChart: FC = () => {
         static: false
       }));
 
-      console.log('Converted layout items:', layoutItems);
-
       const docRef = doc(db, 'userSettings', authUser.uid);
-      
-      // First, get the current document to preserve existing data
-      const docSnap = await getDoc(docRef);
-      
-      // Create a new document if it doesn't exist
-      if (!docSnap.exists()) {
-        console.log('Creating new userSettings document');
-        await setDoc(docRef, {
-          id: authUser.uid,
-          userId: authUser.uid,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-      }
       
       // Prepare the update data
       const updateData = {
@@ -385,11 +385,8 @@ const PatientChart: FC = () => {
         updatedAt: new Date()
       };
 
-      console.log('Saving to Firestore:', updateData);
-
-      // Use setDoc with merge instead of updateDoc to ensure document exists
+      // Use setDoc with merge
       await setDoc(docRef, updateData, { merge: true });
-      console.log('Successfully saved widget positions to Firestore');
     } catch (error) {
       console.error('Error saving widget positions:', error);
     }
@@ -485,7 +482,7 @@ const PatientChart: FC = () => {
   const renderWidgetContent = (type: WidgetType) => {
     switch (type) {
       case 'patient_performance':
-        return <PatientPerformanceCard totalObjectives={10} metObjectives={7} />;
+        return <PatientPerformanceCard totalObjectives={10} metObjectives={7} userRole={userRole} />;
       case 'notification_center':
         return (
           <div className="flex flex-col h-full">
@@ -526,22 +523,18 @@ const PatientChart: FC = () => {
       case 'billing_notes':
         return <BillingWidget patientId={patientId} isFullscreen={fullscreenWidget === type} />;
       case 'prescriptions':
-        return (
-          <div className="flex flex-col items-center justify-center h-full p-4">
-            <div className="text-2xl mb-4">🚧</div>
-            <h3 className="text-lg font-medium mb-2">{type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h3>
-            <p className="text-sm text-slate-500 text-center">
-              This widget is coming soon. We're working hard to bring you this functionality.
-            </p>
-          </div>
-        );
+        return <PrescriptionsWidget patientId={patientId} />;
       case 'id_card_photos':
         return <IDCardPhotosWidget patientId={patientId} isFullscreen={fullscreenWidget === 'id_card_photos'} />;
-      // Placeholder content for unimplemented widgets
-      case 'documents':
-      case 'patient_timeline':
+      case 'amendments':
+        return <AmendmentsWidget patientId={patientId} isFullscreen={fullscreenWidget === 'amendments'} />;
       case 'disclosures':
+        return <DisclosuresWidget patientId={patientId} isFullscreen={fullscreenWidget === 'disclosures'} />;
       case 'implantable_devices':
+          return <ImplantableDevicesWidget patientId={patientId} isFullscreen={fullscreenWidget === 'disclosures'} />;
+      case 'documents':
+        return <DocumentsWidget patientId={patientId} />;
+      case 'patient_timeline':
       case 'identified_needs':
         return (
           <div className="flex flex-col items-center justify-center h-full p-4">
@@ -777,6 +770,69 @@ const PatientChart: FC = () => {
             </Button>
           </>
         );
+        case 'amendments':
+        return (
+          <>
+            <Button
+              onClick={() => console.log('Verify Record')}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0"
+            >
+              <CheckCircleIcon className="w-4 h-4" />
+              Record
+            </Button>
+            
+          </>
+        );
+        case 'implantable_devices':
+        return (
+          <>
+            <Button
+              onClick={() => console.log('Add Device')}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0"
+            >
+              <CheckCircleIcon className="w-4 h-4" />
+              Add Device
+            </Button>
+            <Button
+              onClick={() => console.log('Edit Devices')}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0"
+            >
+              <CheckCircleIcon className="w-4 h-4" />
+              Edit
+            </Button>
+            
+          </>
+        );
+        case 'prescriptions':
+          return (
+            <>
+              <Button
+                onClick={() => console.log('Add Prescription')}
+                variant="link"
+                size="sm"
+                className="gap-1.5 shrink-0"
+              >
+                <CheckCircleIcon className="w-4 h-4" />
+                Add Prescription
+              </Button>
+              <Button
+                onClick={() => console.log('Edit Prescription')}
+                variant="link"
+                size="sm"
+                className="gap-1.5 shrink-0"
+              >
+                <CheckCircleIcon className="w-4 h-4" />
+                Edit Prescription
+              </Button>
+              
+            </>
+          );
         case 'billing':
           return (
             <>
@@ -950,23 +1006,6 @@ const PatientChart: FC = () => {
     });
   };
 
-  // Save initial widget positions when component mounts and user is available
-  useEffect(() => {
-    console.log('Initial save effect triggered', {
-      isWidgetsLoading,
-      authLoading,
-      authUid: authUser?.uid,
-      activeWidgets,
-      widgetPositions
-    });
-    
-    if (!isWidgetsLoading && !authLoading && authUser?.uid) {
-      console.log('Initial save conditions met, saving...');
-      const widgetsToSave = activeWidgets.length > 0 ? activeWidgets : defaultWidgetTypes;
-      saveWidgetPositions(widgetPositions, widgetsToSave);
-    }
-  }, [isWidgetsLoading, authLoading, authUser?.uid, activeWidgets, widgetPositions]);
-
   // Fetch patient data
   useEffect(() => {
     const fetchPatient = async () => {
@@ -1040,6 +1079,74 @@ const PatientChart: FC = () => {
       fetchPatient();
     }
   }, [patientId]);
+
+  // Function to get appropriate icon based on widget type
+  const getWidgetIcon = (widgetType: WidgetType) => {
+    // Modern styled icon with circular background
+    const getStyledIcon = (Icon: any, bgColor: string, iconColor: string) => {
+      return (
+        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${bgColor} mr-2 shadow-md`}>
+          <Icon className={`w-4 h-4 ${iconColor}`} />
+        </div>
+      );
+    };
+    
+    switch (widgetType) {
+      case 'patient_performance':
+        return getStyledIcon(ChartBarIcon, 'bg-blue-100', 'text-blue-600');
+      case 'notification_center':
+        return getStyledIcon(BellIcon, 'bg-amber-100', 'text-amber-600');
+      case 'activity':
+        return getStyledIcon(ClockIconOutline, 'bg-purple-100', 'text-purple-600');
+      case 'clinical_insights_carousel':
+        return getStyledIcon(ChartPieIcon, 'bg-cyan-100', 'text-cyan-700');
+      case 'vital_signs':
+        return getStyledIcon(HeartIcon, 'bg-red-100', 'text-red-600');
+      case 'clinical_notes':
+        return getStyledIcon(DocumentIcon, 'bg-emerald-100', 'text-emerald-600');
+      case 'medications':
+        return getStyledIcon(SquaresPlusIcon, 'bg-orange-100', 'text-orange-600');
+      case 'diagnosis':
+        return getStyledIcon(ClipboardIcon, 'bg-indigo-100', 'text-indigo-600');
+      case 'allergies':
+        return getStyledIcon(ExclamationTriangleIcon, 'bg-rose-100', 'text-rose-600');
+      case 'lab_results':
+        return getStyledIcon(BeakerIcon, 'bg-blue-100', 'text-blue-500');
+      case 'appointments':
+        return getStyledIcon(CalendarIcon, 'bg-violet-100', 'text-violet-600');
+      case 'demographics':
+        return getStyledIcon(UserIcon, 'bg-green-100', 'text-green-600');
+      case 'insurance':
+        return getStyledIcon(BuildingOfficeIcon, 'bg-blue-100', 'text-blue-700');
+      case 'billing':
+      case 'billing_payment_receipts':
+      case 'billing_statement':
+      case 'billing_prior_auth':
+      case 'billing_new_payment':
+      case 'billing_credit_cards':
+      case 'billing_write_off':
+      case 'billing_notes':
+        return getStyledIcon(BanknotesIcon, 'bg-green-100', 'text-green-700');
+      case 'documents':
+        return getStyledIcon(DocumentDuplicateIcon, 'bg-amber-100', 'text-amber-700');
+      case 'id_card_photos':
+        return getStyledIcon(IdentificationIcon, 'bg-purple-100', 'text-purple-700');
+      case 'amendments':
+        return getStyledIcon(PencilSquareIcon, 'bg-orange-100', 'text-orange-700');
+      case 'patient_timeline':
+        return getStyledIcon(ListBulletIcon, 'bg-blue-100', 'text-blue-600');
+      case 'disclosures':
+        return getStyledIcon(InformationCircleIcon, 'bg-teal-100', 'text-teal-600');
+      case 'implantable_devices':
+        return getStyledIcon(DeviceTabletIcon, 'bg-slate-100', 'text-slate-700');
+      case 'prescriptions':
+        return getStyledIcon(ClipboardDocumentCheckIcon, 'bg-orange-100', 'text-orange-600');
+      case 'identified_needs':
+        return getStyledIcon(StarIcon, 'bg-yellow-100', 'text-yellow-600');
+      default:
+        return getStyledIcon(RectangleStackIcon, 'bg-slate-100', 'text-slate-600');
+    }
+  };
 
   if (isLoading || isWidgetsLoading) {
     return (
@@ -1190,7 +1297,11 @@ const PatientChart: FC = () => {
                           key: widget.id,
                           default: getWidgetStyle(widget),
                           minWidth: 200,
-                          maxWidth: fullscreenWidget === widget.type ? window.innerWidth : 800,
+                          maxWidth: fullscreenWidget === widget.type 
+                            ? window.innerWidth 
+                            : widget.type === 'clinical_insights_carousel' 
+                              ? 1400 
+                              : 1200,
                           minHeight: minimizedWidgets.includes(widget.type) ? 48 : widget.type === 'patient_performance' ? 100 : 200,
                           maxHeight: fullscreenWidget === widget.type ? window.innerHeight : widget.type === 'patient_performance' ? 300 : 800,
                           bounds: "parent",
@@ -1209,7 +1320,7 @@ const PatientChart: FC = () => {
                             topLeft: false
                           },
                           "data-widget-type": widget.type,
-                          className: "absolute bg-white rounded-lg shadow-sm overflow-hidden transition-all duration-300",
+                          className: "absolute bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300",
                           style: {
                             ...getWidgetStyle(widget),
                             transition: 'height 0.3s ease-in-out'
@@ -1219,36 +1330,15 @@ const PatientChart: FC = () => {
                         switch (widget.type) {
                           case 'patient_performance':
                             return (
-                              <Rnd {...rndProps}>
-                                <div className="h-full flex flex-col">
-                                  <div className="flex-1">
-                                    <PatientPerformanceCard
-                                      totalObjectives={10}
-                                      metObjectives={7}
-                                    />
-                                  </div>
-                                </div>
-                              </Rnd>
-                            );
-                          case 'clinical_insights_carousel': {
-                            const isMinimized = minimizedWidgets.includes(widget.type);
-                            return (
                               <>
-                                <Rnd {...rndProps} minHeight={isMinimized ? 48 : 100} maxHeight={isMinimized ? 48 : 300}>
+                                <Rnd {...rndProps}>
                                   <div className="h-full flex flex-col">
                                     <div className="drag-handle flex items-center justify-between p-3 cursor-move bg-white border-b">
-                                      <h3 className="font-medium text-sm">{widget.title}</h3>
+                                      <h3 className="font-medium text-sm flex items-center">
+                                        {getWidgetIcon(widget.type)}
+                                        {widget.title}
+                                      </h3>
                                       <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={() => toggleMinimize(widget.type)}
-                                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                                        >
-                                          {isMinimized ? (
-                                            <ChevronDownIcon className="w-4 h-4" />
-                                          ) : (
-                                            <ChevronUpIcon className="w-4 h-4" />
-                                          )}
-                                        </button>
                                         <button
                                           onClick={() => toggleFullscreen(widget.type)}
                                           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
@@ -1298,6 +1388,126 @@ const PatientChart: FC = () => {
                                         </DropdownMenu>
                                       </div>
                                     </div>
+                                    <div className="flex-1">
+                                      <PatientPerformanceCard
+                                        totalObjectives={10}
+                                        metObjectives={7}
+                                        userRole={userRole}
+                                      />
+                                    </div>
+                                  </div>
+                                </Rnd>
+
+                                <Dialog open={fullscreenWidget === widget.type} onOpenChange={() => setFullscreenWidget(null)}>
+                                  <DialogContent className="max-w-6xl w-[90vw] h-[90vh] p-0 shadow-md">
+                                    <div className="flex flex-col h-full">
+                                      <div className="flex items-center justify-between px-6 py-4 border-b">
+                                        <h2 className="text-lg font-semibold flex items-center">
+                                          {getWidgetIcon(widget.type)}
+                                          {widget.title}
+                                        </h2>
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() => console.log('Export', widget.type)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                          >
+                                            <ArrowDownTrayIcon className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => console.log('Print', widget.type)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                          >
+                                            <PrinterIcon className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => console.log('Share', widget.type)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                          >
+                                            <ShareIcon className="w-4 h-4" />
+                                          </button>
+                                          <div className="w-px h-4 bg-gray-200 mx-1" />
+                                          <button
+                                            onClick={() => setFullscreenWidget(null)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                          >
+                                            <XMarkIcon className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <div className="flex-1 p-6 overflow-auto">
+                                        <PatientPerformanceCard
+                                          totalObjectives={10}
+                                          metObjectives={7}
+                                          userRole={userRole}
+                                        />
+                                      </div>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              </>
+                            );
+                          case 'clinical_insights_carousel': {
+                            const isMinimized = minimizedWidgets.includes(widget.type);
+                            return (
+                              <>
+                                <Rnd {...rndProps} minHeight={isMinimized ? 48 : 100} maxHeight={isMinimized ? 48 : 300}>
+                                  <div className="h-full flex flex-col">
+                                    <div className="drag-handle flex items-center justify-between p-3 cursor-move bg-white border-b">
+                                      <h3 className="font-medium text-sm flex items-center">
+                                        {getWidgetIcon(widget.type)}
+                                        {widget.title}
+                                      </h3>
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={() => toggleMinimize(widget.type)}
+                                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                        >
+                                          {isMinimized ? (
+                                            <ChevronDownIcon className="w-4 h-4" />
+                                          ) : (
+                                            <ChevronUpIcon className="w-4 h-4" />
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={() => toggleFullscreen(widget.type)}
+                                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                        >
+                                          <ArrowsPointingOutIcon className="w-4 h-4" />
+                                        </button>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <button
+                                              className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                            >
+                                              <EllipsisVerticalIcon className="w-4 h-4" />
+                                            </button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="w-[160px]">
+                                            <DropdownMenuItem 
+                                              onClick={() => console.log('Export', widget.type)}
+                                              className="gap-2"
+                                            >
+                                              <ArrowDownTrayIcon className="w-4 h-4" />
+                                              Export
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={() => console.log('Print', widget.type)}
+                                              className="gap-2"
+                                            >
+                                              <PrinterIcon className="w-4 h-4" />
+                                              Print
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={() => console.log('Share', widget.type)}
+                                              className="gap-2"
+                                            >
+                                              <ShareIcon className="w-4 h-4" />
+                                              Share
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </div>
                                     {!isMinimized && (
                                       <div className="flex-1">
                                         <ClinicalInsightsCarousel
@@ -1310,7 +1520,7 @@ const PatientChart: FC = () => {
                                 </Rnd>
                                 
                                 <Dialog open={fullscreenWidget === widget.type} onOpenChange={() => setFullscreenWidget(null)}>
-                                  <DialogContent className="max-w-6xl w-[90vw] h-[90vh] p-0">
+                                  <DialogContent className="max-w-6xl w-[90vw] h-[90vh] p-0 shadow-md">
                                     <div className="flex flex-col h-full">
                                       <div className="flex items-center justify-between px-6 py-4 border-b">
                                         <h2 className="text-lg font-semibold">{widget.title}</h2>
@@ -1361,7 +1571,10 @@ const PatientChart: FC = () => {
                                 <Rnd {...rndProps} minHeight={48} maxHeight={isMinimized ? 48 : 800}>
                                   <div className="h-full flex flex-col">
                                     <div className="drag-handle flex items-center justify-between p-4 cursor-move bg-white">
-                                      <h3 className="font-medium">{widget.title}</h3>
+                                      <h3 className="font-medium flex items-center">
+                                        {getWidgetIcon(widget.type)}
+                                        {widget.title}
+                                      </h3>
                                       <div className="flex items-center gap-1">
                                         <button
                                           onClick={() => toggleMinimize(widget.type)}
@@ -1429,7 +1642,7 @@ const PatientChart: FC = () => {
                                       )}>
                                         {renderWidgetContent(widget.type)}
                                         {renderWidgetFooter(widget.type) && (
-                                          <div className="absolute bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+                                          <div className="absolute bottom-0 left-0 right-0 h-14 rounded-b-lg bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75 shadow-md">
                                             <div className="relative h-full">
                                               <div className="absolute inset-0 flex items-center gap-2 px-4 overflow-x-auto">
                                                 {renderWidgetFooter(widget.type)}
@@ -1443,11 +1656,14 @@ const PatientChart: FC = () => {
                                 </Rnd>
 
                                 <Dialog open={fullscreenWidget === widget.type} onOpenChange={() => setFullscreenWidget(null)}>
-                                  <DialogContent className="max-w-6xl w-[90vw] h-[90vh] p-0">
+                                  <DialogContent className="max-w-6xl w-[90vw] h-[90vh] p-0 shadow-md">
                                     <div className="flex flex-col h-full">
-                                      <div className="flex items-center justify-between px-6 py-4 border-b">
-                                        <h2 className="text-lg font-semibold">{widget.title}</h2>
-                                        <div className="flex items-center gap-1">
+                                      <div className="flex items-center justify-left px-6 py-4 border-b">
+                                        <h2 className="text-lg font-semibold pr-4 flex items-center">
+                                          {getWidgetIcon(widget.type)}
+                                          {widget.title}
+                                        </h2>
+                                        <div className="flex items-center gap-1 pr-8">
                                           <button
                                             onClick={() => console.log('Export', widget.type)}
                                             className="p-1 hover:bg-gray-100 rounded-md transition-colors"
@@ -1468,21 +1684,17 @@ const PatientChart: FC = () => {
                                           </button>
                                           <div className="w-px h-4 bg-gray-200 mx-1" />
                                           <button
-                                            onClick={() => handleDeleteWidget(widget.type)}
-                                            className={cn(
-                                              "p-1 hover:bg-gray-100 rounded-md transition-colors",
-                                              defaultWidgetTypes.includes(widget.type) && "opacity-50 cursor-not-allowed"
-                                            )}
-                                            disabled={defaultWidgetTypes.includes(widget.type)}
+                                            onClick={() => setFullscreenWidget(null)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                                           >
-                                            <TrashIcon className="w-4 h-4 text-red-600" />
+                                            <XMarkIcon className="w-4 h-4" />
                                           </button>
                                         </div>
                                       </div>
-                                      <div className="flex-1 p-6 pb-14 overflow-auto relative">
+                                      <div className="flex-1 p- pb-14 overflow-auto relative">
                                         {renderWidgetContent(widget.type)}
                                         {renderWidgetFooter(widget.type) && (
-                                          <div className="absolute bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+                                          <div className="absolute bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75 shadow-md">
                                             <div className="relative h-full">
                                               <div className="absolute inset-0 flex items-center gap-2 px-4 overflow-x-auto">
                                                 {renderWidgetFooter(widget.type)}

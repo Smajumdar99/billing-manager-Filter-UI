@@ -62,11 +62,12 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
     { label: 'Billing Specialist', value: 'billing_specialist' },
     { label: 'Billing Manager', value: 'Billing Manager' },
     { label: 'Clinician', value: 'clinician' },
-    { label: 'Front Desk', value: 'front_desk' },
+    { label: 'Front Desk', value: 'Front Desk Officer' },
     { label: 'Clinic Admin/Supervisor', value: 'clinic_admin' },
     { label: 'CFO', value: 'cfo' },
     { label: 'Practice Manager', value: 'practice_manager' },
     { label: 'CCBHC', value: 'ccbhc' },
+    { label: 'Clinical Admin', value: 'clinical_admin' },
     { label: 'Supervisor', value: 'supervisor' }
   ]
 
@@ -128,6 +129,12 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
       label: 'Help and support',
       description: 'Learn, fix a problem, and get answers to your questions.',
       onClick: () => navigate('/support')
+    },
+    {
+      icon: <ArrowPathIcon className="w-5 h-5 text-orange-400" />,
+      label: 'Old UI',
+      description: 'Switch back to the previous version',
+      onClick: () => navigate('/old-ui')
     },
     {
       icon: <ArrowRightOnRectangleIcon className="w-5 h-5 text-orange-400" />,

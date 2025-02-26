@@ -17,9 +17,10 @@ interface Patient {
 
 interface PatientOverviewWidgetProps {
   patients: Patient[]
+  onPatientClick?: (patientId: string) => void
 }
 
-export const PatientOverviewWidget: FC<PatientOverviewWidgetProps> = ({ patients }) => {
+export const PatientOverviewWidget: FC<PatientOverviewWidgetProps> = ({ patients, onPatientClick }) => {
   return (
     <div className="h-full flex flex-col">
       {/* Table */}
@@ -42,8 +43,11 @@ export const PatientOverviewWidget: FC<PatientOverviewWidgetProps> = ({ patients
                 className={cn(
                   "grid grid-cols-4 gap-4 items-center py-2 px-1",
                   "transition-colors duration-200",
-                  "hover:bg-gray-50/50"
+                  "hover:bg-gray-50/50 cursor-pointer"
                 )}
+                onClick={() => onPatientClick?.(patient.id)}
+                role="button"
+                tabIndex={0}
               >
                 <div className="flex items-center gap-2">
                   <div className={cn(

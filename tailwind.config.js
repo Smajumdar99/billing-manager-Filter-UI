@@ -1,3 +1,7 @@
+const {
+  default: flattenColorPalette,
+} = require("tailwindcss/lib/util/flattenColorPalette");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
@@ -120,9 +124,51 @@ module.exports = {
   			"shimmer-slide": {
   				to: { transform: "translate(calc(100cqw - 100%), 0)" },
   			},
+  			twinkle: {
+  				'0%, 100%': { opacity: 1 },
+  				'50%': { opacity: 0.3 },
+  			},
+  			"rocket-float": {
+  				'0%': { transform: 'translate(0px, 0px) rotate(45deg)' },
+  				'25%': { transform: 'translate(5px, -5px) rotate(45deg)' },
+  				'50%': { transform: 'translate(0px, 0px) rotate(45deg)' },
+  				'75%': { transform: 'translate(-5px, 5px) rotate(45deg)' },
+  				'100%': { transform: 'translate(0px, 0px) rotate(45deg)' }
+  			},
+  			"flame-flicker": {
+  				'0%': { transform: 'scaleY(1)', opacity: '0.8' },
+  				'50%': { transform: 'scaleY(1.2)', opacity: '1' },
+  				'100%': { transform: 'scaleY(1)', opacity: '0.8' }
+  			},
+  			"star-twinkle": {
+  				'0%': { transform: 'scale(1)', opacity: '1' },
+  				'50%': { transform: 'scale(1.2)', opacity: '0.3' },
+  				'100%': { transform: 'scale(1)', opacity: '1' }
+  			},
+  			"circle-pulse": {
+  				'0%': { transform: 'scale(1)', opacity: '0.1' },
+  				'50%': { transform: 'scale(1.05)', opacity: '0.15' },
+  				'100%': { transform: 'scale(1)', opacity: '0.1' }
+  			},
+  			"spin-slow": {
+  				"0%": { transform: "rotate(0deg)" },
+  				"100%": { transform: "rotate(360deg)" }
+  			},
+  			"spin-reverse-slow": {
+  				"0%": { transform: "rotate(360deg)" },
+  				"100%": { transform: "rotate(0deg)" }
+  			},
+  			aurora: {
+  				from: {
+  					backgroundPosition: "50% 50%, 50% 50%",
+  				},
+  				to: {
+  					backgroundPosition: "350% 50%, 350% 50%",
+  				},
+  			},
   		},
   		animation: {
-  			float: 'float 3s ease-in-out infinite',
+  			float: 'float 6s ease-in-out infinite',
   			'float-delayed': 'float 6s ease-in-out 2s infinite',
   			'float-slow': 'float 8s ease-in-out 1s infinite',
   			blob: "blob 7s infinite",
@@ -134,6 +180,14 @@ module.exports = {
   			shimmer: 'shimmer 2s linear infinite',
   			"shimmer-slide": "shimmer-slide var(--speed) ease-in-out infinite alternate",
   			"spin-around": "spin-around calc(var(--speed) * 2) infinite linear",
+  			twinkle: 'twinkle 3s ease-in-out infinite',
+  			'rocket-float': 'rocket-float 6s ease-in-out infinite',
+  			'flame-flicker': 'flame-flicker 1s ease-in-out infinite',
+  			'star-twinkle': 'star-twinkle 3s ease-in-out infinite',
+  			'circle-pulse': 'circle-pulse 4s ease-in-out infinite',
+  			"spin-slow": "spin-slow 15s linear infinite",
+  			"spin-reverse-slow": "spin-reverse-slow 8s linear infinite",
+  			aurora: "aurora 60s linear infinite",
   		},
   		backgroundImage: {
   			'grid-primary': 'linear-gradient(to right, rgb(var(--primary) / 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgb(var(--primary) / 0.1) 1px, transparent 1px)',
@@ -143,5 +197,20 @@ module.exports = {
   		},
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    addVariablesForColors
+  ],
+}
+
+// This plugin adds each Tailwind color as a global CSS variable, e.g. var(--gray-200).
+function addVariablesForColors({ addBase, theme }) {
+  let allColors = flattenColorPalette(theme("colors"));
+  let newVars = Object.fromEntries(
+    Object.entries(allColors).map(([key, val]) => [`--${key}`, val])
+  );
+
+  addBase({
+    ":root": newVars,
+  });
 }

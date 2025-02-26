@@ -9,6 +9,7 @@ import { ProfileMenu } from '@/components/molecules/ProfileMenu'
 import * as Popover from '@radix-ui/react-popover'
 import { useAuth } from '@/context/AuthContext'
 import { getUserSettings, saveUserSettings } from '@/services/firestore'
+import { AuroraBackground } from '@/components/ui/aurora-background'
 
 export interface SidebarProps {
   logo: React.ReactNode
@@ -16,6 +17,7 @@ export interface SidebarProps {
   userInfo: {
     name: string
     role: string
+    avatar?: string
   }
   onCollapsedChange?: (collapsed: boolean) => void
   defaultCollapsed?: boolean
@@ -239,10 +241,12 @@ export const Sidebar: FC<SidebarProps> = ({
 
   return (
     <TooltipProvider>
-      <aside 
+      <AuroraBackground 
+        opacity="low"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-card transition-all duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border transition-all duration-300 ease-in-out",
           "md:relative md:flex",
+          "shadow-[5px_0_30px_-15px_rgba(0,0,0,0.2)] dark:shadow-[5px_0_30px_-15px_rgba(0,0,0,0.4)]",
           collapsed ? "w-[70px]" : "w-[240px]",
           "transform md:transform-none",
           !mobileOpen && "-translate-x-full md:translate-x-0"
@@ -255,7 +259,7 @@ export const Sidebar: FC<SidebarProps> = ({
           />
         )}
         {/* Header with Logo and Toggle */}
-        <div className="h-24 border-b border-border">
+        <div className="h-24 border-b border-border/50">
           <div className={cn(
             "h-full flex items-center",
             collapsed ? "justify-center" : "px-4 gap-3"
@@ -305,22 +309,39 @@ export const Sidebar: FC<SidebarProps> = ({
           ))}
         </div>
         
-        {/* User Info 
+        {/* User Info */}
         {userInfo && (
           <div className={cn(
-            "h-16 px-4 border-t border-border flex items-center gap-3 relative",
+            "h-16 px-4 border-t border-border/50 flex items-center gap-3 relative",
             collapsed ? "justify-center" : ""
           )}>
-            {collapsed ? (
-              <TooltipRoot>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setIsProfileMenuOpen(!isProfileMenuOpen)
-                    }}
-                    className="hover:bg-accent/50 rounded-md p-2 -m-2 transition-colors"
-                  >
+            <ProfileMenu
+              trigger={
+                collapsed ? (
+                  <TooltipRoot>
+                    <TooltipTrigger asChild>
+                      <button className="hover:bg-accent/50 rounded-md p-2 -m-2 transition-colors">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          {userInfo.avatar ? (
+                            <img 
+                              src={userInfo.avatar} 
+                              alt={userInfo.name}
+                              className="w-9 h-9 rounded-full" 
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-primary">
+                              {userInfo.name.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {userInfo.name}
+                    </TooltipContent>
+                  </TooltipRoot>
+                ) : (
+                  <button className="flex items-center gap-3 w-full hover:bg-accent/50 rounded-md p-2 -mx-2 transition-colors group">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       {userInfo.avatar ? (
                         <img 
@@ -334,53 +355,24 @@ export const Sidebar: FC<SidebarProps> = ({
                         </span>
                       )}
                     </div>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {userInfo.name}
-                </TooltipContent>
-              </TooltipRoot>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsProfileMenuOpen(!isProfileMenuOpen)
-                }}
-                className="flex items-center gap-3 w-full hover:bg-accent/50 rounded-md p-2 -mx-2 transition-colors group"
-              >
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  {userInfo.avatar ? (
-                    <img 
-                      src={userInfo.avatar} 
-                      alt={userInfo.name}
-                      className="w-9 h-9 rounded-full" 
+                    <div className="min-w-0 transition-all duration-300 overflow-hidden text-left flex-1">
+                      <p className="text-sm font-medium truncate">{userInfo.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{userInfo.role}</p>
+                    </div>
+                    <ChevronUpDownIcon 
+                      className={cn(
+                        "w-4 h-4 text-muted-foreground transition-colors",
+                        "group-hover:text-foreground"
+                      )} 
                     />
-                  ) : (
-                    <span className="text-sm font-medium text-primary">
-                      {userInfo.name.charAt(0)}
-                    </span>
-                  )}
-                </div>
-                <div className="min-w-0 transition-all duration-300 overflow-hidden text-left flex-1">
-                  <p className="text-sm font-medium truncate">{userInfo.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{userInfo.role}</p>
-                </div>
-                <ChevronUpDownIcon 
-                  className={cn(
-                    "w-4 h-4 text-muted-foreground transition-colors",
-                    "group-hover:text-foreground",
-                    isProfileMenuOpen && "text-foreground rotate-180"
-                  )} 
-                />
-              </button>
-            )}
-            <ProfileMenu 
-              isOpen={isProfileMenuOpen} 
-              onClose={() => setIsProfileMenuOpen(false)} 
+                  </button>
+                )
+              }
+              userInfo={userInfo}
             />
           </div>
-        )}*/}
-      </aside>
+        )}
+      </AuroraBackground>
     </TooltipProvider>
   )
 } 

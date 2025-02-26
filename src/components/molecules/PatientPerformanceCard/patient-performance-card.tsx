@@ -13,7 +13,23 @@ import {
   FileText,
   ClipboardList,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserCircle,
+  CreditCard,
+  FileCheck,
+  Phone,
+  ClipboardSignature,
+  Building2,
+  ShieldCheck,
+  BadgeCheck,
+  Receipt,
+  FileSpreadsheet,
+  ClipboardCheck,
+  Wallet,
+  CreditCard as CCIcon,
+  XCircle,
+  PencilLine,
+  DollarSign
 } from 'lucide-react'
 
 interface PatientPerformanceCardProps {
@@ -21,6 +37,7 @@ interface PatientPerformanceCardProps {
   totalObjectives: number
   metObjectives: number
   onAction?: (action: string) => void
+  userRole?: string
 }
 
 interface QuickAction {
@@ -41,17 +58,52 @@ const clinicianQuickActions: QuickAction[] = [
   { id: '8', label: 'Care Plan', icon: <ClipboardList className="w-4 h-4" />, action: 'care_plan' },
 ]
 
+const frontDeskQuickActions: QuickAction[] = [
+  { id: '1', label: 'New Encounter', icon: <Stethoscope className="w-4 h-4" />, action: 'new_encounter' },
+  { id: '2', label: 'Demographics', icon: <UserCircle className="w-4 h-4" />, action: 'edit_demographics' },
+  { id: '3', label: 'Schedule', icon: <Calendar className="w-4 h-4" />, action: 'schedule_appointment' },
+  { id: '4', label: 'Payments', icon: <CreditCard className="w-4 h-4" />, action: 'process_payment' },
+  { id: '5', label: 'Check In', icon: <FileCheck className="w-4 h-4" />, action: 'check_in' },
+  { id: '6', label: 'Contact', icon: <Phone className="w-4 h-4" />, action: 'contact_patient' },
+  { id: '7', label: 'Documents', icon: <ClipboardSignature className="w-4 h-4" />, action: 'manage_documents' },
+  { id: '8', label: 'Insurance', icon: <ShieldCheck className="w-4 h-4" />, action: 'verify_insurance' },
+]
+
+const billingSpecialistQuickActions: QuickAction[] = [
+  { id: '1', label: 'Payments', icon: <DollarSign className="w-4 h-4" />, action: 'process_payment' },
+  { id: '2', label: 'Receipts', icon: <Receipt className="w-4 h-4" />, action: 'view_receipts' },
+  { id: '3', label: 'Statement', icon: <FileSpreadsheet className="w-4 h-4" />, action: 'view_statement' },
+  { id: '4', label: 'Prior Auth', icon: <ClipboardCheck className="w-4 h-4" />, action: 'prior_auth' },
+  { id: '5', label: 'New Payment', icon: <Wallet className="w-4 h-4" />, action: 'new_payment' },
+  { id: '6', label: 'Credit Cards', icon: <CCIcon className="w-4 h-4" />, action: 'manage_cards' },
+  { id: '7', label: 'Write Off', icon: <XCircle className="w-4 h-4" />, action: 'write_off' },
+  { id: '8', label: 'Add Note', icon: <PencilLine className="w-4 h-4" />, action: 'add_billing_note' },
+]
+
 export const PatientPerformanceCard: FC<PatientPerformanceCardProps> = ({
   className,
   totalObjectives,
   metObjectives,
-  onAction
+  onAction,
+  userRole = 'clinician'
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const percentageComplete = Math.round((metObjectives / totalObjectives) * 100)
   const starRating = Math.round((percentageComplete / 100) * 5)
   const needleRotation = -90 + (percentageComplete / 100) * 180
+
+  // Select quick actions based on user role
+  const quickActions = (() => {
+    switch (userRole) {
+      case 'front_desk':
+        return frontDeskQuickActions;
+      case 'billing_specialist':
+        return billingSpecialistQuickActions;
+      default:
+        return clinicianQuickActions;
+    }
+  })();
 
   // Auto-rotate carousel
   useEffect(() => {
@@ -79,7 +131,7 @@ export const PatientPerformanceCard: FC<PatientPerformanceCardProps> = ({
   const renderQuickActions = () => (
     <div className="flex flex-col h-full">
       <div className="grid grid-cols-4 gap-4 px-6 h-full place-content-center">
-        {clinicianQuickActions.map((action) => (
+        {quickActions.map((action) => (
           <button
             key={action.id}
             onClick={() => handleActionClick(action.action)}

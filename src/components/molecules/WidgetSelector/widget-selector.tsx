@@ -1,4 +1,5 @@
 import { FC, useState } from 'react';
+import { useToast } from '@/components/ui/use-toast';
 import { 
   PlusIcon, 
   MinusIcon, 
@@ -30,7 +31,8 @@ import {
   ArchiveBoxXMarkIcon,
   PencilSquareIcon,
   MagnifyingGlassIcon,
-  SparklesIcon
+  SparklesIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import {
   DropdownMenu,
@@ -51,6 +53,7 @@ interface WidgetSelectorProps {
 export const getWidgetIcon = (type: WidgetType) => {
   const iconMap: Record<WidgetType, { icon: React.ElementType; colors: string }> = {
     patient_performance: { icon: ChartBarIcon, colors: 'bg-blue-50 text-blue-600' },
+    quick_action_bar: { icon: Squares2X2Icon, colors: 'bg-indigo-50 text-indigo-600' },
     notification_center: { icon: BellIcon, colors: 'bg-rose-50 text-rose-600' },
     activity: { icon: ArrowPathIcon, colors: 'bg-green-50 text-green-600' },
     clinical_insights_carousel: { icon: SparklesIcon, colors: 'bg-violet-50 text-violet-600' },
@@ -149,8 +152,8 @@ export const additionalWidgets: Widget[] = [
   { type: 'intra_office_messages', title: 'Intra-Office Messages', id: 'intra_office_messages' },
   { type: 'patient_portal_messages', title: 'Patient Portal Messages', id: 'patient_portal_messages' },
   { type: 'patient_reminders', title: 'Patient Reminders (MU)', id: 'patient_reminders' },
-  { type: 'disclosures', title: 'Disclosures (MU)', id: 'disclosures' },
-  { type: 'amendments', title: 'Amendments (MU)', id: 'amendments' },
+  { type: 'disclosures', title: 'Disclosures (MU)', id: 'disclosures', description: 'Manage patient disclosures and consents' },
+  { type: 'amendments', title: 'Amendments (MU)', id: 'amendments', description: 'Track and manage amendments to patient records' },
   { type: 'vitals', title: 'Vitals', id: 'vitals' },
   { type: 'implantable_devices', title: 'Implantable Devices (MU)', id: 'implantable_devices' },
   { type: 'functional_status', title: 'Functional Status (MU)', id: 'functional_status' },
@@ -167,13 +170,10 @@ export const WidgetSelector: FC<WidgetSelectorProps> = ({
   activeWidgets,
   onToggleWidget
 }) => {
-  console.log('WidgetSelector rendered with:', {
-    availableWidgets: availableWidgets.map(w => w.type),
-    activeWidgets,
-  });
-
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
   const allWidgets = [...availableWidgets, ...additionalWidgets];
   
   const filterWidgets = (widgets: Widget[]) => {
@@ -190,23 +190,71 @@ export const WidgetSelector: FC<WidgetSelectorProps> = ({
     allWidgets.filter(widget => activeWidgets.includes(widget.type))
   );
 
-  console.log('Filtered widgets:', {
-    addableWidgets: addableWidgets.map(w => w.type),
-    removableWidgets: removableWidgets.map(w => w.type)
-  });
-
-  const handleWidgetToggle = (widgetType: WidgetType) => {
-    console.log('Widget toggle clicked:', widgetType);
-    onToggleWidget(widgetType);
+  const handleWidgetToggle = async (widgetType: WidgetType) => {
+    try {
+      setIsLoading(true);
+      
+      // Check if widget is being added or removed
+      const isAdding = !activeWidgets.includes(widgetType);
+      
+      // Get widget details for the toast message
+      const widget = allWidgets.find(w => w.type === widgetType);
+      
+      await onToggleWidget(widgetType);
+      
+      const { icon: Icon, colors } = getWidgetIcon(widgetType);
+      
+      toast({
+        title: (
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-sm ${colors}`}>
+              <Icon className="w-4 h-4" />
+            </div>
+            <span>{isAdding ? 'Widget Added' : 'Widget Removed'}</span>
+          </div>
+        ),
+        description: (
+          <div className="mt-1">
+            <p className="text-sm font-medium">{widget?.title}</p>
+            <p className="text-sm text-slate-500">
+              {isAdding 
+                ? 'The widget has been added to your dashboard. You can now view and interact with it.'
+                : 'The widget has been removed from your dashboard. You can add it back anytime.'}
+            </p>
+          </div>
+        ),
+        variant: 'default',
+      });
+      
+    } catch (error) {
+      console.error('Error toggling widget:', error);
+      toast({
+        title: (
+          <div className="flex items-center gap-2 text-white">
+            <XMarkIcon className="w-5 h-5" />
+            <span>Error Managing Widget</span>
+          </div>
+        ),
+        description: 'There was an error managing your widgets. Please try again or contact support if the issue persists.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-sm shadow-sm border border-slate-200/50">
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-sm transition-colors">
+          <button 
+            className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-sm transition-colors"
+            disabled={isLoading}
+          >
             <Squares2X2Icon className="w-4 h-4 text-slate-600" />
-            <span className="text-sm text-slate-600">Widgets</span>
+            <span className="text-sm text-slate-600">
+              {isLoading ? 'Processing...' : 'Widgets'}
+            </span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-[600px] max-h-[500px]">
@@ -241,14 +289,22 @@ export const WidgetSelector: FC<WidgetSelectorProps> = ({
                       key={widget.type}
                       onClick={() => handleWidgetToggle(widget.type)}
                       className="gap-2 px-2 py-1.5"
+                      disabled={isLoading}
                     >
                       <div className={`flex items-center justify-center w-6 h-6 rounded-sm ${colors}`}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="flex-1">
                         <div className="text-sm">{widget.title}</div>
+                        {widget.description && (
+                          <p className="text-xs text-slate-500">{widget.description}</p>
+                        )}
                       </div>
-                      <PlusIcon className="w-4 h-4 text-slate-400" />
+                      {isLoading ? (
+                        <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <PlusIcon className="w-4 h-4 text-slate-400" />
+                      )}
                     </DropdownMenuItem>
                   );
                 })}
@@ -272,14 +328,22 @@ export const WidgetSelector: FC<WidgetSelectorProps> = ({
                       key={widget.type}
                       onClick={() => handleWidgetToggle(widget.type)}
                       className="gap-2 px-2 py-1.5"
+                      disabled={isLoading}
                     >
                       <div className={`flex items-center justify-center w-6 h-6 rounded-sm ${colors}`}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="flex-1">
                         <div className="text-sm">{widget.title}</div>
+                        {widget.description && (
+                          <p className="text-xs text-slate-500">{widget.description}</p>
+                        )}
                       </div>
-                      <MinusIcon className="w-4 h-4 text-red-500" />
+                      {isLoading ? (
+                        <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <MinusIcon className="w-4 h-4 text-red-500" />
+                      )}
                     </DropdownMenuItem>
                   );
                 })}

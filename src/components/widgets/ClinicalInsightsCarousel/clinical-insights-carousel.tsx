@@ -113,8 +113,8 @@ export const ClinicalInsightsCarousel: FC<ClinicalInsightsCarouselProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="relative flex-1">
+    <div className="h-full w-full flex flex-col">
+      <div className="relative flex-1 w-full">
         {/* Gradient Masks */}
         <div className={cn(
           "absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none",
@@ -152,11 +152,11 @@ export const ClinicalInsightsCarousel: FC<ClinicalInsightsCarouselProps> = ({
         {/* Cards Container */}
         <div
           ref={scrollContainerRef}
-          className="h-full overflow-x-auto scrollbar-hide"
+          className="h-full w-full overflow-x-auto scrollbar-hide"
           onScroll={handleScroll}
         >
           <div className={cn(
-            "inline-flex gap-3 p-3",
+            "inline-flex gap-3 p-3 min-w-full",
             isFullscreen ? "flex-wrap justify-center" : "flex-nowrap"
           )}>
             {insights.map(insight => (

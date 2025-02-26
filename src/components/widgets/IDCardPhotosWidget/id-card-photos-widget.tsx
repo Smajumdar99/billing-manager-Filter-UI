@@ -73,12 +73,12 @@ export const IDCardPhotosWidget: FC<IDCardPhotosWidgetProps> = ({ patientId, isF
         <TabsContent value="id-card" className="flex-1 p-4 overflow-auto">
           <div className="flex flex-col items-center max-w-full">
             {/* ID Card - Sleeker Design */}
-            <div className="w-full max-w-[400px] aspect-[1.6/1] bg-[#2563eb] rounded-xl shadow-lg relative overflow-hidden mb-6">
+            <div className="w-full max-w-[400px] aspect-[1.6/1] bg-slate-100 rounded-xl shadow-md relative overflow-hidden mb-6">
               {/* Background Pattern */}
               <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-transparent" />
-                <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0)_40%)]" />
-                <div className="absolute right-0 inset-y-0 w-1/2 bg-[radial-gradient(circle_at_70%_50%,rgba(255,255,255,0.2)_0%,transparent_60%)]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-slate-100" />
+                <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.2)_40%)]" />
+                <div className="absolute right-0 inset-y-0 w-1/2 bg-[radial-gradient(circle_at_70%_50%,rgba(59,130,246,0.1)_0%,transparent_60%)]" />
               </div>
 
               {/* Content Container */}
@@ -86,10 +86,10 @@ export const IDCardPhotosWidget: FC<IDCardPhotosWidgetProps> = ({ patientId, isF
                 {/* Header */}
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-white/90 font-semibold tracking-wide">DrCloud EHR</h3>
-                    <p className="text-[10px] text-white/60 uppercase tracking-wider">Patient Identification</p>
+                    <h3 className="text-slate-800 font-semibold tracking-wide">Kaiser Permanente</h3>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Patient Identification</p>
                   </div>
-                  <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-white/80 shadow-sm backdrop-blur-sm flex items-center justify-center">
                     <span className="text-xl">🏥</span>
                   </div>
                 </div>
@@ -97,23 +97,23 @@ export const IDCardPhotosWidget: FC<IDCardPhotosWidgetProps> = ({ patientId, isF
                 {/* Main Content */}
                 <div className="flex-1 flex items-center gap-4 my-3">
                   {/* Photo */}
-                  <div className="w-20 h-20 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20">
-                    <PhotoIcon className="w-10 h-10 text-white/40" />
+                  <div className="w-20 h-20 rounded-xl bg-white/80 shadow-sm backdrop-blur-sm flex items-center justify-center">
+                    <PhotoIcon className="w-10 h-10 text-slate-400" />
                   </div>
 
                   {/* Patient Info */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-lg text-white font-medium tracking-wide truncate mb-2">
+                    <h4 className="text-lg text-slate-800 font-medium tracking-wide truncate mb-2">
                       {patient.name}
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <p className="text-[10px] text-white/50 uppercase tracking-wider">ID Number</p>
-                        <p className="text-sm text-white/90 truncate">{patient.id}</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">ID Number</p>
+                        <p className="text-sm text-slate-700 truncate">{patient.id}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-white/50 uppercase tracking-wider">Date of Birth</p>
-                        <p className="text-sm text-white/90 truncate">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Date of Birth</p>
+                        <p className="text-sm text-slate-700 truncate">
                           {new Date(patient.dateOfBirth).toLocaleDateString()}
                         </p>
                       </div>
@@ -122,14 +122,14 @@ export const IDCardPhotosWidget: FC<IDCardPhotosWidgetProps> = ({ patientId, isF
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-between items-center pt-2 border-t border-white/10">
+                <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                   <div>
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">Gender</p>
-                    <p className="text-sm text-white/90">{patient.gender}</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Gender</p>
+                    <p className="text-sm text-slate-700">{patient.gender}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">Emergency Contact</p>
-                    <p className="text-sm text-white/90">{patient.phoneNumber}</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Emergency Contact</p>
+                    <p className="text-sm text-slate-700">{patient.phoneNumber}</p>
                   </div>
                 </div>
               </div>

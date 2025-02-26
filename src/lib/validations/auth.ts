@@ -32,7 +32,8 @@ export const signupSchema = z.object({
     'cfo',
     'practice_manager',
     'ccbhc',
-    'supervisor'
+    'supervisor',
+    'clinical_admin'
   ]).default('front_desk'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",

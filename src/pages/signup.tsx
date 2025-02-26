@@ -37,6 +37,7 @@ const roleLabels: Record<string, string> = {
   cfo: 'CFO',
   practice_manager: 'Practice Manager',
   ccbhc: 'CCBHC',
+  clinical_admin: 'Clinical Admin',
   supervisor: 'Supervisor'
 }
 
@@ -55,7 +56,7 @@ export const SignupPage: FC = () => {
       password: "",
       confirmPassword: "",
       displayName: "",
-      role: "staff",
+      role: "front_desk",
     },
   })
 

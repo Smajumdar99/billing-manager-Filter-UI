@@ -6,6 +6,7 @@ export type UserRole =
   | 'clinician'
   | 'front_desk'
   | 'clinic_admin'
+  | 'clinical_admin'
   | 'billing_specialist'
   | 'billing_manager'
   | 'cfo'

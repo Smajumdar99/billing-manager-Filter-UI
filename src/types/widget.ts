@@ -11,6 +11,7 @@ export interface WidgetPositions {
 
 export type WidgetType =
   | 'patient_performance'
+  | 'quick_action_bar'
   | 'notification_center'
   | 'activity'
   | 'vital_signs'

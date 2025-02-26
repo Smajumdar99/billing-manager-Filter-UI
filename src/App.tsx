@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { HomePage } from '@/pages/home'
 import { SignupPage } from '@/pages/signup'
 import { DashboardPage } from '@/pages/dashboard'
-import { NotFoundPage } from '@/pages/NotFound'
+import { ComingSoonPage } from '@/pages/NotFound'
 import { AuthProvider } from '@/context/AuthContext'
 import { useAuth } from '@/context/AuthContext'
 import { Loader } from '@/components/atoms/Loader'
@@ -12,6 +12,8 @@ import { FontProvider } from '@/contexts/FontContext'
 import AllPatients from './pages/AllPatients'
 import PatientChart from './pages/PatientChart'
 import Settings from './pages/Settings'
+import { Toaster } from "@/components/ui/toaster"
+import OldUI from './pages/OldUI'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -57,7 +59,15 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
-      <Route path="*" element={<NotFoundPage />} />
+      <Route 
+        path="/old-ui" 
+        element={
+          <ProtectedRoute>
+            <OldUI />
+          </ProtectedRoute>
+        } 
+      />
+      <Route path="*" element={<ComingSoonPage />} />
     </Routes>
   )
 }
@@ -72,6 +82,7 @@ const App = () => {
               <AppRoutes />
             </Suspense>
           </BrowserRouter>
+          <Toaster />
         </AuthProvider>
       </FontProvider>
     </ThemeProvider>

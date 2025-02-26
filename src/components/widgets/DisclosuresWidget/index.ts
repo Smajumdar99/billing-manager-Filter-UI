@@ -1,0 +1,1 @@
+export { DisclosuresWidget } from './disclosures-widget'; 

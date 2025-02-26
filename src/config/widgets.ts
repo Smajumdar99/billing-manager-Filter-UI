@@ -1,7 +1,7 @@
 import type { UserRole } from '@/types/user';
 import type { Widget, WidgetType } from '@/types/widget';
 
-const defaultWidgets: Widget[] = [
+export const defaultWidgets: Widget[] = [
   {
     id: 'patient-performance',
     type: 'patient_performance',
@@ -99,12 +99,12 @@ const defaultWidgets: Widget[] = [
     title: 'New Payment'
   },
   {
-    id: 'billing-credit-cards',
+    id: 'billing-credit_cards',
     type: 'billing_credit_cards',
     title: 'Credit Cards'
   },
   {
-    id: 'billing-write-off',
+    id: 'billing-write_off',
     type: 'billing_write_off',
     title: 'Write Off'
   },
@@ -112,11 +112,6 @@ const defaultWidgets: Widget[] = [
     id: 'billing-notes',
     type: 'billing_notes',
     title: 'Billing Notes'
-  },
-  {
-    id: 'disclosures',
-    type: 'disclosures',
-    title: 'Disclosures & Amendments'
   },
   {
     id: 'demographics',
@@ -129,6 +124,18 @@ const defaultWidgets: Widget[] = [
     title: 'Implantable Devices'
   },
   {
+    id: 'disclosures',
+    type: 'disclosures',
+    title: 'Disclosures',
+    description: 'Manage patient disclosures and consents'
+  },
+  {
+    id: 'amendments',
+    type: 'amendments',
+    title: 'Amendments',
+    description: 'Track and manage amendments to patient records'
+  },
+  {
     id: 'identified_needs',
     type: 'identified_needs',
     title: 'Identified Needs'
@@ -138,40 +145,144 @@ const defaultWidgets: Widget[] = [
     type: 'id_card_photos',
     title: 'ID/Card Photos',
     description: 'View and manage patient ID cards and photos'
+  },
+  {
+    id: 'prescriptions',
+    type: 'prescriptions',
+    title: 'Prescriptions',
+    description: 'Manage patient prescriptions and medications'
   }
 ];
 
-const widgetPermissions: Record<string, WidgetType[]> = {
+export const widgetPermissions: Record<string, WidgetType[]> = {
   admin: [
-    'patient_performance', 'notification_center', 'activity', 
+    'patient_performance', 
+    'notification_center', 
+    'activity',
     'medications', 'diagnosis', 'allergies', 'lab_results', 'appointments',
     'documents', 'patient_timeline', 'insurance', 'billing', 'disclosures',
-    'demographics', 'implantable_devices', 'identified_needs', 'id_card_photos'
+    'demographics', 'implantable_devices', 'identified_needs', 'id_card_photos',
+    'prescriptions'
+  ],
+  clinical_admin: [
+    // Core Monitoring Widgets
+    'patient_performance',
+    'notification_center',
+    'activity',
+    'clinical_insights_carousel',
+    
+    // Clinical Widgets
+    'vital_signs',
+    'clinical_notes',
+    'medications',
+    'diagnosis',
+    'allergies',
+    'lab_results',
+    'prescriptions',
+    
+    // Administrative & Compliance Widgets
+    'appointments',
+    'documents',
+    'patient_timeline',
+    'demographics',
+    'insurance',
+    'disclosures',
+    'amendments',
+    'identified_needs',
+    
+    // Quality & Oversight Widgets
+    'golden_thread_alerts',
+    'clinical_reminders'
   ],
   front_desk: [
-    'patient_performance', 'notification_center', 'appointments', 
-    'demographics', 'insurance', 'documents', 'id_card_photos'
+    'patient_performance',
+    'notification_center',
+    'appointments',
+    'demographics',
+    'insurance',
+    'billing',
+    'documents',
+    'id_card_photos',
+    'billing_payment_receipts',
+    'billing_statement',
+    'billing_prior_auth',
+    'billing_new_payment',
+    'billing_credit_cards',
+    'billing_write_off',
+    'billing_notes',
+    'lab_results'
   ],
   doctor: [
-    'patient_performance', 'notification_center', 'activity', 'clinical_insights_carousel', 'vital_signs', 'clinical_notes', 
-    'medications', 'diagnosis', 'allergies', 'lab_results', 'appointments',
-    'documents', 'patient_timeline', 'insurance', 'billing', 'disclosures',
-    'demographics', 'implantable_devices', 'identified_needs', 'id_card_photos'
+    'patient_performance', 
+    'notification_center', 
+    'activity',
+    'clinical_insights_carousel',
+    'vital_signs',
+    'clinical_notes',
+    'medications',
+    'diagnosis',
+    'allergies',
+    'lab_results',
+    'appointments',
+    'documents',
+    'patient_timeline',
+    'insurance',
+    'billing',
+    'disclosures',
+    'demographics',
+    'implantable_devices',
+    'identified_needs',
+    'id_card_photos',
+    'prescriptions'
   ],
   nurse: [
-    'vital_signs', 'notification_center', 'activity', 'clinical_insights_carousel', 'clinical_notes', 'medications', 
-    'diagnosis', 'allergies', 'lab_results', 'appointments', 'documents', 
-    'patient_timeline', 'id_card_photos'
+    'vital_signs', 
+    'notification_center', 
+    'activity',
+    'clinical_insights_carousel',
+    'clinical_notes',
+    'medications',
+    'diagnosis',
+    'allergies',
+    'lab_results',
+    'appointments',
+    'documents',
+    'id_card_photos',
+    'prescriptions'
   ],
   patient: [
-    'vital_signs', 'activity', 'medications', 'diagnosis', 'allergies', 'lab_results',
-    'appointments', 'documents', 'id_card_photos'
+    'vital_signs', 
+    'activity',
+    'medications',
+    'diagnosis',
+    'allergies',
+    'lab_results',
+    'appointments',
+    'documents',
+    'id_card_photos'
   ],
   clinician: [
-    'patient_performance', 'notification_center', 'activity', 'clinical_insights_carousel', 'vital_signs', 'clinical_notes', 
-    'medications', 'diagnosis', 'allergies', 'lab_results', 'appointments',
-    'documents', 'patient_timeline', 'insurance', 'billing', 'disclosures',
-    'demographics', 'implantable_devices', 'identified_needs', 'id_card_photos'
+    'patient_performance', 
+    'notification_center', 
+    'activity',
+    'clinical_insights_carousel',
+    'vital_signs',
+    'clinical_notes',
+    'medications',
+    'diagnosis',
+    'allergies',
+    'lab_results',
+    'appointments',
+    'documents',
+    'patient_timeline',
+    'insurance',
+    'billing',
+    'disclosures',
+    'demographics',
+    'implantable_devices',
+    'identified_needs',
+    'id_card_photos',
+    'prescriptions'
   ],
   billing_specialist: [
     'patient_performance',
@@ -186,7 +297,9 @@ const widgetPermissions: Record<string, WidgetType[]> = {
     'billing_write_off',
     'billing_notes',
     'demographics',
-    'id_card_photos'
+    'id_card_photos',
+    'disclosures',
+    'amendments'
   ]
 };
 

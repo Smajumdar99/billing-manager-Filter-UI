@@ -1,4 +1,5 @@
 import { FC, useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { Squares2X2Icon, UserIcon, UsersIcon, BanknotesIcon, ChartBarIcon, QuestionMarkCircleIcon, Cog6ToothIcon, ArrowPathIcon, CalendarIcon, ClipboardDocumentListIcon, HomeIcon } from "@heroicons/react/24/outline"
 import { Sidebar } from "@/components/organisms/Sidebar"
@@ -725,6 +726,7 @@ const DashboardSkeleton: FC = () => {
 
 export const DashboardPage: FC = () => {
   useDocumentTitle('Dashboard')
+  const navigate = useNavigate()
   const { user } = useCurrentUser()
   const [isLoading, setIsLoading] = useState(true)
   const [layouts, setLayouts] = useState(defaultLayouts)
@@ -931,6 +933,10 @@ export const DashboardPage: FC = () => {
     }
   }
 
+  const handlePatientClick = (patientId: string) => {
+    navigate(`/patient-chart/${patientId}`)
+  }
+
   return (
     <>
       {isLoading ? (
@@ -997,7 +1003,10 @@ export const DashboardPage: FC = () => {
                     </div>
                     <div key="patients">
                       <Widget title="Patient Arrival/Check-In Status">
-                        <PatientOverviewWidget patients={mockPatients} />
+                        <PatientOverviewWidget 
+                          patients={mockPatients} 
+                          onPatientClick={handlePatientClick}
+                        />
                       </Widget>
                     </div>
                     <div key="tasks">

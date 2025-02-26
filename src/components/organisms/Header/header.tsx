@@ -3,6 +3,10 @@ import {
   BellIcon, 
   Bars3Icon,
   UserCircleIcon,
+  PhoneIcon,
+  BellAlertIcon,
+  QuestionMarkCircleIcon,
+  LifebuoyIcon,
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/atoms/Button'
 import { ProfileMenu } from '@/components/molecules/ProfileMenu/profile-menu'
@@ -17,6 +21,10 @@ interface HeaderProps {
   notificationCount?: number
   onSearch?: (query: string) => void
   onNotificationClick?: () => void
+  onCallClick?: () => void
+  onReminderClick?: () => void
+  onHelpClick?: () => void
+  onSupportClick?: () => void
   onAddClick?: () => void
   onResetLayout?: () => void
   onMobileMenuClick?: () => void
@@ -57,6 +65,10 @@ export const Header: FC<HeaderProps> = ({
   notificationCount,
   onSearch,
   onNotificationClick,
+  onCallClick,
+  onReminderClick,
+  onHelpClick,
+  onSupportClick,
   onAddClick,
   onResetLayout,
   onMobileMenuClick,
@@ -83,16 +95,85 @@ export const Header: FC<HeaderProps> = ({
             className="min-w-[900px]"
           />
         ))}
-
-        <div className="ml-4 bg-white rounded-full shadow-sm border">
+        {/* <div className="ml-4 bg-white rounded-full shadow-sm border">
           <SearchBar
-            width="w-[280px]"
+            width="w-[200px]"
             className="[&>div]:border-0 [&>div]:shadow-none"
             onSearch={onSearch}
           />
-        </div>
+        </div> */}
 
-        <div className="ml-auto flex items-center gap-2 bg-white rounded-full shadow-sm border px-2">
+        
+
+        <div className="ml-auto flex items-center gap-1 bg-white rounded-full shadow-sm border px-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "relative transition-colors duration-200",
+              "hover:bg-gray-100",
+              "active:bg-gray-200",
+              "focus-visible:ring-2 focus-visible:ring-primary/20",
+              "rounded-full p-3",
+              "h-12 w-12"
+            )}
+            onClick={onCallClick}
+            title="Call"
+          >
+            <PhoneIcon className="h-5 w-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "relative transition-colors duration-200",
+              "hover:bg-gray-100",
+              "active:bg-gray-200",
+              "focus-visible:ring-2 focus-visible:ring-primary/20",
+              "rounded-full p-3",
+              "h-12 w-12"
+            )}
+            onClick={onReminderClick}
+            title="Send Reminder"
+          >
+            <BellAlertIcon className="h-5 w-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "relative transition-colors duration-200",
+              "hover:bg-gray-100",
+              "active:bg-gray-200",
+              "focus-visible:ring-2 focus-visible:ring-primary/20",
+              "rounded-full p-3",
+              "h-12 w-12"
+            )}
+            onClick={onHelpClick}
+            title="Help"
+          >
+            <QuestionMarkCircleIcon className="h-5 w-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "relative transition-colors duration-200",
+              "hover:bg-gray-100",
+              "active:bg-gray-200",
+              "focus-visible:ring-2 focus-visible:ring-primary/20",
+              "rounded-full p-3",
+              "h-12 w-12"
+            )}
+            onClick={onSupportClick}
+            title="Support"
+          >
+            <LifebuoyIcon className="h-5 w-5" />
+          </Button>
+
           <Button
             variant="ghost"
             size="icon"
@@ -178,6 +259,74 @@ export const Header: FC<HeaderProps> = ({
       )}
 
       <div className="ml-auto flex items-center gap-2 bg-white rounded-full shadow-sm border px-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "relative transition-colors duration-200",
+            "hover:bg-gray-100",
+            "active:bg-gray-200",
+            "focus-visible:ring-2 focus-visible:ring-primary/20",
+            "rounded-full p-3",
+            "h-12 w-12"
+          )}
+          onClick={onCallClick}
+          title="Call"
+        >
+          <PhoneIcon className="h-5 w-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "relative transition-colors duration-200",
+            "hover:bg-gray-100",
+            "active:bg-gray-200",
+            "focus-visible:ring-2 focus-visible:ring-primary/20",
+            "rounded-full p-3",
+            "h-12 w-12"
+          )}
+          onClick={onReminderClick}
+          title="Send Reminder"
+        >
+          <BellAlertIcon className="h-5 w-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "relative transition-colors duration-200",
+            "hover:bg-gray-100",
+            "active:bg-gray-200",
+            "focus-visible:ring-2 focus-visible:ring-primary/20",
+            "rounded-full p-3",
+            "h-12 w-12"
+          )}
+          onClick={onHelpClick}
+          title="Help"
+        >
+          <QuestionMarkCircleIcon className="h-5 w-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "relative transition-colors duration-200",
+            "hover:bg-gray-100",
+            "active:bg-gray-200",
+            "focus-visible:ring-2 focus-visible:ring-primary/20",
+            "rounded-full p-3",
+            "h-12 w-12"
+          )}
+          onClick={onSupportClick}
+          title="Support"
+        >
+          <LifebuoyIcon className="h-5 w-5" />
+        </Button>
+
         <Button
           variant="ghost"
           size="icon"

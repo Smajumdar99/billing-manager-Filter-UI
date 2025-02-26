@@ -24,177 +24,231 @@ interface Notification {
 interface NotificationCenterProps {
   patientId: string;
   className?: string;
+  userRole?: 'billing_specialist' | 'front_desk' | 'clinician';
 }
 
-const mockNotifications: Notification[] = [
+const billingNotifications: Notification[] = [
   {
     id: '1',
-    type: 'golden-thread',
+    type: 'task',
     priority: 'high',
-    title: 'Critical Lab Result Alert',
-    message: 'Patient shows elevated potassium levels requiring immediate attention',
+    title: 'Prior Authorization Required',
+    message: 'Urgent: MRI authorization needed for patient John D. (ID: 12345) - Insurance requires approval before procedure',
     timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     isRead: false,
-    category: 'Lab Results',
+    category: 'Authorization',
     actionRequired: true
   },
   {
     id: '2',
-    type: 'message',
-    priority: 'medium',
-    title: 'Consultation Request',
-    message: 'Dr. Smith requested cardiology consultation',
+    type: 'golden-thread',
+    priority: 'high',
+    title: 'Claims Rejection Alert',
+    message: 'Medicare rejected 3 claims due to incorrect diagnosis codes - Review needed within 24 hours',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
     isRead: false,
-    sender: 'Dr. Smith',
-    to: 'Dr. Johnson',
-    subject: 'Cardiology Consultation Request',
-    category: 'Consultations'
+    category: 'Claims',
+    actionRequired: true
   },
   {
     id: '3',
     type: 'task',
     priority: 'medium',
-    title: 'Medication Review Required',
-    message: 'Please review updated medication list',
+    title: 'Outstanding Balance Review',
+    message: '5 patient accounts flagged for collections review - Total outstanding: $12,450',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
     isRead: false,
-    category: 'Medications',
+    category: 'Collections',
     actionRequired: true
   },
   {
     id: '4',
+    type: 'message',
+    priority: 'medium',
+    title: 'Insurance Policy Update',
+    message: 'BlueCross updated their prior authorization requirements for imaging services',
+    timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+    isRead: false,
+    category: 'Policy Updates'
+  },
+  {
+    id: '5',
     type: 'reminder',
-    priority: 'low',
-    title: 'Follow-up Appointment',
-    message: 'Schedule follow-up appointment for next week',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    priority: 'medium',
+    title: 'EOB Reconciliation',
+    message: '28 EOBs pending reconciliation from last week',
+    timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+    isRead: false,
+    category: 'Reconciliation'
+  }
+];
+
+const frontDeskNotifications: Notification[] = [
+  {
+    id: '1',
+    type: 'task',
+    priority: 'high',
+    title: 'Missing Insurance Information',
+    message: 'Patient Maria Garcia (Appt: 10:30 AM) - Missing current insurance card and coverage verification',
+    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    isRead: false,
+    category: 'Insurance Verification',
+    actionRequired: true
+  },
+  {
+    id: '2',
+    type: 'golden-thread',
+    priority: 'high',
+    title: 'No-Show Follow Up Required',
+    message: '3 patients missed appointments yesterday - Contact for rescheduling: John D., Sarah M., Robert K.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    isRead: false,
+    category: 'Appointments',
+    actionRequired: true
+  },
+  {
+    id: '3',
+    type: 'task',
+    priority: 'medium',
+    title: 'Copay Collection Required',
+    message: '2 patients in waiting room with outstanding copays: $40 and $60',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    isRead: false,
+    category: 'Payments',
+    actionRequired: true
+  },
+  {
+    id: '4',
+    type: 'message',
+    priority: 'medium',
+    title: 'Update Patient Demographics',
+    message: '5 patients need address/phone verification at check-in today',
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    isRead: false,
+    category: 'Patient Information'
+  },
+  {
+    id: '5',
+    type: 'reminder',
+    priority: 'medium',
+    title: 'Appointment Reminders',
+    message: 'Send tomorrow\'s appointment reminders to 12 patients',
+    timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
     isRead: false,
     category: 'Appointments'
   },
   {
-    id: '5',
-    type: 'golden-thread',
-    priority: 'high',
-    title: 'Abnormal Vital Signs',
-    message: 'Blood pressure readings outside normal range',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    isRead: false,
-    category: 'Vitals',
-    actionRequired: true
-  },
-  {
     id: '6',
-    type: 'golden-thread',
+    type: 'task',
     priority: 'high',
-    title: 'Medication Interaction Alert',
-    message: 'Potential severe interaction detected between Warfarin and new prescription',
-    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    title: 'Insurance Pre-Authorization',
+    message: 'Collect insurance referral forms from 3 new patients at check-in',
+    timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
     isRead: false,
-    category: 'Medications',
+    category: 'Insurance',
     actionRequired: true
   },
   {
     id: '7',
     type: 'message',
     priority: 'medium',
-    title: 'Prior Authorization Update',
-    message: 'Insurance approved MRI authorization request',
-    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    title: 'Registration Forms Needed',
+    message: 'Print registration packets for 3 new patients arriving between 2-3 PM',
+    timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
     isRead: false,
-    sender: 'Insurance Dept',
-    category: 'Insurance'
+    category: 'Registration'
   },
   {
     id: '8',
-    type: 'task',
-    priority: 'high',
-    title: 'Documentation Update Required',
-    message: 'Complete missing elements in latest progress note',
-    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-    isRead: false,
-    category: 'Documentation',
-    actionRequired: true
-  },
-  {
-    id: '9',
     type: 'reminder',
-    priority: 'medium',
-    title: 'Immunization Due',
-    message: 'Patient due for Tdap booster',
-    timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-    isRead: false,
-    category: 'Immunizations'
-  },
-  {
-    id: '10',
-    type: 'message',
     priority: 'low',
-    title: 'Patient Portal Message',
-    message: 'New secure message from patient regarding prescription refill',
+    title: 'Weekly Schedule Review',
+    message: 'Review next week\'s schedule for double bookings and scheduling conflicts',
     timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
     isRead: false,
-    sender: 'Patient Portal',
-    category: 'Messages'
-  },
-  {
-    id: '11',
-    type: 'task',
-    priority: 'medium',
-    title: 'Lab Order Review',
-    message: 'Review and sign pending lab orders',
-    timestamp: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
-    isRead: false,
-    category: 'Lab Orders',
-    actionRequired: true
-  },
-  {
-    id: '12',
-    type: 'golden-thread',
-    priority: 'high',
-    title: 'Care Gap Alert',
-    message: 'Overdue for diabetic foot exam and HbA1c test',
-    timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-    isRead: false,
-    category: 'Care Gaps',
-    actionRequired: true
-  },
-  {
-    id: '13',
-    type: 'reminder',
-    priority: 'medium',
-    title: 'Referral Follow-up',
-    message: 'Check status of cardiology referral sent last week',
-    timestamp: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-    isRead: false,
-    category: 'Referrals'
-  },
-  {
-    id: '14',
-    type: 'message',
-    priority: 'medium',
-    title: 'Care Team Update',
-    message: 'New specialist added to patient\'s care team',
-    timestamp: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
-    isRead: false,
-    sender: 'Care Coordinator',
-    category: 'Care Team'
-  },
-  {
-    id: '15',
-    type: 'task',
-    priority: 'high',
-    title: 'Discharge Summary Pending',
-    message: 'Complete discharge summary for recent hospital stay',
-    timestamp: new Date(Date.now() - 1000 * 60 * 480).toISOString(),
-    isRead: false,
-    category: 'Documentation',
-    actionRequired: true
+    category: 'Schedule Management'
   }
 ];
 
-export const NotificationCenter: FC<NotificationCenterProps> = ({ patientId, className }) => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+const clinicianNotifications: Notification[] = [
+  {
+    id: '1',
+    type: 'golden-thread',
+    priority: 'high',
+    title: 'Critical Lab Alert',
+    message: 'STAT: Patient Sarah M. shows K+ level of 6.8 mEq/L - Immediate action required',
+    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    isRead: false,
+    category: 'Lab Results',
+    actionRequired: true
+  },
+  {
+    id: '2',
+    type: 'golden-thread',
+    priority: 'high',
+    title: 'Medication Safety Alert',
+    message: 'High-risk interaction: Patient on Warfarin prescribed NSAIDs - Review needed',
+    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    isRead: false,
+    category: 'Medications',
+    actionRequired: true
+  },
+  {
+    id: '3',
+    type: 'task',
+    priority: 'high',
+    title: 'Pending Orders Review',
+    message: '4 unsigned orders including critical imaging results',
+    timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+    isRead: false,
+    category: 'Orders',
+    actionRequired: true
+  },
+  {
+    id: '4',
+    type: 'message',
+    priority: 'medium',
+    title: 'Care Coordination Alert',
+    message: 'Cardiology consultation report received for Patient Robert J.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    isRead: false,
+    category: 'Care Coordination'
+  },
+  {
+    id: '5',
+    type: 'golden-thread',
+    priority: 'high',
+    title: 'Clinical Decision Support',
+    message: 'Patient meets sepsis screening criteria - Protocol initiation recommended',
+    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    isRead: false,
+    category: 'Clinical Alerts',
+    actionRequired: true
+  },
+  {
+    id: '6',
+    type: 'reminder',
+    priority: 'medium',
+    title: 'Preventive Care Due',
+    message: '3 patients due for annual wellness visits this week',
+    timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+    isRead: false,
+    category: 'Preventive Care'
+  }
+];
+
+export const NotificationCenter: FC<NotificationCenterProps> = ({ patientId, className, userRole = 'clinician' }) => {
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    switch (userRole) {
+      case 'billing_specialist':
+        return billingNotifications;
+      case 'front_desk':
+        return frontDeskNotifications;
+      case 'clinician':
+      default:
+        return clinicianNotifications;
+    }
+  });
   const [selectedType, setSelectedType] = useState<'all' | NotificationType>('all');
 
   const getTypeCount = (type: 'all' | NotificationType) => {

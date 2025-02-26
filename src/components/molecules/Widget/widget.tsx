@@ -37,7 +37,7 @@ export const Widget: FC<WidgetProps> = ({
             <div className="widget-drag-handle cursor-move p-1 hover:bg-accent/50 rounded-md">
               <GripVertical className="w-4 h-4 text-muted-foreground" />
             </div>
-            <h3 className="font-semibold">{title}</h3>
+            <h4 className="font-semibold">{title}</h4>
           </div>
           
           <div className="flex gap-2">
