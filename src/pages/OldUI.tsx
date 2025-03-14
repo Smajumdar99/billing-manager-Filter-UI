@@ -1,5 +1,5 @@
 import React, { FC, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   MagnifyingGlassIcon, BellIcon, QuestionMarkCircleIcon, EnvelopeIcon, Cog6ToothIcon,
   HomeIcon, ClipboardDocumentIcon, UserGroupIcon, ClockIcon, CalendarDaysIcon, 
@@ -12,6 +12,7 @@ import {
   ChatBubbleLeftRightIcon, GlobeAltIcon, ChevronDownIcon, ChevronRightIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
+import { TopNavigationBar, MainNavigationBar, Sidebar } from '../components/old-ui'
 
 interface Patient {
   id: string
@@ -37,6 +38,7 @@ const OldUI: FC = () => {
   const [groupBy, setGroupBy] = useState<GroupBy>('Form Type')
   const [selectedEncounter, setSelectedEncounter] = useState('all')
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Message', 'Patient Portal'])
+  const navigate = useNavigate();
 
   const patients: Patient[] = [
     { id: 'Abced .asd (1002734)' },
@@ -735,181 +737,47 @@ const OldUI: FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen overflow-hidden bg-white">
       {/* Top Navigation Bar */}
-      <div className="flex items-center p-2 h-16 bg-[#1C75BC]/15 text-[#1C75BC]">
-        {/* Left side */}
-        <div className="flex items-center gap-4">
-          <img src="/logo.svg" alt="Logo" className="h-8 w-8" />
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-64 px-4 py-1.5 pl-10 rounded text-sm bg-white/50 border border-[#1C75BC]/20 placeholder-[#1C75BC]/70 focus:outline-none focus:ring-2 focus:ring-[#1C75BC]/30"
-            />
-            <MagnifyingGlassIcon className="absolute left-3 top-2 h-5 w-5 text-[#1C75BC]/70" />
-          </div>
-        </div>
-
-        {/* Right side */}
-        <div className="ml-auto flex items-center gap-6">
-          <BellIcon className="h-4 w-4 text-[#1C75BC]" />
-          <QuestionMarkCircleIcon className="h-4 w-4 text-[#1C75BC]" />
-          <EnvelopeIcon className="h-4 w-4 text-[#1C75BC]" />
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[#1C75BC]">Mayank Hospitals</span>
-            <img src="https://ui-avatars.com/api/?name=Darlene+Robertson" alt="User" className="h-6 w-6 rounded-full" />
-          </div>
-        </div>
-      </div>
+      <TopNavigationBar 
+        hospitalName="Mayank Hospitals"
+        userAvatarUrl="https://ui-avatars.com/api/?name=Darlene+Robertson"
+        onSearch={(searchTerm) => console.log('Search:', searchTerm)}
+      />
 
       {/* Main Navigation */}
-      <div className="flex items-center h-10 bg-[#1C75BC] text-white">
-        <nav className="flex w-full">
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <HomeIcon className="h-4 w-4" />
-            Dashboard
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <ClipboardDocumentIcon className="h-4 w-4" />
-            ADL
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <UserGroupIcon className="h-4 w-4" />
-            Pre-Admit/Referrals
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <ClockIcon className="h-4 w-4" />
-            Wait List
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <CalendarDaysIcon className="h-4 w-4" />
-            Schedule
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white text-[#1C75BC]">
-            <UsersIcon className="h-4 w-4" />
-            Clients
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <BeakerIcon className="h-4 w-4" />
-            Practice
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <BanknotesIcon className="h-4 w-4" />
-            Billing
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <ChartBarIcon className="h-4 w-4" />
-            Reports
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <Cog8ToothIcon className="h-4 w-4" />
-            Administration
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <InboxIcon className="h-4 w-4" />
-            Inbox
-          </Link>
-          <Link to="#" className="flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-blue-600">
-            <WrenchScrewdriverIcon className="h-4 w-4" />
-            Settings
-          </Link>
-        </nav>
-      </div>
+      <MainNavigationBar 
+        activeItem="Clients"
+        onNavigate={(itemName) => {
+          console.log('Navigate to:', itemName);
+          
+          // Handle navigation to different pages
+          if (itemName === 'Inbox') {
+            navigate('/inbox');
+          } else if (itemName === 'Dashboard') {
+            navigate('/dashboard');
+          } else if (itemName === 'Settings') {
+            navigate('/settings');
+          }
+          // Other navigation will be handled by the MainNavigationBar component
+        }}
+      />
 
       {/* Content Area */}
       <div className="flex flex-1">
         {/* Sidebar */}
-        <div className="w-64 bg-white border-r">
-          <div className="p-4">
-            <input
-              type="search"
-              placeholder="Search menu"
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <nav className="space-y-1">
-            <SidebarItem icon={<ChartPieIcon />} label="Client Summary Chart" />
-            <SidebarItem icon={<DocumentTextIcon />} label="Past Encounters" />
-            <SidebarItem icon={<EnvelopeOpenIcon />} label="Message Patient" />
-            <SidebarItem icon={<ChartBarIcon />} label="ROI Dashboard" badge="1" />
-            <SidebarItem icon={<PencilSquareIcon />} label="Prescribe" />
-            <SidebarItem icon={<LabIcon />} label="Labs" />
-            <SidebarItem icon={<ArrowTrendingUpIcon />} label="Trend Vitals" />
-            <SidebarItem icon={<DocumentPlusIcon />} label="Forms to Sign" />
-            <SidebarItem icon={<ClipboardIcon />} label="Record Vitals" />
-            <SidebarItem icon={<ClipboardDocumentListIcon />} label="Treatment Plan" />
-            <SidebarItem icon={<MedicationIcon />} label="Administer Medications" />
-            <SidebarItem icon={<DocumentCheckIcon />} label="RecordMAR Orders/Vitals" />
-            <SidebarItem icon={<AcademicCapIcon />} label="Patient Education" />
-            <SidebarItem icon={<CheckCircleIcon />} label="Batch Eligibility Checking" />
-            <SidebarItem icon={<ExclamationCircleIcon />} label="New Incident" />
-            <SidebarItem icon={<EyeIcon />} label="View Incidents" />
-            <SidebarItem icon={<GroupIcon />} label="Patient Monitoring Rounds" />
-            <SidebarItem 
-              icon={<DocumentTextIcon />} 
-              label="Patient Forms" 
-              isActive={selectedMenu === 'Patient Forms'}
-              onClick={() => setSelectedMenu('Patient Forms')}
-            />
-            <SidebarItem icon={<FolderIcon />} label="Form Cabinet" />
-            <SidebarItem icon={<DocumentDuplicateIcon />} label="CCDA" />
-            <SidebarItem icon={<ChartBarIcon />} label="ABA Definition" />
-            <SidebarItem icon={<PresentationChartBarIcon />} label="ABA Reports" />
-            <SidebarItem icon={<ClipboardDocumentListIcon />} label="ABA Tracking" />
-          </nav>
-        </div>
+        <Sidebar 
+          activeItem={selectedMenu}
+          onMenuSelect={(itemLabel) => setSelectedMenu(itemLabel)} 
+          onSearch={(searchTerm) => console.log('Search sidebar:', searchTerm)}
+        />
 
         {/* Main Content */}
-        <div className="flex-1 p-6 bg-gray-50">
+        <div className="flex-1 p-6 bg-gray-50 overflow-y-auto">
           {renderContent()}
         </div>
       </div>
     </div>
-  )
-}
-
-interface SidebarItemProps {
-  icon: JSX.Element
-  label: string
-  badge?: string
-  isActive?: boolean
-  onClick?: () => void
-}
-
-const SidebarItem: FC<SidebarItemProps> = ({ icon, label, badge, isActive, onClick }) => {
-  const iconWithClasses = {
-    ...icon,
-    props: {
-      ...icon.props,
-      className: `h-4 w-4 mr-3 ${isActive ? 'text-[#1C75BC]' : 'text-gray-500'}`
-    }
-  }
-  
-  return (
-    <a 
-      href="#" 
-      onClick={(e) => {
-        e.preventDefault()
-        onClick?.()
-      }}
-      className={`flex items-center px-4 py-2 text-sm relative ${
-        isActive 
-          ? 'text-[#1C75BC] bg-[#1C75BC]/5' 
-          : 'text-gray-700 hover:bg-gray-100'
-      }`}
-    >
-      {isActive && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#1C75BC]" />
-      )}
-      {iconWithClasses}
-      <span>{label}</span>
-      {badge && (
-        <span className="ml-auto inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">
-          {badge}
-        </span>
-      )}
-    </a>
   )
 }
 

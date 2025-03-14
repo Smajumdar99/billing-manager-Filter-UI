@@ -24,6 +24,12 @@ export const defaultWidgets: Widget[] = [
     description: 'Key clinical insights and trends for the patient'
   },
   {
+    id: 'front-desk-insights',
+    type: 'front_desk_insights',
+    title: 'Front Desk Insights',
+    description: 'Key administrative insights and actions for the patient'
+  },
+  {
     id: 'vital-signs',
     type: 'vital_signs',
     title: 'Vital Signs'
@@ -210,7 +216,8 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     'billing_credit_cards',
     'billing_write_off',
     'billing_notes',
-    'lab_results'
+    'lab_results',
+    'front_desk_insights'
   ],
   doctor: [
     'patient_performance', 

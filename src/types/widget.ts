@@ -37,6 +37,7 @@ export type WidgetType =
   | 'implantable_devices'
   | 'identified_needs'
   | 'clinical_insights_carousel'
+  | 'front_desk_insights'
   | 'problems'
   | 'procedures'
   | 'immunizations'

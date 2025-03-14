@@ -32,7 +32,8 @@ import {
   PencilSquareIcon,
   MagnifyingGlassIcon,
   SparklesIcon,
-  XMarkIcon
+  XMarkIcon,
+  SquaresPlusIcon
 } from '@heroicons/react/24/outline';
 import {
   DropdownMenu,
@@ -57,6 +58,7 @@ export const getWidgetIcon = (type: WidgetType) => {
     notification_center: { icon: BellIcon, colors: 'bg-rose-50 text-rose-600' },
     activity: { icon: ArrowPathIcon, colors: 'bg-green-50 text-green-600' },
     clinical_insights_carousel: { icon: SparklesIcon, colors: 'bg-violet-50 text-violet-600' },
+    front_desk_insights: { icon: SquaresPlusIcon, colors: 'bg-amber-50 text-amber-600' },
     vital_signs: { icon: HeartIcon, colors: 'bg-red-50 text-red-600' },
     diagnosis: { icon: ClipboardDocumentListIcon, colors: 'bg-indigo-50 text-indigo-600' },
     clinical_notes: { icon: DocumentTextIcon, colors: 'bg-blue-50 text-blue-600' },
@@ -116,6 +118,12 @@ export const additionalWidgets: Widget[] = [
     title: 'Clinical Insights',
     id: 'clinical-insights-carousel',
     description: 'Key clinical insights and trends for the patient'
+  },
+  {
+    type: 'front_desk_insights',
+    title: 'Front Desk Insights',
+    id: 'front-desk-insights',
+    description: 'Key administrative insights and actions for the patient'
   },
   { type: 'vital_signs', title: 'Vital Signs', id: 'vital-signs' },
   { type: 'clinical_notes', title: 'Clinical Notes', id: 'clinical-notes' },

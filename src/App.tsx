@@ -14,6 +14,7 @@ import PatientChart from './pages/PatientChart'
 import Settings from './pages/Settings'
 import { Toaster } from "@/components/ui/toaster"
 import OldUI from './pages/OldUI'
+import Inbox from './pages/Inbox'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -64,6 +65,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <OldUI />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/inbox" 
+        element={
+          <ProtectedRoute>
+            <Inbox />
           </ProtectedRoute>
         } 
       />

@@ -9,4 +9,9 @@ export interface Appointment {
   status: AppointmentStatus
   type: AppointmentType
   duration: number // in minutes
+  program?: string // Behavioral program name
+  provider?: string // Healthcare provider name
+  category?: string // Assessment category
+  isGroup?: boolean // Whether it's a group or individual appointment
+  isRecurring?: boolean // Whether the appointment recurs
 } 

@@ -94,6 +94,7 @@ import { BillingWidget } from '@/components/widgets/BillingWidget/billing-widget
 import { IDCardPhotosWidget } from '@/components/widgets/IDCardPhotosWidget/id-card-photos-widget';
 import { AmendmentsWidget } from '@/components/widgets/AmendmentsWidget/amendments-widget';
 import { DocumentsWidget } from '@/components/widgets/DocumentsWidget/documents-widget';
+import { FrontDeskInsightsCarousel } from '@/components/widgets/FrontDeskInsightsCarousel/front-desk-insights-carousel';
 
 const PatientChart: FC = () => {
   const { patientId = '' } = useParams();
@@ -154,6 +155,7 @@ const PatientChart: FC = () => {
         return [
           'patient_performance',
           'notification_center',
+          'front_desk_insights',
           'appointments',
           'demographics',
           'insurance',
@@ -245,6 +247,7 @@ const PatientChart: FC = () => {
     notification_center: { x: 20, y: 190, width: 400, height: 600 },
     activity: { x: 20, y: 860, width: 400, height: 420 },
     clinical_insights_carousel: { x: 1220, y: 1080, width: 1200, height: 400 },
+    front_desk_insights: { x: 440, y: 20, width: 760, height: 250 },
     vital_signs: { x: 440, y: 440, width: 390, height: 400 },
     diagnosis: { x: 440, y: 860, width: 390, height: 400 },
     clinical_notes: { x: 850, y: 440, width: 350, height: 400 },
@@ -495,6 +498,8 @@ const PatientChart: FC = () => {
         return <ActivityWidget patientId={patientId} />;
       case 'clinical_insights_carousel':
         return <ClinicalInsightsCarousel patientId={patientId} isFullscreen={fullscreenWidget === 'clinical_insights_carousel'} />;
+      case 'front_desk_insights':
+        return <FrontDeskInsightsCarousel patientId={patientId} isFullscreen={fullscreenWidget === 'front_desk_insights'} />;
       case 'vital_signs':
         return <VitalsWidget patientId={patientId} />;
       case 'diagnosis':
@@ -1100,6 +1105,8 @@ const PatientChart: FC = () => {
         return getStyledIcon(ClockIconOutline, 'bg-purple-100', 'text-purple-600');
       case 'clinical_insights_carousel':
         return getStyledIcon(ChartPieIcon, 'bg-cyan-100', 'text-cyan-700');
+      case 'front_desk_insights':
+        return getStyledIcon(SquaresPlusIcon, 'bg-amber-100', 'text-amber-700');
       case 'vital_signs':
         return getStyledIcon(HeartIcon, 'bg-red-100', 'text-red-600');
       case 'clinical_notes':
@@ -1299,9 +1306,7 @@ const PatientChart: FC = () => {
                           minWidth: 200,
                           maxWidth: fullscreenWidget === widget.type 
                             ? window.innerWidth 
-                            : widget.type === 'clinical_insights_carousel' 
-                              ? 1400 
-                              : 1200,
+                            :1900,
                           minHeight: minimizedWidgets.includes(widget.type) ? 48 : widget.type === 'patient_performance' ? 100 : 200,
                           maxHeight: fullscreenWidget === widget.type ? window.innerHeight : widget.type === 'patient_performance' ? 300 : 800,
                           bounds: "parent",
@@ -1463,9 +1468,9 @@ const PatientChart: FC = () => {
                                           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                                         >
                                           {isMinimized ? (
-                                            <ChevronDownIcon className="w-4 h-4" />
+                                          <ChevronDownIcon className="w-4 h-4" />
                                           ) : (
-                                            <ChevronUpIcon className="w-4 h-4" />
+                                          <ChevronUpIcon className="w-4 h-4" />
                                           )}
                                         </button>
                                         <button
@@ -1564,6 +1569,124 @@ const PatientChart: FC = () => {
                               </>
                             );
                           }
+                          case 'front_desk_insights': {
+                            const isMinimized = minimizedWidgets.includes(widget.type);
+                            return (
+                              <>
+                                <Rnd {...rndProps} minHeight={isMinimized ? 48 : 100} maxHeight={isMinimized ? 48 : 300}>
+                                  <div className="h-full flex flex-col">
+                                    <div className="drag-handle flex items-center justify-between p-3 cursor-move bg-white border-b">
+                                      <h3 className="font-medium text-sm flex items-center">
+                                        {getWidgetIcon(widget.type)}
+                                        {widget.title}
+                                      </h3>
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={() => toggleMinimize(widget.type)}
+                                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                        >
+                                          {isMinimized ? (
+                                          <ChevronDownIcon className="w-4 h-4" />
+                                          ) : (
+                                          <ChevronUpIcon className="w-4 h-4" />
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={() => toggleFullscreen(widget.type)}
+                                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                        >
+                                          <ArrowsPointingOutIcon className="w-4 h-4" />
+                                        </button>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <button
+                                              className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                            >
+                                              <EllipsisVerticalIcon className="w-4 h-4" />
+                                            </button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="w-[160px]">
+                                            <DropdownMenuItem 
+                                              onClick={() => console.log('Export', widget.type)}
+                                              className="gap-2"
+                                            >
+                                              <ArrowDownTrayIcon className="w-4 h-4" />
+                                              Export
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={() => console.log('Print', widget.type)}
+                                              className="gap-2"
+                                            >
+                                              <PrinterIcon className="w-4 h-4" />
+                                              Print
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={() => console.log('Share', widget.type)}
+                                              className="gap-2"
+                                            >
+                                              <ShareIcon className="w-4 h-4" />
+                                              Share
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </div>
+                                    {!isMinimized && (
+                                      <div className="flex-1">
+                                        <FrontDeskInsightsCarousel
+                                          patientId={patientId}
+                                          isFullscreen={fullscreenWidget === 'front_desk_insights'}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </Rnd>
+                                
+                                <Dialog open={fullscreenWidget === widget.type} onOpenChange={() => setFullscreenWidget(null)}>
+                                  <DialogContent className="max-w-6xl w-[90vw] h-[90vh] p-0 shadow-md">
+                                    <div className="flex flex-col h-full">
+                                      <div className="flex items-center justify-between px-6 py-4 border-b">
+                                        <h2 className="text-lg font-semibold">{widget.title}</h2>
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() => console.log('Export', widget.type)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                          >
+                                            <ArrowDownTrayIcon className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => console.log('Print', widget.type)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                          >
+                                            <PrinterIcon className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => console.log('Share', widget.type)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                          >
+                                            <ShareIcon className="w-4 h-4" />
+                                          </button>
+                                          <div className="w-px h-4 bg-gray-200 mx-1" />
+                                          <button
+                                            onClick={() => setFullscreenWidget(null)}
+                                            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                          >
+                                            <XMarkIcon className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <div className="flex-1 p-6 overflow-auto">
+                                        <FrontDeskInsightsCarousel
+                                          patientId={patientId}
+                                          isFullscreen={true}
+                                        />
+                                      </div>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              </>
+                            );
+                          }
                           default: {
                             const isMinimized = minimizedWidgets.includes(widget.type);
                             return (
@@ -1581,9 +1704,9 @@ const PatientChart: FC = () => {
                                           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                                         >
                                           {isMinimized ? (
-                                            <ChevronDownIcon className="w-4 h-4" />
+                                          <ChevronDownIcon className="w-4 h-4" />
                                           ) : (
-                                            <ChevronUpIcon className="w-4 h-4" />
+                                          <ChevronUpIcon className="w-4 h-4" />
                                           )}
                                         </button>
                                         <button
