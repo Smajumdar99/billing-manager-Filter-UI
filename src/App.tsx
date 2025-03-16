@@ -15,6 +15,7 @@ import Settings from './pages/Settings'
 import { Toaster } from "@/components/ui/toaster"
 import OldUI from './pages/OldUI'
 import Inbox from './pages/Inbox'
+import Schedule from './pages/Schedule'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -73,6 +74,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Inbox />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/schedule" 
+        element={
+          <ProtectedRoute>
+            <Schedule />
           </ProtectedRoute>
         } 
       />

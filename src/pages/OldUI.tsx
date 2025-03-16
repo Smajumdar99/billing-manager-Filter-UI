@@ -38,6 +38,7 @@ const OldUI: FC = () => {
   const [groupBy, setGroupBy] = useState<GroupBy>('Form Type')
   const [selectedEncounter, setSelectedEncounter] = useState('all')
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Message', 'Patient Portal'])
+  const [activeTab, setActiveTab] = useState('Clients')
   const navigate = useNavigate();
 
   const patients: Patient[] = [
@@ -652,7 +653,24 @@ const OldUI: FC = () => {
   }
 
   const renderContent = () => {
+    // Add debug logs
+    console.log('renderContent called, activeTab:', activeTab);
+    
+    // Show Schedule tab content
+    if (activeTab === 'Schedule') {
+      console.log('Rendering Schedule content');
+      return (
+        <div className="flex flex-col items-center justify-center h-full">
+          <CalendarDaysIcon className="w-16 h-16 text-[#1C75BC] mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Hi!</h2>
+          <p className="text-lg text-gray-600">Welcome to the Schedule tab</p>
+        </div>
+      );
+    }
+    
+    // Show Patient Forms content
     if (selectedMenu === 'Patient Forms') {
+      console.log('Rendering Patient Forms content');
       return (
         <div className="flex gap-6 p-6 h-[calc(100vh-8rem)]">
           {/* Patient List */}
@@ -747,9 +765,12 @@ const OldUI: FC = () => {
 
       {/* Main Navigation */}
       <MainNavigationBar 
-        activeItem="Clients"
+        activeItem={activeTab}
         onNavigate={(itemName) => {
           console.log('Navigate to:', itemName);
+          
+          // Set the active tab
+          setActiveTab(itemName);
           
           // Handle navigation to different pages
           if (itemName === 'Inbox') {
@@ -758,6 +779,15 @@ const OldUI: FC = () => {
             navigate('/dashboard');
           } else if (itemName === 'Settings') {
             navigate('/settings');
+          } else if (itemName === 'Schedule') {
+            // Prevent navigation to /schedule route
+            // Just update the activeTab state to show the Schedule content
+            console.log('Schedule tab clicked');
+            // Stay on the current page
+            return false; // This signals to MainNavigationBar not to navigate
+          } else if (itemName === 'Clients') {
+            // Reset to default state when returning to Clients tab
+            setActiveTab('Clients');
           }
           // Other navigation will be handled by the MainNavigationBar component
         }}
@@ -765,12 +795,14 @@ const OldUI: FC = () => {
 
       {/* Content Area */}
       <div className="flex flex-1">
-        {/* Sidebar */}
-        <Sidebar 
-          activeItem={selectedMenu}
-          onMenuSelect={(itemLabel) => setSelectedMenu(itemLabel)} 
-          onSearch={(searchTerm) => console.log('Search sidebar:', searchTerm)}
-        />
+        {/* Sidebar - Only show when on Clients tab */}
+        {activeTab === 'Clients' && (
+          <Sidebar 
+            activeItem={selectedMenu}
+            onMenuSelect={(itemLabel) => setSelectedMenu(itemLabel)} 
+            onSearch={(searchTerm) => console.log('Search sidebar:', searchTerm)}
+          />
+        )}
 
         {/* Main Content */}
         <div className="flex-1 p-6 bg-gray-50 overflow-y-auto">

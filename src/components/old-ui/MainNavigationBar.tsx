@@ -14,10 +14,11 @@ import {
  * 
  * @param {string} activeItem - The currently active navigation item
  * @param {Function} onNavigate - Optional callback for navigation item clicks
+ *                               If it returns false, navigation will be prevented
  */
 interface MainNavigationBarProps {
   activeItem?: string;
-  onNavigate?: (itemName: string) => void;
+  onNavigate?: (itemName: string) => boolean | void;
 }
 
 // Navigation item configuration with routes
@@ -49,7 +50,13 @@ const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
     
     // Call the onNavigate callback if provided
     if (onNavigate) {
-      onNavigate(itemName);
+      const shouldNavigate = onNavigate(itemName);
+      
+      // If onNavigate returns false explicitly, don't navigate
+      if (shouldNavigate === false) {
+        console.log(`Navigation to ${route} prevented by callback`);
+        return;
+      }
     }
     
     // Navigate to the appropriate route
