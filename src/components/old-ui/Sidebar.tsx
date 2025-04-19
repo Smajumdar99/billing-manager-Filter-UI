@@ -6,13 +6,11 @@ import {
   Square3Stack3DIcon as MedicationIcon, DocumentCheckIcon, AcademicCapIcon, 
   CheckCircleIcon, ExclamationCircleIcon, EyeIcon, UserGroupIcon as GroupIcon,
   FolderIcon, DocumentDuplicateIcon, PresentationChartBarIcon,
-  ChevronLeftIcon, ChevronRightIcon
+  ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 /**
- * SidebarItem Component
- * 
- * Individual item in the sidebar with icon, label, and optional badge
+ * SidebarItem Component Props
  */
 export interface SidebarItemProps {
   icon: JSX.Element;
@@ -23,8 +21,46 @@ export interface SidebarItemProps {
   collapsed?: boolean;
 }
 
+// Icon color mapping based on functionality
+const getIconColor = (label: string): string => {
+  // Activity Center - Light Blue
+  if (label.includes('Activity')) {
+    return 'text-blue-600 bg-blue-50/50';
+  }
+  // Documents & Forms - Purple
+  if (label.includes('Document') || label.includes('Form')) {
+    return 'text-purple-600 bg-purple-50/50';
+  }
+  // Calendar/Log - Light Gray
+  if (label.includes('Log')) {
+    return 'text-gray-600 bg-gray-50/50';
+  }
+  // Messages & Communication - Peach/Orange
+  if (label.includes('Message') || label.includes('Direct Messaging')) {
+    return 'text-orange-600 bg-orange-50/50';
+  }
+  // Staff & Dashboard - Light Blue
+  if (label.includes('Staff') || label.includes('Dashboard')) {
+    return 'text-blue-600 bg-blue-50/50';
+  }
+  // Treatment Plans - Mint Green
+  if (label.includes('Treatment')) {
+    return 'text-emerald-600 bg-emerald-50/50';
+  }
+  // Transactions - Gray
+  if (label.includes('Transaction')) {
+    return 'text-gray-600 bg-gray-50/50';
+  }
+  // User Related - Purple
+  if (label.includes('User')) {
+    return 'text-purple-600 bg-purple-50/50';
+  }
+  // Default - Light Gray
+  return 'text-gray-600 bg-gray-50/50';
+};
+
 /**
- * SidebarItem
+ * SidebarItem Component
  * 
  * Renders an individual sidebar menu item with icon, label, and optional badge
  */
@@ -36,11 +72,13 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
   onClick,
   collapsed 
 }) => {
+  const iconColor = getIconColor(label);
+  
   const iconWithClasses = {
     ...icon,
     props: {
       ...icon.props,
-      className: `h-4 w-4 ${collapsed ? 'mx-auto' : 'mr-3'} ${isActive ? 'text-[#1C75BC]' : 'text-gray-400'}`
+      className: `h-5 w-5 transition-colors duration-200`
     }
   };
   
@@ -51,25 +89,27 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
         e.preventDefault();
         onClick?.();
       }}
-      className={`flex items-center ${collapsed ? 'justify-center' : 'px-4'} py-1.5 text-xs relative ${
-        isActive 
-          ? 'text-semibold text-[#1C75BC] bg-[#1C75BC]/10' 
-          : 'text-gray-700 hover:bg-gray-100'
-      }`}
+      className={`flex items-center ${collapsed ? 'justify-center' : 'px-4'} py-1.5 text-sm relative group
+        ${isActive 
+          ? 'text-[#1C75BC] bg-[#1C75BC]/5 font-semibold' 
+          : 'text-gray-700 hover:bg-gray-50/50'
+        }`}
       title={collapsed ? label : ''}
     >
       {isActive && (
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#1C75BC]" />
       )}
-      {iconWithClasses}
-      {!collapsed && <span>{label}</span>}
+      <div className={`w-8 h-8 flex items-center justify-center rounded-lg ${iconColor}`}>
+        {iconWithClasses}
+      </div>
+      {!collapsed && <span className="ml-3">{label}</span>}
       {!collapsed && badge && (
-        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-500 w-5 h-5 text-xs font-medium text-white">
+        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-500 px-2 min-w-[1.25rem] h-5 text-xs font-medium text-white">
           {badge}
         </span>
       )}
       {collapsed && badge && (
-        <span className="absolute top-0 right-0 inline-flex items-center justify-center rounded-full bg-red-500 w-4 h-4 text-[9px] font-medium text-white">
+        <span className="absolute top-0 right-0 inline-flex items-center justify-center rounded-full bg-red-500 min-w-[1rem] h-4 text-[9px] font-medium text-white">
           {badge}
         </span>
       )}
@@ -159,10 +199,9 @@ export interface SidebarProps {
 }
 
 /**
- * Sidebar Component
+ * Modern Sidebar Component
  * 
- * Reusable sidebar component extracted from OldUI
- * Displays a search input and navigation items
+ * A beautiful and responsive sidebar with smooth animations and modern design
  */
 const Sidebar: React.FC<SidebarProps> = ({
   items = defaultSidebarItems,
@@ -175,7 +214,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   
-  // Initialize localStorage persistence if needed
   useEffect(() => {
     const savedState = localStorage.getItem('oldui-sidebar-collapsed');
     if (savedState !== null) {
@@ -194,50 +232,58 @@ const Sidebar: React.FC<SidebarProps> = ({
   const toggleCollapse = () => {
     const newCollapsed = !collapsed;
     setCollapsed(newCollapsed);
-    
-    // Save state to localStorage
     localStorage.setItem('oldui-sidebar-collapsed', String(newCollapsed));
-    
-    // Notify parent component
-    if (onCollapsedChange) {
-      onCollapsedChange(newCollapsed);
-    }
+    onCollapsedChange?.(newCollapsed);
   };
 
   return (
-    <div className={`${collapsed ? 'w-14' : widthClass} bg-white border-r overflow-y-auto transition-all duration-300 ease-in-out flex flex-col`}>
-      {!collapsed && (
-        <div className="p-4">
-          <input
-            type="search"
-            placeholder="Search menu"
-            className="w-full px-3 py-2 border rounded-md text-sm"
-            onChange={handleSearchChange}
-          />
+    <div className={`${collapsed ? 'w-16' : widthClass} bg-white border-r flex flex-col h-full`}>
+      {/* Fixed Header with search and collapse button */}
+      <div className="shrink-0 border-b bg-white sticky top-0 z-10">
+        <div className="flex items-center p-2">
+          {!collapsed && (
+            <div className="flex-1 px-2">
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="search"
+                  placeholder="Search menu"
+                  className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#1C75BC] focus:border-[#1C75BC]"
+                  onChange={handleSearchChange}
+                />
+              </div>
+            </div>
+          )}
+          <button 
+            onClick={toggleCollapse}
+            className="p-2 hover:bg-gray-100 rounded-md ml-2"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <ChevronRightIcon className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronLeftIcon className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
         </div>
-      )}
-      <nav className="space-y-0.5 py-2 flex-grow">
-        {items.map((item) => (
-          <SidebarItem 
-            key={item.label}
-            icon={item.icon}
-            label={item.label}
-            badge={item.badge}
-            isActive={activeItem === item.label}
-            onClick={() => onMenuSelect?.(item.label)}
-            collapsed={collapsed}
-          />
-        ))}
-      </nav>
-      <div className="border-t p-2 flex justify-center">
-        <button 
-          onClick={toggleCollapse}
-          className="text-gray-500 hover:text-gray-700 p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRightIcon className="h-5 w-5" /> : <ChevronLeftIcon className="h-5 w-5" />}
-        </button>
       </div>
+
+      {/* Scrollable Navigation */}
+      <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300">
+        <div className="space-y-0.5 py-2">
+          {items.map((item) => (
+            <SidebarItem 
+              key={item.label}
+              icon={item.icon}
+              label={item.label}
+              badge={item.badge}
+              isActive={activeItem === item.label}
+              onClick={() => onMenuSelect?.(item.label)}
+              collapsed={collapsed}
+            />
+          ))}
+        </div>
+      </nav>
     </div>
   );
 };

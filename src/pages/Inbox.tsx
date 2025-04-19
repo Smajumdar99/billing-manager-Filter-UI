@@ -10,7 +10,7 @@ import {
   ReceiptPercentIcon, IdentificationIcon, ShieldCheckIcon, BuildingOfficeIcon,
   ChevronDownIcon, ArrowSmallUpIcon, ArrowSmallDownIcon, EnvelopeIcon, XMarkIcon,
   PaperClipIcon, CalendarIcon, ClockIcon, ExclamationCircleIcon, PhoneIcon,
-  TableCellsIcon, Squares2X2Icon, EyeIcon, EyeSlashIcon
+  TableCellsIcon, Squares2X2Icon, EyeIcon, EyeSlashIcon, PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid, BellIcon as BellSolid, ArrowUpIcon, ArrowDownIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import { 
@@ -22,9 +22,25 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/atoms/Select/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { UpcomingAppointments } from '@/components/organisms/UpcomingAppointments'
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/atoms/Input';
+import { format } from 'date-fns';
+import Messages from '../components/widgets/ActivityCenter/Messages';
+import { ReviewFormsWidget } from '@/components/widgets/ReviewFormsWidget/review-forms-widget';
+import { TransactionsReviewsWidget } from '@/components/widgets/TransactionsReviewsWidget/transactions-reviews-widget';
 
 /**
  * Inbox Page
@@ -286,17 +302,24 @@ const Inbox: React.FC = () => {
     // Reset filters when switching tabs
     setSearchQuery('');
     setSelectedReminders([]);
-    // Do not manipulate appointmentViewMode here as it's for a different purpose
+    setViewMode('all');
+    
+    // Keep all Activity Center tabs within Activity Center
+    const activityCenterTabs = [
+      'Reminders',
+      'Review Forms',
+      'Transactions Reviews',
+      'Upcoming Appointments',
+      'DrFirst Notifications',
+      'Messages',
+      'Birthdays',
+      'Unbilled Encounters',
+      'Authorization(s)'
+    ];
     
     // Update sidebar selection based on the tab
-    if (tabLabel === 'Reminders') {
+    if (activityCenterTabs.includes(tabLabel)) {
       setSelectedMenu('Activity Center');
-    } else if (tabLabel === 'Messages') {
-      setSelectedMenu('Client Messages');
-    } else if (tabLabel === 'Transactions Reviews') {
-      setSelectedMenu('Transactions Reviews');
-    } else if (tabLabel === 'Review Forms') {
-      setSelectedMenu('Forms Reviews');
     }
     
     // Simulate loading data (would be an API call in real app)
@@ -312,58 +335,113 @@ const Inbox: React.FC = () => {
     {
       id: 1,
       priority: 'High',
-      from: 'Ensoftek Admin',
-      dueDate: '2024-08-21',
-      isOverdue: true,
-      person: 'Patient K Merge (1004336)',
-      description: 'Ensoftek Admin has created Encounter at New Facilitys Date of Service: 2024-08-21 23:10:00',
-      type: 'Appointment',
+      from: 'Dr. Sarah Johnson',
+      dueDate: '2024-03-15',
+      isOverdue: false,
+      person: 'Robert Wilson (1004445)',
+      description: 'Follow-up required for medication review and adjustment. Patient reported side effects.',
+      type: 'Evaluation',
       isCompleted: false,
     },
     {
       id: 2,
-      priority: 'High',
-      from: 'Ensoftek Admin',
-      dueDate: '2024-08-22',
-      isOverdue: true,
-      person: 'Patient K Merge (1004336)',
-      description: 'Ensoftek Admin has created Encounter at Developmental Evaluation Date of Service: 2024-08-22 22:04:00',
-      type: 'Evaluation',
+      priority: 'Medium',
+      from: 'Nurse Practitioner',
+      dueDate: '2024-03-18',
+      isOverdue: false,
+      person: 'Emily Chen (1004552)',
+      description: 'Routine check-up scheduled. Review recent lab results before appointment.',
+      type: 'Appointment',
       isCompleted: false,
     },
     {
       id: 3,
-      priority: 'Medium',
-      from: 'Ensoftek Admin',
-      dueDate: '2024-08-27',
-      isOverdue: true,
-      person: 'Patient K Merge (1004336)',
-      description: 'Ensoftek Admin has created Encounter at Developmental Evaluation Date of Service: 2024-08-27 06:55:00',
-      type: 'Evaluation',
+      priority: 'Low',
+      from: 'System',
+      dueDate: '2024-03-20',
+      isOverdue: false,
+      person: 'James Brown (1004678)',
+      description: 'Annual patient satisfaction survey due for completion.',
+      type: 'Form',
       isCompleted: false,
     },
     {
       id: 4,
       priority: 'High',
-      from: 'Ensoftek Admin',
-      dueDate: '2024-09-04',
-      isOverdue: true,
-      person: 'Patient K Merge (1004336)',
-      description: 'Your Participant has checked-in for an appointment at Occupational Therapy Assessment Appointment date: 2024-09-04 Appointment Time: 03:00 PM to 03:59 PM',
-      type: 'Check-in',
+      from: 'Dr. Michael Lee',
+      dueDate: '2024-03-14',
+      isOverdue: false,
+      person: 'Sarah Miller (1004789)',
+      description: 'Urgent: Review updated treatment plan and sign off on changes.',
+      type: 'Form',
       isCompleted: true,
     },
     {
       id: 5,
-      priority: 'Low',
-      from: 'Ensoftek Admin',
-      dueDate: '2024-09-11',
+      priority: 'Medium',
+      from: 'Physical Therapy',
+      dueDate: '2024-03-16',
+      isOverdue: false,
+      person: 'David Thompson (1004890)',
+      description: 'PT evaluation report ready for review. Please check and approve exercise plan.',
+      type: 'Evaluation',
+      isCompleted: false,
+    },
+    {
+      id: 6,
+      priority: 'High',
+      from: 'Emergency Department',
+      dueDate: '2024-03-13',
       isOverdue: true,
-      person: 'LFS 431 (1004232)',
-      description: 'Ensoftek Admin has created Encounter at APOLLO12134 Date of Service: 2024-09-11 13:16:00',
+      person: 'Lisa Anderson (1004901)',
+      description: 'Critical: Follow-up required for recent ER visit. Patient needs immediate care plan review.',
+      type: 'Appointment',
+      isCompleted: false,
+    },
+    {
+      id: 7,
+      priority: 'Low',
+      from: 'Lab Services',
+      dueDate: '2024-03-19',
+      isOverdue: false,
+      person: 'Mark Davis (1005001)',
+      description: 'Routine blood work results available for review.',
       type: 'Form',
       isCompleted: false,
     },
+    {
+      id: 8,
+      priority: 'Medium',
+      from: 'Billing Department',
+      dueDate: '2024-03-17',
+      isOverdue: false,
+      person: 'Jennifer White (1005112)',
+      description: 'Insurance verification needed before scheduled procedure.',
+      type: 'Form',
+      isCompleted: false,
+    },
+    {
+      id: 9,
+      priority: 'High',
+      from: 'Dr. Elizabeth Taylor',
+      dueDate: '2024-03-12',
+      isOverdue: true,
+      person: 'Michael Jordan (1005223)',
+      description: 'Patient reported severe symptoms. Immediate evaluation required.',
+      type: 'Evaluation',
+      isCompleted: true,
+    },
+    {
+      id: 10,
+      priority: 'Low',
+      from: 'System',
+      dueDate: '2024-03-21',
+      isOverdue: false,
+      person: 'Rachel Green (1005334)',
+      description: 'Monthly quality assurance review due for completion.',
+      type: 'Form',
+      isCompleted: false,
+    }
   ];
   
   // Filter and view states
@@ -420,6 +498,7 @@ const Inbox: React.FC = () => {
       setActiveFilter(null);
     } else {
       setActiveFilter(filterName);
+      updateDropdownPosition(filterName);
     }
   };
 
@@ -1042,50 +1121,51 @@ const Inbox: React.FC = () => {
 
   // Create a skeleton loading component for reminders
   const RemindersSkeletonLoading = () => (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
-      {/* Skeleton for table header */}
-      <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-white border-b">
-        {[...Array(12)].map((_, i) => (
-          <div key={i} className={`col-span-${i === 2 || i === 3 ? '2' : '1'} ${i === 5 ? 'col-span-3' : ''}`}>
-            <div className="h-4 bg-gray-200 rounded"></div>
-          </div>
-        ))}
-      </div>
-      
-      {/* Skeleton rows */}
-      {[...Array(6)].map((_, index) => (
-        <div key={index} className="grid grid-cols-12 gap-4 px-4 py-3.5 border-b">
-          <div className="col-span-1">
-            <div className="h-4 w-4 bg-gray-200 rounded"></div>
-          </div>
-          <div className="col-span-1">
-            <div className="h-5 w-16 bg-gray-200 rounded-full"></div>
-          </div>
-          <div className="col-span-2">
-            <div className="h-4 w-full bg-gray-200 rounded"></div>
-          </div>
-          <div className="col-span-2">
-            <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-          </div>
-          <div className="col-span-2">
-            <div className="h-4 w-full bg-gray-200 rounded"></div>
-          </div>
-          <div className="col-span-3">
-            <div className="h-4 w-full bg-gray-200 rounded"></div>
-            <div className="h-3 w-2/3 bg-gray-200 rounded mt-1"></div>
-          </div>
-          <div className="col-span-1 flex justify-end">
-            <div className="h-6 w-16 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      ))}
-      
-      {/* Skeleton for pagination */}
-      <div className="px-4 py-3 bg-white border-t flex justify-between items-center">
-        <div className="h-4 w-32 bg-gray-200 rounded"></div>
-        <div className="flex space-x-2">
-          <div className="h-8 w-8 bg-gray-200 rounded"></div>
-          <div className="h-8 w-8 bg-gray-200 rounded"></div>
+    <div className="space-y-3">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">
+                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                </TableHead>
+                <TableHead className="w-[200px]">
+                  <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                </TableHead>
+                <TableHead className="w-[150px]">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                </TableHead>
+                <TableHead className="w-[120px]">
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                </TableHead>
+                <TableHead className="w-[100px]">
+                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(5)].map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
@@ -1486,6 +1566,58 @@ const Inbox: React.FC = () => {
     );
   };
 
+  // Add these state variables after other state declarations
+  const [statusSearch, setStatusSearch] = useState('');
+  const [prioritySearch, setPrioritySearch] = useState('');
+  const [typeSearch, setTypeSearch] = useState('');
+
+  // Add these filter functions after other functions
+  const getFilteredStatuses = () => {
+    const statuses = ['All', 'Today', 'Upcoming', 'Overdue'];
+    return statuses.filter(status => 
+      status.toLowerCase().includes(statusSearch.toLowerCase())
+    );
+  };
+
+  const getFilteredPriorities = () => {
+    const priorities = ['All', 'High', 'Medium', 'Low'];
+    return priorities.filter(priority => 
+      priority.toLowerCase().includes(prioritySearch.toLowerCase())
+    );
+  };
+
+  const getFilteredTypes = () => {
+    const types = ['All', 'Appointment', 'Evaluation', 'Form'];
+    return types.filter(type => 
+      type.toLowerCase().includes(typeSearch.toLowerCase())
+    );
+  };
+
+  // Add this after other state declarations
+  const [dropdownPositions, setDropdownPositions] = useState<{ [key: string]: { top: string; left: string } }>({});
+
+  // Add this function after other function declarations
+  const updateDropdownPosition = (filterName: string) => {
+    const buttonElement = document.querySelector(`button[data-filter="${filterName}"]`);
+    if (buttonElement) {
+      const rect = buttonElement.getBoundingClientRect();
+      setDropdownPositions(prev => ({
+        ...prev,
+        [filterName]: {
+          top: `${rect.bottom + window.scrollY + 4}px`,
+          left: `${rect.left + window.scrollX}px`
+        }
+      }));
+    }
+  };
+
+  // Inbox Groups data
+  const inboxGroups = [
+    { id: 1, name: "Nursing Team A", description: "Messages related to Nursing Team A", count: 15 },
+    { id: 2, name: "Nursing Team B", description: "Messages related to Nursing Team B", count: 12 },
+    { id: 3, name: "ICU Staff", description: "Messages related to ICU Staff", count: 10 },
+  ];
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white">
       {/* Top Navigation Bar */}
@@ -1515,7 +1647,7 @@ const Inbox: React.FC = () => {
 
         {/* Activity Center Vertical Tab Bar - Only show when Activity Center is selected */}
         {selectedMenu === 'Activity Center' && (
-          <div className="w-14 bg-white border-r border-gray-200 flex flex-col items-center py-6 overflow-y-auto">
+          <div className="w-14 bg-white border-r border-gray-100 flex flex-col items-center py-6 overflow-y-auto">
             {activityCenterTabs.map((tab, index) => (
               <div 
                 key={tab.id}
@@ -1593,13 +1725,13 @@ const Inbox: React.FC = () => {
         
         {/* Activity Center content area - Only show when Activity Center is selected */}
         {selectedMenu === 'Activity Center' && (
-          <div className={`flex-1 bg-gray-50 overflow-y-auto transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-0' : ''}`}>
+          <div className={`flex-1 bg-gradient-to-br from-orange-50/70 to-blue-50 overflow-y-auto transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-0' : ''}`}>
             {/* Page Header */}
-            <div className="bg-white p-4 border-b mb-4 shadow-sm">
+            <div className="bg-white/0 p-4 mb-0">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
                   <h1 className="text-2xl font-bold text-gray-800 mr-4">
-                    {activeTopTab}
+                    {activeTopTab} ({filteredReminders.length})
                   </h1>
                   {activeTopTab === 'Upcoming Appointments' && (
                     <div className="relative">
@@ -1633,7 +1765,7 @@ const Inbox: React.FC = () => {
                           onClick={() => setSelectedFilter('week')}>
                           This Week
                         </button>
-                        <button className={`px-3 py-1 text-xs font-medium rounded-full ${selectedFilter === 'virtual' ? 'bg-[#1C75BC] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        <button className={`px-3 py-1 text-xs font-medium ${selectedFilter === 'virtual' ? 'bg-[#1C75BC] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                           onClick={() => setSelectedFilter('virtual')}>
                           Virtual
                         </button>
@@ -1659,6 +1791,11 @@ const Inbox: React.FC = () => {
                     View Logs
                   </button>
 
+                  <button className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-blue-100">
+                    <UserGroupIcon className="h-4 w-4 mr-1.5" />
+                    Inbox Groups
+                  </button>
+
                   {activeTopTab === 'Reminders' && (
                     <button 
                       className="bg-[#1C75BC] text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-[#1C75BC]/90"
@@ -1682,521 +1819,300 @@ const Inbox: React.FC = () => {
               {/* View Selector Tabs - Only show for Reminders */}
               {activeTopTab === 'Reminders' && (
                 <>
-                  <div className="bg-white rounded-lg shadow-sm mb-4">
-                    <div className="flex border-b">
-                      {/* Fix the reminders section buttons back to viewMode */}
-                      <button 
-                        className={`px-4 py-2 text-sm font-medium flex items-center ${viewMode === 'all' ? 'text-[#1C75BC] border-b-2 border-[#1C75BC]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                        onClick={() => setViewMode('all')}
-                      >
-                        <ArchiveBoxIcon className="h-4 w-4 mr-1.5" />
-                        All
-                        <span className="ml-1.5 bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 text-xs">
-                          {reminderData.length}
-                        </span>
-                      </button>
-                      <button 
-                        className={`px-4 py-2 text-sm font-medium flex items-center ${viewMode === 'today' ? 'text-[#1C75BC] border-b-2 border-[#1C75BC]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                        onClick={() => setViewMode('today')}
-                      >
-                        <BoltIcon className="h-4 w-4 mr-1.5" />
-                        Today
-                      </button>
-                      <button 
-                        className={`px-4 py-2 text-sm font-medium flex items-center ${viewMode === 'upcoming' ? 'text-[#1C75BC] border-b-2 border-[#1C75BC]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                        onClick={() => setViewMode('upcoming')}
-                      >
-                        <CalendarDaysIcon className="h-4 w-4 mr-1.5" />
-                        Upcoming
-                      </button>
-                      <button 
-                        className={`px-4 py-2 text-sm font-medium flex items-center ${viewMode === 'overdue' ? 'text-[#1C75BC] border-b-2 border-[#1C75BC]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                        onClick={() => setViewMode('overdue')}
-                      >
-                        <XCircleIcon className="h-4 w-4 mr-1.5" />
-                        Overdue
-                        <span className="ml-1.5 bg-red-100 text-red-600 rounded-full px-2 py-0.5 text-xs">
-                          {reminderData.filter(r => r.isOverdue).length}
-                        </span>
-                      </button>
-                    </div>
-                    
+                  <div className="space-y-4">
                     {/* Filters and Actions */}
-                    <div className="p-3 border-b flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
                         <div className="relative">
                           <input
                             type="text"
-                            placeholder="Search reminders..."
-                            className="pl-8 pr-4 py-1.5 border border-gray-300 rounded-md text-sm w-64 focus:outline-none focus:ring-1 focus:ring-[#1C75BC] focus:border-[#1C75BC]"
+                            placeholder="Search reminders"
+                            className="h-8 w-[150px] lg:w-[180px] rounded-md border-0 bg-white/90 px-2 text-sm shadow-none ring-1 ring-gray-200 transition-all placeholder:text-gray-400 focus:ring-2 focus:ring-gray-300"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                           />
-                          <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                         </div>
-                        
-                        {/* Filter and Sort buttons removed */}
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          className={`px-3 py-1.5 rounded-md text-sm flex items-center ${selectedReminders.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                          disabled={selectedReminders.length === 0}
-                          onClick={markSelectedAsComplete}
+                        <button
+                          data-filter="status"
+                          onClick={() => toggleFilter('status')}
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm h-8 border-0 bg-white px-3 ring-1 ring-gray-200 hover:bg-gray-100 transition-all"
                         >
-                          <CheckCircleIcon className="h-4 w-4 mr-1.5" />
-                          Mark Complete
+                          {viewMode === 'all' ? 'Status' : viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
+                          <ChevronDownIcon className="ml-2 h-4 w-4" />
                         </button>
-                        
-                        <div className="text-xs text-gray-500">
-                          {filteredReminders.length} {filteredReminders.length === 1 ? 'reminder' : 'reminders'}
+                        <button
+                          data-filter="priority"
+                          onClick={() => toggleFilter('priority')}
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm h-8 border-0 bg-white px-3 ring-1 ring-gray-200 hover:bg-gray-100 transition-all"
+                        >
+                          {filterOptions.priorityFilter === 'all' ? 'Priority' : filterOptions.priorityFilter.charAt(0).toUpperCase() + filterOptions.priorityFilter.slice(1)}
+                          <ChevronDownIcon className="ml-2 h-4 w-4" />
+                        </button>
+                        <button
+                          data-filter="type"
+                          onClick={() => toggleFilter('type')}
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm h-8 border-0 bg-white px-3 ring-1 ring-gray-200 hover:bg-gray-100 transition-all"
+                        >
+                          {filterOptions.typeFilter === 'all' ? 'Type' : filterOptions.typeFilter.charAt(0).toUpperCase() + filterOptions.typeFilter.slice(1)}
+                          <ChevronDownIcon className="ml-2 h-4 w-4" />
+                        </button>
+
+                        {/* Status Dropdown */}
+                        {activeFilter === 'status' && (
+                          <div
+                            ref={(el) => (filterRefs.current['status'] = el)}
+                            className="fixed min-w-[180px] rounded-md border border-gray-200 bg-white shadow-lg z-50"
+                            style={dropdownPositions['status']}
+                          >
+                            <div className="p-2">
+                              <input
+                                type="text"
+                                placeholder="Filter statuses..."
+                                className="w-full rounded-md border border-gray-200 px-2 py-1 text-sm"
+                                value={statusSearch}
+                                onChange={(e) => setStatusSearch(e.target.value)}
+                              />
+                            </div>
+                            <div className="p-2">
+                              <div className="space-y-1">
+                                {getFilteredStatuses().map((status: string) => (
+                                  <button
+                                    key={status}
+                                    className={`w-full rounded-sm px-2 py-1.5 text-sm text-left hover:bg-gray-100 ${
+                                      viewMode === status.toLowerCase() ? 'bg-gray-100' : ''
+                                    }`}
+                                    onClick={() => {
+                                      setViewMode(status.toLowerCase());
+                                      setActiveFilter(null);
+                                      setStatusSearch('');
+                                    }}
+                                  >
+                                    {status}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Priority Dropdown */}
+                        {activeFilter === 'priority' && (
+                          <div
+                            ref={(el) => (filterRefs.current['priority'] = el)}
+                            className="fixed min-w-[180px] rounded-md border border-gray-200 bg-white shadow-lg z-50"
+                            style={dropdownPositions['priority']}
+                          >
+                            <div className="p-2">
+                              <input
+                                type="text"
+                                placeholder="Filter priorities..."
+                                className="w-full rounded-md border border-gray-200 px-2 py-1 text-sm"
+                                value={prioritySearch}
+                                onChange={(e) => setPrioritySearch(e.target.value)}
+                              />
+                            </div>
+                            <div className="p-2">
+                              <div className="space-y-1">
+                                {getFilteredPriorities().map((priority: string) => (
+                                  <button
+                                    key={priority}
+                                    className={`w-full rounded-sm px-2 py-1.5 text-sm text-left hover:bg-gray-100 ${
+                                      filterOptions.priorityFilter === priority.toLowerCase() ? 'bg-gray-100' : ''
+                                    }`}
+                                    onClick={() => {
+                                      setFilterOptions({ ...filterOptions, priorityFilter: priority.toLowerCase() });
+                                      setActiveFilter(null);
+                                      setPrioritySearch('');
+                                    }}
+                                  >
+                                    {priority}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Type Dropdown */}
+                        {activeFilter === 'type' && (
+                          <div
+                            ref={(el) => (filterRefs.current['type'] = el)}
+                            className="fixed min-w-[180px] rounded-md border border-gray-200 bg-white shadow-lg z-50"
+                            style={dropdownPositions['type']}
+                          >
+                            <div className="p-2">
+                              <input
+                                type="text"
+                                placeholder="Filter types..."
+                                className="w-full rounded-md border border-gray-200 px-2 py-1 text-sm"
+                                value={typeSearch}
+                                onChange={(e) => setTypeSearch(e.target.value)}
+                              />
+                            </div>
+                            <div className="p-2">
+                              <div className="space-y-1">
+                                {getFilteredTypes().map((type: string) => (
+                                  <button
+                                    key={type}
+                                    className={`w-full rounded-sm px-2 py-1.5 text-sm text-left hover:bg-gray-100 ${
+                                      filterOptions.typeFilter === type.toLowerCase() ? 'bg-gray-100' : ''
+                                    }`}
+                                    onClick={() => {
+                                      setFilterOptions({ ...filterOptions, typeFilter: type.toLowerCase() });
+                                      setActiveFilter(null);
+                                      setTypeSearch('');
+                                    }}
+                                  >
+                                    {type}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="show-completed"
+                            className="h-4 w-4 rounded-sm border-gray-200 text-gray-900"
+                            checked={filterOptions.showCompleted}
+                            onChange={(e) => setFilterOptions({ ...filterOptions, showCompleted: e.target.checked })}
+                          />
+                          <label htmlFor="show-completed" className="text-sm text-gray-500">
+                            Show Completed
+                          </label>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Reminders List */}
-                  {isLoading ? (
-                    <RemindersSkeletonLoading />
-                  ) : (
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                      {filteredReminders.length > 0 ? (
-                        <div>
-                          {/* Table Header */}
-                          <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-white border-b sticky top-0 z-10 shadow-sm">
-                            <div className="col-span-1 flex items-center">
-                              <div className="relative inline-flex items-center">
-                                <input 
-                                  type="checkbox" 
-                                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition-colors"
-                                  checked={selectedReminders.length === filteredReminders.length && filteredReminders.length > 0}
-                                  onChange={toggleSelectAll}
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Priority Column */}
-                            <div className="col-span-1 relative">
-                              <div className="flex items-center">
-                                <button
-                                  className="text-xs font-medium text-gray-700 cursor-pointer flex items-center hover:text-blue-600 transition-colors"
-                                  onClick={() => handleSort('priority')}
-                                >
-                                  Priority
-                                  {sortField === 'priority' && (
-                                    <span className="ml-1 text-blue-600">
-                                      {sortDirection === 'asc' ? (
-                                        <ArrowUpIcon className="h-3 w-3" />
-                                      ) : (
-                                        <ArrowDownIcon className="h-3 w-3" />
-                                      )}
-                                    </span>
-                                  )}
-                                </button>
-                                <button 
-                                  className={`ml-1 p-0.5 rounded-sm ${
-                                    activeFilter === 'priority' || columnFilters.priority.length > 0 
-                                      ? 'bg-blue-100 text-blue-600' 
-                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                  } transition-colors`}
-                                  onClick={() => toggleFilter('priority')}
-                                >
-                                  <FunnelIcon className="h-3 w-3" />
-                                </button>
-                              </div>
-                              
-                              {/* Priority Filter Dropdown */}
-                              {activeFilter === 'priority' && (
-                                <div 
-                                  ref={el => filterRefs.current['priority'] = el}
-                                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-32 py-1"
-                                >
-                                  <div className="px-3 py-2 border-b">
-                                    <p className="text-xs font-medium text-gray-500">Filter by Priority</p>
-                                  </div>
-                                  <div className="p-2 space-y-1">
-                                    {['High', 'Medium', 'Low'].map(priority => (
-                                      <div key={priority} className="flex items-center">
-                                        <input
-                                          type="checkbox"
-                                          id={`priority-${priority}`}
-                                          checked={columnFilters.priority.includes(priority)}
-                                          onChange={() => handlePriorityFilter(priority)}
-                                          className="h-3 w-3 text-[#1C75BC] rounded border-gray-300 focus:ring-[#1C75BC]"
-                                        />
-                                        <label 
-                                          htmlFor={`priority-${priority}`}
-                                          className={`ml-2 text-xs ${getPriorityColorClass(priority)}`}
-                                        >
-                                          {priority}
-                                        </label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  <div className="px-2 py-2 border-t flex justify-between">
-                                    <button 
-                                      className="text-xs text-gray-500 hover:text-gray-700"
-                                      onClick={() => setColumnFilters({...columnFilters, priority: []})}
-                                    >
-                                      Clear
-                                    </button>
-                                    <button 
-                                      className="text-xs text-blue-600 hover:text-blue-700"
-                                      onClick={() => setActiveFilter(null)}
-                                    >
-                                      Apply
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Due Date Column */}
-                            <div className="col-span-2 relative">
-                              <div className="flex items-center">
-                                <button
-                                  className="text-xs font-medium text-gray-700 cursor-pointer flex items-center hover:text-blue-600 transition-colors"
-                                  onClick={() => handleSort('dueDate')}
-                                >
-                                  Due Date
-                                  {sortField === 'dueDate' && (
-                                    <span className="ml-1 text-blue-600">
-                                      {sortDirection === 'asc' ? (
-                                        <ArrowUpIcon className="h-3 w-3" />
-                                      ) : (
-                                        <ArrowDownIcon className="h-3 w-3" />
-                                      )}
-                                    </span>
-                                  )}
-                                </button>
-                                <button 
-                                  className={`ml-1 p-0.5 rounded-sm ${
-                                    activeFilter === 'dueDate' || columnFilters.dueDate.start || columnFilters.dueDate.end 
-                                      ? 'bg-blue-100 text-blue-600' 
-                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                  } transition-colors`}
-                                  onClick={() => toggleFilter('dueDate')}
-                                >
-                                  <FunnelIcon className="h-3 w-3" />
-                                </button>
-                              </div>
-                              
-                              {/* Due Date Filter Dropdown */}
-                              {activeFilter === 'dueDate' && (
-                                <div 
-                                  ref={el => filterRefs.current['dueDate'] = el}
-                                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48 py-1"
-                                >
-                                  <div className="px-3 py-2 border-b">
-                                    <p className="text-xs font-medium text-gray-500">Filter by Date Range</p>
-                                  </div>
-                                  <div className="p-2 space-y-2">
-                                    <div>
-                                      <label className="block text-xs text-gray-500 mb-1">From:</label>
-                                      <input
-                                        type="date"
-                                        value={columnFilters.dueDate.start}
-                                        onChange={(e) => handleDateFilter('start', e.target.value)}
-                                        className="w-full text-xs border border-gray-300 rounded p-1"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block text-xs text-gray-500 mb-1">To:</label>
-                                      <input
-                                        type="date"
-                                        value={columnFilters.dueDate.end}
-                                        onChange={(e) => handleDateFilter('end', e.target.value)}
-                                        className="w-full text-xs border border-gray-300 rounded p-1"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="px-2 py-2 border-t flex justify-between">
-                                    <button 
-                                      className="text-xs text-gray-500 hover:text-gray-700"
-                                      onClick={() => setColumnFilters({
-                                        ...columnFilters, 
-                                        dueDate: { start: '', end: '' }
-                                      })}
-                                    >
-                                      Clear
-                                    </button>
-                                    <button 
-                                      className="text-xs text-blue-600 hover:text-blue-700"
-                                      onClick={() => setActiveFilter(null)}
-                                    >
-                                      Apply
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* From Column */}
-                            <div className="col-span-2 relative">
-                              <div className="flex items-center">
-                                <button
-                                  className="text-xs font-medium text-gray-700 cursor-pointer flex items-center hover:text-blue-600 transition-colors"
-                                  onClick={() => handleSort('from')}
-                                >
-                                  From
-                                  {sortField === 'from' && (
-                                    <span className="ml-1 text-blue-600">
-                                      {sortDirection === 'asc' ? (
-                                        <ArrowUpIcon className="h-3 w-3" />
-                                      ) : (
-                                        <ArrowDownIcon className="h-3 w-3" />
-                                      )}
-                                    </span>
-                                  )}
-                                </button>
-                                <button 
-                                  className={`ml-1 p-0.5 rounded-sm ${
-                                    activeFilter === 'from' || columnFilters.from 
-                                      ? 'bg-blue-100 text-blue-600' 
-                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                  } transition-colors`}
-                                  onClick={() => toggleFilter('from')}
-                                >
-                                  <FunnelIcon className="h-3 w-3" />
-                                </button>
-                              </div>
-                              
-                              {/* From Filter Dropdown */}
-                              {activeFilter === 'from' && (
-                                <div 
-                                  ref={el => filterRefs.current['from'] = el}
-                                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48 py-1"
-                                >
-                                  <div className="px-3 py-2 border-b">
-                                    <p className="text-xs font-medium text-gray-500">Filter by Sender</p>
-                                  </div>
-                                  <div className="p-2">
-                                    <input
-                                      type="text"
-                                      placeholder="Type to filter..."
-                                      value={columnFilters.from}
-                                      onChange={(e) => handleTextFilter('from', e.target.value)}
-                                      className="w-full text-xs border border-gray-300 rounded p-1.5"
-                                    />
-                                  </div>
-                                  <div className="px-2 py-2 border-t flex justify-between">
-                                    <button 
-                                      className="text-xs text-gray-500 hover:text-gray-700"
-                                      onClick={() => setColumnFilters({...columnFilters, from: ''})}
-                                    >
-                                      Clear
-                                    </button>
-                                    <button 
-                                      className="text-xs text-blue-600 hover:text-blue-700"
-                                      onClick={() => setActiveFilter(null)}
-                                    >
-                                      Apply
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Person Column */}
-                            <div className="col-span-2 relative">
-                              <div className="flex items-center">
-                                <button
-                                  className="text-xs font-medium text-gray-700 cursor-pointer flex items-center hover:text-blue-600 transition-colors"
-                                  onClick={() => handleSort('person')}
-                                >
-                                  Person
-                                  {sortField === 'person' && (
-                                    <span className="ml-1 text-blue-600">
-                                      {sortDirection === 'asc' ? (
-                                        <ArrowUpIcon className="h-3 w-3" />
-                                      ) : (
-                                        <ArrowDownIcon className="h-3 w-3" />
-                                      )}
-                                    </span>
-                                  )}
-                                </button>
-                                <button 
-                                  className={`ml-1 p-0.5 rounded-sm ${
-                                    activeFilter === 'person' || columnFilters.person 
-                                      ? 'bg-blue-100 text-blue-600' 
-                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                  } transition-colors`}
-                                  onClick={() => toggleFilter('person')}
-                                >
-                                  <FunnelIcon className="h-3 w-3" />
-                                </button>
-                              </div>
-                              
-                              {/* Person Filter Dropdown */}
-                              {activeFilter === 'person' && (
-                                <div 
-                                  ref={el => filterRefs.current['person'] = el}
-                                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48 py-1"
-                                >
-                                  <div className="px-3 py-2 border-b">
-                                    <p className="text-xs font-medium text-gray-500">Filter by Person</p>
-                                  </div>
-                                  <div className="p-2">
-                                    <input
-                                      type="text"
-                                      placeholder="Type to filter..."
-                                      value={columnFilters.person}
-                                      onChange={(e) => handleTextFilter('person', e.target.value)}
-                                      className="w-full text-xs border border-gray-300 rounded p-1.5"
-                                    />
-                                  </div>
-                                  <div className="px-2 py-2 border-t flex justify-between">
-                                    <button 
-                                      className="text-xs text-gray-500 hover:text-gray-700"
-                                      onClick={() => setColumnFilters({...columnFilters, person: ''})}
-                                    >
-                                      Clear
-                                    </button>
-                                    <button 
-                                      className="text-xs text-blue-600 hover:text-blue-700"
-                                      onClick={() => setActiveFilter(null)}
-                                    >
-                                      Apply
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Description and Actions */}
-                            <div className="col-span-3 text-xs font-medium text-gray-700">Description</div>
-                            <div className="col-span-1 text-xs font-medium text-gray-700 text-right">Actions</div>
-                          </div>
-
-                          {/* Add filter status and reset button */}
-                          {hasActiveFilters() && (
-                            <div className="px-4 py-2 bg-blue-50 flex justify-between items-center border-b border-blue-100">
-                              <div className="text-xs text-blue-700">
-                                <span className="font-medium">{sortedReminders.length}</span> results with filters applied
-                              </div>
-                              <button 
-                                className="text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
-                                onClick={resetFilters}
-                              >
-                                Clear all filters
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Reminder Rows - Update to use white background */}
-                          {sortedReminders.map((reminder, index) => (
-                            <div 
-                              key={reminder.id} 
-                              className={`grid grid-cols-12 gap-4 px-4 py-3.5 border-b hover:bg-gray-50 transition-colors ${
-                                reminder.isCompleted ? 'bg-gray-50/80' : 'bg-white'
-                              }`}
-                            >
-                              <div className="col-span-1 flex items-center">
-                                <div className="relative inline-flex items-center">
-                                  <input 
-                                    type="checkbox" 
-                                    className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 transition-colors"
-                                    checked={selectedReminders.includes(reminder.id)}
-                                    onChange={() => toggleSelectReminder(reminder.id)}
+                    {/* Reminders Table */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-gray-50/50">
+                              <TableHead className="w-[40px] pl-4">
+                                <div className="flex items-center justify-center">
+                                  <Checkbox 
+                                    checked={selectedReminders.length === filteredReminders.length}
+                                    onCheckedChange={toggleSelectAll}
                                   />
                                 </div>
-                              </div>
-                              <div className="col-span-1 flex items-center">
-                                <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${getPriorityColorClass(reminder.priority)} bg-opacity-10`}>
-                                  {reminder.priority}
-                                </span>
-                              </div>
-                              <div className="col-span-2 flex items-center">
-                                <span className={`text-sm ${reminder.isOverdue ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-                                  {new Date(reminder.dueDate).toLocaleDateString()} 
-                                  {reminder.isOverdue && (
-                                    <span className="ml-1 text-xs font-medium bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full">
-                                      Overdue
-                                    </span>
-                                  )}
-                                </span>
-                              </div>
-                              <div className="col-span-2 flex items-center">
-                                <span className="text-sm text-gray-700">{reminder.from}</span>
-                              </div>
-                              <div className="col-span-2 flex items-center">
-                                <span className="text-sm text-gray-700 truncate font-medium">{reminder.person}</span>
-                              </div>
-                              <div className="col-span-3 flex items-center">
-                                <div>
-                                  <p className="text-sm text-gray-700 line-clamp-2">{reminder.description}</p>
-                                  <div className="mt-1.5 flex items-center">
-                                    <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${getTypeInfo(reminder.type).colorClass} shadow-sm`}>
-                                      {getTypeInfo(reminder.type).icon}
-                                      {reminder.type}
-                                    </span>
+                              </TableHead>
+                              <TableHead className="w-[100px]">Priority</TableHead>
+                              <TableHead>From</TableHead>
+                              <TableHead>Due Date</TableHead>
+                              <TableHead>Person</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead className="w-[100px]">Type</TableHead>
+                              <TableHead className="w-[70px]"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {sortedReminders.map((reminder) => (
+                              <TableRow key={reminder.id} className="h-[45px]">
+                                <TableCell className="pl-4">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox 
+                                      checked={selectedReminders.includes(reminder.id)}
+                                      onCheckedChange={() => toggleSelectReminder(reminder.id)}
+                                    />
                                   </div>
-                                </div>
-                              </div>
-                              <div className="col-span-1 flex items-center justify-end gap-1">
-                                <button 
-                                  className="text-gray-400 hover:text-green-600 p-1.5 rounded-full hover:bg-green-50 transition-colors"
-                                  onClick={() => toggleReminderCompletion(reminder.id)}
-                                  aria-label={reminder.isCompleted ? "Mark as incomplete" : "Mark as complete"}
-                                  title={reminder.isCompleted ? "Mark as incomplete" : "Mark as complete"}
-                                >
-                                  {reminder.isCompleted ? (
-                                    <CheckCircleSolid className="h-5 w-5 text-green-500" />
-                                  ) : (
-                                    <CheckCircleIcon className="h-5 w-5" />
-                                  )}
-                                </button>
-                                <button 
-                                  className="text-gray-400 hover:text-blue-600 p-1.5 rounded-full hover:bg-blue-50 transition-colors"
-                                  aria-label="Send Reminder"
-                                  title="Send Reminder"
-                                  onClick={() => handleSendReminder(reminder.id)}
-                                >
-                                  <EnvelopeIcon className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Pagination - Update styling */}
-                          <div className="px-4 py-3 bg-white flex items-center justify-between border-t">
-                            <div className="text-xs text-gray-600">
-                              Showing {sortedReminders.length} of {reminderData.length} reminders
-                            </div>
-                            
-                            <div className="flex items-center space-x-1">
-                              <button className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                                <ChevronLeftIcon className="h-5 w-5" />
-                              </button>
-                              <span className="text-sm text-gray-700 font-medium">Page 1 of 1</span>
-                              <button className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                                <ChevronRightIcon className="h-5 w-5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-8 text-center">
-                          <div className="mx-auto h-12 w-12 text-gray-400">
-                            <ArchiveBoxIcon className="h-12 w-12" />
-                          </div>
-                          <h3 className="mt-2 text-sm font-medium text-gray-900">No reminders found</h3>
-                          <p className="mt-1 text-sm text-gray-500">
-                            {searchQuery ? 'Try adjusting your search or filter criteria.' : 'Get started by creating a new reminder.'}
-                          </p>
-                          <div className="mt-6">
-                            <button
-                              type="button"
-                              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#1C75BC] hover:bg-[#1C75BC]/90"
-                            >
-                              <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                              New Reminder
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className={`text-sm font-medium ${getPriorityColorClass(reminder.priority)}`}>
+                                    {reminder.priority}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">{reminder.from}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-sm text-gray-600">
+                                      {format(new Date(reminder.dueDate), 'MMM d, yyyy')}
+                                    </span>
+                                    {reminder.isOverdue && (
+                                      <Badge variant="destructive" className="text-[10px] h-[18px]">
+                                        Overdue
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">{reminder.person}</TableCell>
+                                <TableCell className="text-sm max-w-md">
+                                  <div className="truncate">{reminder.description}</div>
+                                </TableCell>
+                                <TableCell>
+                                  {(() => {
+                                    const { colorClass, icon } = getTypeInfo(reminder.type);
+                                    return (
+                                      <Badge variant="outline" className={`text-[10px] h-[18px] flex items-center ${colorClass}`}>
+                                        {icon}
+                                        {reminder.type}
+                                      </Badge>
+                                    );
+                                  })()}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      onClick={() => handleSendReminder(reminder.id)}
+                                      className="text-gray-500 hover:text-gray-700"
+                                    >
+                                      <PaperAirplaneIcon className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => toggleReminderCompletion(reminder.id)}
+                                      className={`${
+                                        reminder.isCompleted ? 'text-green-500 hover:text-green-600' : 'text-gray-400 hover:text-gray-500'
+                                      }`}
+                                    >
+                                      <CheckCircleIcon className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Add filter status and reset button */}
+                    {hasActiveFilters() && (
+                      <div className="px-4 py-2 bg-blue-50 flex justify-between items-center border-b border-blue-100">
+                        <div className="text-xs text-blue-700">
+                          <span className="font-medium">{filteredReminders.length}</span> results with filters applied
+                        </div>
+                        <button 
+                          className="text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+                          onClick={resetFilters}
+                        >
+                          Clear all filters
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Pagination */}
+                    {filteredReminders.length > 0 && (
+                      <div className="flex justify-between items-center text-sm text-gray-500 px-2">
+                        <div>
+                          Showing {filteredReminders.length} of {reminderData.length} reminders
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <button className="p-1 rounded hover:bg-gray-100">
+                            <ChevronLeftIcon className="h-5 w-5 text-gray-400" />
+                          </button>
+                          <span className="px-2">1</span>
+                          <button className="p-1 rounded hover:bg-gray-100">
+                            <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
               
@@ -2205,10 +2121,43 @@ const Inbox: React.FC = () => {
                 isLoading ? (
                   <MessagesSkeletonLoading />
                 ) : (
-                  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    {/* Messages content here */}
-                    <p className="p-4 text-gray-500">Message content will be displayed here.</p>
-                  </div>
+                  <>
+                    {/* Inbox Groups */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-medium text-gray-700">Inbox Groups</h3>
+                        <Button variant="ghost" size="sm" className="text-xs">
+                          <PlusIcon className="w-4 h-4 mr-1" />
+                          New Group
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {inboxGroups.map((group) => (
+                          <Card key={group.id} className="p-4 hover:bg-gray-50 cursor-pointer">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-sm font-medium">{group.name}</h4>
+                                  <Badge variant="outline" className="text-xs">
+                                    {group.count} messages
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-gray-500">{group.description}</p>
+                              </div>
+                              <Button variant="ghost" size="sm">
+                                <EllipsisHorizontalIcon className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Messages Content */}
+                    <div className="bg-white rounded-lg shadow-sm overflow-hidden p-4">
+                      <Messages />
+                    </div>
+                  </>
                 )
               )}
               
@@ -2218,8 +2167,18 @@ const Inbox: React.FC = () => {
                   <GenericSkeletonLoading />
                 ) : (
                   <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    {/* Review Forms content here */}
-                    <p className="p-4 text-gray-500">Review Forms content will be displayed here.</p>
+                    <ReviewFormsWidget />
+                  </div>
+                )
+              )}
+              
+              {/* Transactions Reviews Tab Content */}
+              {activeTopTab === 'Transactions Reviews' && (
+                isLoading ? (
+                  <GenericSkeletonLoading />
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <TransactionsReviewsWidget />
                   </div>
                 )
               )}

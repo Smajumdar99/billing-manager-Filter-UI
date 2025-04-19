@@ -1,4 +1,4 @@
-import { FC, useEffect } from 'react';
+import { FC } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
@@ -28,8 +28,12 @@ export const DataTable: FC<DataTableProps> = ({
 }) => {
   return (
     <div 
-      className={`ag-theme-alpine ${className}`}
-      style={{ width: '100%', height: '100%' }}
+      className={`ag-theme-alpine ag-theme-custom ${className}`}
+      style={{ 
+        width: '100%', 
+        height: '100%',
+        '--ag-borders-secondary': 'none'
+      } as React.CSSProperties}
     >
       <AgGridReact
         rowData={rowData}
@@ -40,7 +44,10 @@ export const DataTable: FC<DataTableProps> = ({
           resizable: true,
           minWidth: 100,
           flex: 1,
+          cellStyle: { textAlign: 'left' }
         }}
+        rowSelection="multiple"
+        suppressRowClickSelection={true}
         suppressCellFocus={true}
         animateRows={true}
         pagination={true}

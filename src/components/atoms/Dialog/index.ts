@@ -3,5 +3,9 @@ export {
   DialogTrigger,
   DialogContent,
   DialogClose,
-  DialogPortal
+  DialogPortal,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription
 } from './dialog' 

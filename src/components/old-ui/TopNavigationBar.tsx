@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   MagnifyingGlassIcon, BellIcon, QuestionMarkCircleIcon, EnvelopeIcon
 } from '@heroicons/react/24/outline';
+import Avatar from '@/components/atoms/Avatar/avatar';
 
 /**
  * TopNavigationBar Component
@@ -24,36 +26,58 @@ const TopNavigationBar: React.FC<TopNavigationBarProps> = ({
   userAvatarUrl,
   onSearch,
 }) => {
+  const navigate = useNavigate();
+  
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onSearch) {
       onSearch(e.target.value);
     }
   };
 
+  const handleLogoClick = () => {
+    navigate('/dashboard');
+  };
+
   return (
-    <div className="flex items-center p-2 h-16 min-h-[64px] max-h-[64px] bg-[#1C75BC]/15 text-[#1C75BC]">
+    <div className="flex items-center p-2 h-16 min-h-[64px] max-h-[64px] bg-primary/10 text-slate-700">
       {/* Left side */}
       <div className="flex items-center gap-4">
-        <img src="/logo.svg" alt="Logo" className="h-8 w-8" />
+        <img 
+          src="/logo.svg" 
+          alt="Logo" 
+          className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity brightness-0 invert-[0.4]" 
+          onClick={handleLogoClick}
+        />
         <div className="relative">
           <input
             type="text"
             placeholder="Search"
-            className="w-64 px-4 py-1.5 pl-10 rounded text-sm bg-white/50 border border-[#1C75BC]/20 placeholder-[#1C75BC]/70 focus:outline-none focus:ring-2 focus:ring-[#1C75BC]/30"
+            className="w-64 px-4 py-1.5 pl-10 rounded text-sm bg-white border border-slate-200 placeholder-slate-400 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 shadow-sm"
             onChange={handleSearchInputChange}
           />
-          <MagnifyingGlassIcon className="absolute left-3 top-2 h-5 w-5 text-[#1C75BC]/70" />
+          <MagnifyingGlassIcon className="absolute left-3 top-2 h-5 w-5 text-slate-400" />
         </div>
       </div>
 
       {/* Right side */}
       <div className="ml-auto flex items-center gap-6">
-        <BellIcon className="h-4 w-4 text-[#1C75BC]" />
-        <QuestionMarkCircleIcon className="h-4 w-4 text-[#1C75BC]" />
-        <EnvelopeIcon className="h-4 w-4 text-[#1C75BC]" />
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[#1C75BC]">{hospitalName}</span>
-          <img src={userAvatarUrl} alt="User" className="h-6 w-6 rounded-full" />
+        <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <BellIcon className="h-6 w-6 text-slate-600 hover:text-slate-800 transition-colors" />
+        </button>
+        <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <QuestionMarkCircleIcon className="h-6 w-6 text-slate-600 hover:text-slate-800 transition-colors" />
+        </button>
+        <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <EnvelopeIcon className="h-6 w-6 text-slate-600 hover:text-slate-800 transition-colors" />
+        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-slate-700 font-medium">{hospitalName}</span>
+          <Avatar 
+            src={userAvatarUrl} 
+            alt={hospitalName}
+            size="sm"
+            className="ring-slate-200"
+          />
         </div>
       </div>
     </div>

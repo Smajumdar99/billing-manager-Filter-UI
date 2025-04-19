@@ -53,7 +53,7 @@ export type WidgetType =
   | 'functional_status'
   | 'cognitive_status'
   | 'diagnostic_imaging'
-  | 'active_directives'
+  | 'advanced_directives'
   | 'golden_thread_alerts'
   | 'appointment_reminders'
   | 'prescriptions';

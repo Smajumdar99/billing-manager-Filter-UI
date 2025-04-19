@@ -84,17 +84,18 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
       description: 'Manage your account settings',
       onClick: () => navigate('/account')
     },
-    {
-      icon: <ArrowPathIcon className="w-5 h-5 text-orange-400" />,
-      label: 'Switch as',
-      description: 'You have access to other roles',
-      onClick: (e: Event) => {
-        e.preventDefault()
-        setShowRoles(true)
-      },
-      rightIcon: <ChevronRightIcon className="w-5 h-5 text-gray-400" />,
-      preventClose: true
-    },
+    // --- HIDE "Switch as" menu item for now. Restore when needed. ---
+    // {
+    //   icon: <ArrowPathIcon className="w-5 h-5 text-orange-400" />, 
+    //   label: 'Switch as',
+    //   description: 'You have access to other roles',
+    //   onClick: (e: Event) => {
+    //     e.preventDefault()
+    //     setShowRoles(true)
+    //   },
+    //   rightIcon: <ChevronRightIcon className="w-5 h-5 text-gray-400" />, 
+    //   preventClose: true
+    // },
     {
       icon: <LanguageIcon className="w-5 h-5 text-orange-400" />,
       label: 'Change Font',

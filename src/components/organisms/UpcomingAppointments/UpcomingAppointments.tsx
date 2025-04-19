@@ -19,7 +19,14 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/24/outline'
 import { Badge } from '@/components/atoms/Badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/atoms/Table/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Input } from '@/components/atoms/Input'
 
 // Mock data for upcoming appointments
@@ -265,77 +272,71 @@ const AppointmentCard: FC<{ appointment: Appointment }> = ({ appointment }) => {
 
 // Component for displaying an appointment in tabular view
 const AppointmentRow: FC<{ appointment: Appointment }> = ({ appointment }) => {
-  const isVirtual = appointment.id === '2' || appointment.id === '4' || appointment.id === '7' // Mock some virtual appointments
-  const isPhoneCall = appointment.id === '3' || appointment.id === '6' // Mock some phone appointments
+  const isVirtual = appointment.id === '2' || appointment.id === '4' || appointment.id === '7'
+  const isPhoneCall = appointment.id === '3' || appointment.id === '6'
   
   return (
-    <TableRow className="hover:bg-gray-50 border-b border-gray-100">
-      <TableCell className="py-4 px-6">
-        <div>
-          <div className="font-medium text-gray-900">{appointment.patientName}</div>
-          <div className="text-xs text-gray-500 mt-1">
-            {appointment.program} {appointment.isGroup ? '• Group' : '• Individual'}
-            {appointment.isRecurring && ' • Recurring'}
-          </div>
+    <TableRow className="h-[45px] hover:bg-gray-50/50">
+      <TableCell className="py-2">
+        <div className="text-sm font-medium text-gray-900">{appointment.patientName}</div>
+        <div className="text-xs text-gray-500">
+          {appointment.program} {appointment.isGroup ? '• Group' : '• Individual'}
+          {appointment.isRecurring && ' • Recurring'}
         </div>
       </TableCell>
-      <TableCell className="py-4 px-6">
-        <span className="text-sm text-gray-700">
-          {format(appointment.date, 'MM/dd/yyyy')}
+      <TableCell className="py-2">
+        <span className="text-sm text-gray-600">
+          {format(appointment.date, 'MMM d, yyyy')}
         </span>
       </TableCell>
-      <TableCell className="py-4 px-6">
-        <span className="text-sm text-gray-700">
-          {appointment.time}
-        </span>
+      <TableCell className="py-2">
+        <span className="text-sm text-gray-600">{appointment.time}</span>
       </TableCell>
-      <TableCell className="py-4 px-6">
-        <span className="text-sm text-gray-700">
-          {appointment.duration} min
-        </span>
+      <TableCell className="py-2">
+        <span className="text-sm text-gray-600">{appointment.duration} min</span>
       </TableCell>
-      <TableCell className="py-4 px-6">
-        <span className="text-sm text-gray-700">{appointment.provider}</span>
+      <TableCell className="py-2">
+        <span className="text-sm text-gray-600">{appointment.provider}</span>
       </TableCell>
-      <TableCell className="py-4 px-6">
-        <span className="text-sm text-gray-700">{appointment.category}</span>
+      <TableCell className="py-2">
+        <span className="text-sm text-gray-600">{appointment.category}</span>
       </TableCell>
-      <TableCell className="py-4 px-6">
+      <TableCell className="py-2">
         {isVirtual ? (
-          <div className="flex items-center">
-            <VideoCameraIcon className="h-4 w-4 text-[#1C75BC] mr-1.5" />
-            <span className="text-sm text-gray-700">Virtual</span>
-          </div>
+          <Badge variant="outline" className="text-[10px] h-[18px] flex items-center bg-blue-50 text-blue-700">
+            <VideoCameraIcon className="h-3 w-3 mr-1" />
+            Virtual
+          </Badge>
         ) : isPhoneCall ? (
-          <div className="flex items-center">
-            <PhoneIcon className="h-4 w-4 text-[#1C75BC] mr-1.5" />
-            <span className="text-sm text-gray-700">Phone</span>
-          </div>
+          <Badge variant="outline" className="text-[10px] h-[18px] flex items-center bg-green-50 text-green-700">
+            <PhoneIcon className="h-3 w-3 mr-1" />
+            Phone
+          </Badge>
         ) : (
-          <div className="flex items-center">
-            <UserIcon className="h-4 w-4 text-[#1C75BC] mr-1.5" />
-            <span className="text-sm text-gray-700">In-Person</span>
-          </div>
+          <Badge variant="outline" className="text-[10px] h-[18px] flex items-center bg-purple-50 text-purple-700">
+            <UserIcon className="h-3 w-3 mr-1" />
+            In-Person
+          </Badge>
         )}
       </TableCell>
-      <TableCell className="py-4 px-6">
+      <TableCell className="py-2">
         <Badge 
           variant="outline" 
           className={cn(
-            "px-2.5 py-1 font-medium text-xs rounded-full", 
+            "text-[10px] h-[18px]", 
             getStatusBadgeStyles(appointment.status)
           )}
         >
           {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
         </Badge>
       </TableCell>
-      <TableCell className="text-right py-4 px-6">
+      <TableCell className="py-2">
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" className="h-8 text-xs px-3 py-1 rounded-md border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+          <Button variant="outline" size="sm" className="h-7 text-xs px-3 py-0 rounded-md">
             Reschedule
           </Button>
           {isVirtual && (
-            <Button size="sm" className="h-8 text-xs px-3 py-1 rounded-md bg-[#1C75BC] hover:bg-[#1667A5]">
+            <Button size="sm" className="h-7 text-xs px-3 py-0 rounded-md bg-[#1C75BC] hover:bg-[#1667A5]">
               Join Call
             </Button>
           )}
@@ -402,7 +403,7 @@ export const UpcomingAppointments: FC<UpcomingAppointmentsProps> = ({
   const [internalFilter, setInternalFilter] = useState('all')
   
   // Use internal view mode state if external is not provided
-  const [internalViewMode, setInternalViewMode] = useState<'card' | 'table'>('card')
+  const [internalViewMode, setInternalViewMode] = useState<'card' | 'table'>('table')
   
   // Use internal search state if external is not provided
   const [internalSearchQuery, setInternalSearchQuery] = useState('')
@@ -528,18 +529,18 @@ export const UpcomingAppointments: FC<UpcomingAppointmentsProps> = ({
         <div className="w-full">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-4">
             <div className="overflow-x-auto">
-              <Table className="w-full">
+              <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50 border-b border-gray-200">
-                    <TableHead className="py-4 px-6 w-[180px] text-xs uppercase tracking-wider font-semibold text-gray-500">Patient</TableHead>
-                    <TableHead className="py-4 px-6 w-[100px] text-xs uppercase tracking-wider font-semibold text-gray-500">Date</TableHead>
-                    <TableHead className="py-4 px-6 w-[80px] text-xs uppercase tracking-wider font-semibold text-gray-500">Time</TableHead>
-                    <TableHead className="py-4 px-6 w-[90px] text-xs uppercase tracking-wider font-semibold text-gray-500">Duration</TableHead>
-                    <TableHead className="py-4 px-6 w-[150px] text-xs uppercase tracking-wider font-semibold text-gray-500">Provider</TableHead>
-                    <TableHead className="py-4 px-6 w-[150px] text-xs uppercase tracking-wider font-semibold text-gray-500">Category</TableHead>
-                    <TableHead className="py-4 px-6 w-[100px] text-xs uppercase tracking-wider font-semibold text-gray-500">Type</TableHead>
-                    <TableHead className="py-4 px-6 w-[100px] text-xs uppercase tracking-wider font-semibold text-gray-500">Status</TableHead>
-                    <TableHead className="py-4 px-6 text-right w-[150px] text-xs uppercase tracking-wider font-semibold text-gray-500">Actions</TableHead>
+                  <TableRow className="bg-gray-50/50">
+                    <TableHead className="w-[200px] py-3">Patient</TableHead>
+                    <TableHead className="w-[100px] py-3">Date</TableHead>
+                    <TableHead className="w-[80px] py-3">Time</TableHead>
+                    <TableHead className="w-[90px] py-3">Duration</TableHead>
+                    <TableHead className="w-[150px] py-3">Provider</TableHead>
+                    <TableHead className="w-[150px] py-3">Category</TableHead>
+                    <TableHead className="w-[100px] py-3">Type</TableHead>
+                    <TableHead className="w-[100px] py-3">Status</TableHead>
+                    <TableHead className="w-[150px] py-3 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -558,11 +559,11 @@ export const UpcomingAppointments: FC<UpcomingAppointmentsProps> = ({
               </div>
               <div className="flex items-center space-x-1">
                 <button className="p-1 rounded hover:bg-gray-100">
-                  <ChevronLeftIcon className="h-5 w-5 text-gray-400" />
+                  <ChevronLeftIcon className="h-4 w-4 text-gray-400" />
                 </button>
                 <span className="px-2">1</span>
                 <button className="p-1 rounded hover:bg-gray-100">
-                  <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                  <ChevronRightIcon className="h-4 w-4 text-gray-400" />
                 </button>
               </div>
             </div>

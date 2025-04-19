@@ -16,6 +16,8 @@ import { Toaster } from "@/components/ui/toaster"
 import OldUI from './pages/OldUI'
 import Inbox from './pages/Inbox'
 import Schedule from './pages/Schedule'
+import TaskHub from './pages/TaskHub'
+import { TaskProvider } from '@/context/TaskContext'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -85,6 +87,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/task-hub" 
+        element={
+          <ProtectedRoute>
+            <TaskHub />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<ComingSoonPage />} />
     </Routes>
   )
@@ -95,12 +105,14 @@ const App = () => {
     <ThemeProvider defaultTheme="system" storageKey="drcloud-theme">
       <FontProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <Suspense fallback={<Loader />}>
-              <AppRoutes />
-            </Suspense>
-          </BrowserRouter>
-          <Toaster />
+          <TaskProvider>
+            <BrowserRouter>
+              <Suspense fallback={<Loader />}>
+                <AppRoutes />
+              </Suspense>
+            </BrowserRouter>
+            <Toaster />
+          </TaskProvider>
         </AuthProvider>
       </FontProvider>
     </ThemeProvider>

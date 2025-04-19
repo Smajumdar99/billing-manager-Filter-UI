@@ -95,6 +95,9 @@ import { IDCardPhotosWidget } from '@/components/widgets/IDCardPhotosWidget/id-c
 import { AmendmentsWidget } from '@/components/widgets/AmendmentsWidget/amendments-widget';
 import { DocumentsWidget } from '@/components/widgets/DocumentsWidget/documents-widget';
 import { FrontDeskInsightsCarousel } from '@/components/widgets/FrontDeskInsightsCarousel/front-desk-insights-carousel';
+import { FunctionalStatusWidget } from '@/components/widgets/FunctionalStatusWidget/functional-status-widget';
+import { CognitiveStatusWidget } from '@/components/widgets/CognitiveStatusWidget/cognitive-status-widget';
+import { AdvancedDirectivesWidget } from '@/components/widgets/AdvancedDirectivesWidget/advanced-directives-widget';
 
 const PatientChart: FC = () => {
   const { patientId = '' } = useParams();
@@ -536,7 +539,7 @@ const PatientChart: FC = () => {
       case 'disclosures':
         return <DisclosuresWidget patientId={patientId} isFullscreen={fullscreenWidget === 'disclosures'} />;
       case 'implantable_devices':
-          return <ImplantableDevicesWidget patientId={patientId} isFullscreen={fullscreenWidget === 'disclosures'} />;
+        return <ImplantableDevicesWidget patientId={patientId} isFullscreen={fullscreenWidget === 'disclosures'} />;
       case 'documents':
         return <DocumentsWidget patientId={patientId} />;
       case 'patient_timeline':
@@ -550,6 +553,12 @@ const PatientChart: FC = () => {
             </p>
           </div>
         );
+      case 'functional_status':
+        return <FunctionalStatusWidget patientId={patientId} isFullscreen={fullscreenWidget === 'functional_status'} />;
+      case 'cognitive_status':
+        return <CognitiveStatusWidget patientId={patientId} isFullscreen={fullscreenWidget === 'cognitive_status'} />;
+      case 'advanced_directives':
+        return <AdvancedDirectivesWidget patientId={patientId} isFullscreen={fullscreenWidget === 'advanced_directives'} />;
       default:
         return null;
     }
@@ -906,6 +915,38 @@ const PatientChart: FC = () => {
               </Button>
             </>
           );
+      case 'advanced_directives':
+        return (
+          <>
+            <Button
+              onClick={() => console.log('Add Directive')}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Add Directive
+            </Button>
+            <Button
+              onClick={() => console.log('Edit Directive')}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0"
+            >
+              <PencilSquareIcon className="w-4 h-4" />
+              Edit
+            </Button>
+            <Button
+              onClick={() => console.log('Preview/Print Directive')}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0"
+            >
+              <PrinterIcon className="w-4 h-4" />
+              Preview / Print
+            </Button>
+          </>
+        );
       default:
         return null;
     }
@@ -1150,6 +1191,8 @@ const PatientChart: FC = () => {
         return getStyledIcon(ClipboardDocumentCheckIcon, 'bg-orange-100', 'text-orange-600');
       case 'identified_needs':
         return getStyledIcon(StarIcon, 'bg-yellow-100', 'text-yellow-600');
+      case 'advanced_directives':
+        return getStyledIcon(ClipboardDocumentCheckIcon, 'bg-purple-100', 'text-purple-600');
       default:
         return getStyledIcon(RectangleStackIcon, 'bg-slate-100', 'text-slate-600');
     }
@@ -1278,7 +1321,7 @@ const PatientChart: FC = () => {
               </div>
             </div>
             
-            <div className="relative w-full h-[calc(200vh)] p-4 overflow-y-auto">
+            <div className="relative w-full h-[calc(300vh)] p-4 overflow-y-auto">
               {selectedSection === 'Demographics' ? (
                 <Demographics patientId={patientId} />
               ) : (
@@ -1736,14 +1779,12 @@ const PatientChart: FC = () => {
                                               className="gap-2"
                                             >
                                               <PrinterIcon className="w-4 h-4" />
-                                              Print
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
                                               onClick={() => console.log('Share', widget.type)}
                                               className="gap-2"
                                             >
                                               <ShareIcon className="w-4 h-4" />
-                                              Share
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem 

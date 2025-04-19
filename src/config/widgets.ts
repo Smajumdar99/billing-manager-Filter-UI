@@ -157,6 +157,24 @@ export const defaultWidgets: Widget[] = [
     type: 'prescriptions',
     title: 'Prescriptions',
     description: 'Manage patient prescriptions and medications'
+  },
+  {
+    id: 'functional-status',
+    type: 'functional_status',
+    title: 'Functional Status',
+    description: 'Track and manage patient functional status assessments'
+  },
+  {
+    id: 'cognitive-status',
+    type: 'cognitive_status',
+    title: 'Cognitive Status',
+    description: 'Track and manage patient cognitive status assessments'
+  },
+  {
+    id: 'advanced-directives',
+    type: 'advanced_directives',
+    title: 'Advanced Directives',
+    description: 'Manage patient advance directives and medical care instructions for critical situations'
   }
 ];
 
@@ -168,7 +186,10 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     'medications', 'diagnosis', 'allergies', 'lab_results', 'appointments',
     'documents', 'patient_timeline', 'insurance', 'billing', 'disclosures',
     'demographics', 'implantable_devices', 'identified_needs', 'id_card_photos',
-    'prescriptions'
+    'prescriptions',
+    'functional_status',
+    'cognitive_status',
+    'advanced_directives'
   ],
   clinical_admin: [
     // Core Monitoring Widgets
@@ -198,7 +219,8 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     
     // Quality & Oversight Widgets
     'golden_thread_alerts',
-    'clinical_reminders'
+    'clinical_reminders',
+    'advanced_directives'
   ],
   front_desk: [
     'patient_performance',
@@ -217,7 +239,8 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     'billing_write_off',
     'billing_notes',
     'lab_results',
-    'front_desk_insights'
+    'front_desk_insights',
+    'advanced_directives'
   ],
   doctor: [
     'patient_performance', 
@@ -240,7 +263,10 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     'implantable_devices',
     'identified_needs',
     'id_card_photos',
-    'prescriptions'
+    'prescriptions',
+    'functional_status',
+    'cognitive_status',
+    'advanced_directives'
   ],
   nurse: [
     'vital_signs', 
@@ -255,7 +281,8 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     'appointments',
     'documents',
     'id_card_photos',
-    'prescriptions'
+    'prescriptions',
+    'advanced_directives'
   ],
   patient: [
     'vital_signs', 
@@ -266,7 +293,8 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     'lab_results',
     'appointments',
     'documents',
-    'id_card_photos'
+    'id_card_photos',
+    'advanced_directives'
   ],
   clinician: [
     'patient_performance', 
@@ -289,7 +317,10 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     'implantable_devices',
     'identified_needs',
     'id_card_photos',
-    'prescriptions'
+    'prescriptions',
+    'functional_status',
+    'cognitive_status',
+    'advanced_directives'
   ],
   billing_specialist: [
     'patient_performance',
@@ -306,7 +337,8 @@ export const widgetPermissions: Record<string, WidgetType[]> = {
     'demographics',
     'id_card_photos',
     'disclosures',
-    'amendments'
+    'amendments',
+    'advanced_directives'
   ]
 };
 

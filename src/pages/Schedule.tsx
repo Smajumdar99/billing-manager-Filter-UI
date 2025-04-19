@@ -19,8 +19,22 @@ import {
   PrinterIcon,
   ExclamationTriangleIcon,
   BoltIcon,
-  PhoneIcon
+  PhoneIcon,
+  CheckIcon,
+  DocumentTextIcon,
+  Cog6ToothIcon,
+  SwatchIcon,
+  MapIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu"
 import { TopNavigationBar, MainNavigationBar } from '../components/old-ui'
 
 // FullCalendar imports
@@ -43,6 +57,9 @@ import { Textarea } from '../components/ui/textarea'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
 import { Tooltip } from '../components/ui/tooltip'
+import { Badge } from '../components/ui/badge'
+import { cn } from '../lib/utils'
+import { DataTable } from '../components/organisms/DataTable'  // Updated import path
 
 // Types for our calendar
 interface Appointment {
@@ -77,6 +94,9 @@ interface Appointment {
   repeatInterval?: string;
   isTelehealth?: boolean;
   printAppointmentSlip?: boolean;
+  hasChart?: boolean;
+  hasLink?: boolean;
+  category?: string;
 }
 
 interface Patient {
@@ -916,6 +936,40 @@ const EventWithTooltip: FC<{
   );
 };
 
+// Add this interface near the top with other interfaces
+interface StaffMember {
+  name: string;
+  role: string;
+  appointments: Appointment[];
+}
+
+// Add this function before the Schedule component
+const groupAppointmentsByStaff = (appointments: Appointment[]): StaffMember[] => {
+  // Mock staff roles - in real app, this would come from your backend
+  const staffRoles: Record<string, string> = {
+    'Sreedhar Reddy': 'Clinician',
+    'Dr. Smith': 'Psychiatrist',
+    'Dr. Johnson': 'Emergency Care',
+    'Dr. Williams': 'Therapist'
+  };
+
+  const staffMap = new Map<string, StaffMember>();
+  
+  appointments.forEach(appointment => {
+    const { provider } = appointment;
+    if (!staffMap.has(provider)) {
+      staffMap.set(provider, {
+        name: provider,
+        role: staffRoles[provider] || 'Staff',
+        appointments: []
+      });
+    }
+    staffMap.get(provider)?.appointments.push(appointment);
+  });
+
+  return Array.from(staffMap.values());
+};
+
 /**
  * Schedule Page Component
  * 
@@ -931,7 +985,8 @@ const Schedule: FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<string | 'all'>('all');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isAppointmentDetailsModalOpen, setIsAppointmentDetailsModalOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
+  const [currentView, setCurrentView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth' | 'agenda'>('timeGridDay');
+  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
   
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
@@ -1259,7 +1314,31 @@ const Schedule: FC = () => {
   // Get current date title
   const getHeaderTitle = () => {
     if (calendarRef.current) {
-      return calendarRef.current.getApi().view.title;
+      const api = calendarRef.current.getApi();
+      const view = api.view;
+      const date = api.getDate();
+      
+      const formatDate = (date: Date) => {
+        return new Intl.DateTimeFormat('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }).format(date);
+      };
+
+      switch (view.type) {
+        case 'timeGridDay':
+          return formatDate(date);
+        case 'timeGridWeek':
+          const start = view.currentStart;
+          const end = view.currentEnd;
+          return `${new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric' }).format(start)} - ${new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(end.getTime() - 86400000))}`;
+        case 'dayGridMonth':
+          return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
+        default:
+          return api.view.title;
+      }
     }
     return '';
   };
@@ -1279,7 +1358,19 @@ const Schedule: FC = () => {
       
       if (!extendedProps) return true;
       
-      const { type, provider, patient } = extendedProps;
+      const { type, provider, patient, room } = extendedProps;
+      
+      // Apply search query filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          patient.toLowerCase().includes(query) ||
+          provider.toLowerCase().includes(query) ||
+          (room && room.toLowerCase().includes(query)) ||
+          (event.title ? event.title.toLowerCase().includes(query) : false);
+        
+        if (!matchesSearch) return false;
+      }
       
       // Person appointments only
       if (filters.personApptsOnly && type !== 'Individual') {
@@ -1315,14 +1406,221 @@ const Schedule: FC = () => {
       return true;
     });
   };
-  
+
+  // Add column definitions for agenda view
+  const agendaColumnDefs = [
+    {
+      headerName: 'Time',
+      field: 'time',
+      colId: 'time',
+      width: 150,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center">
+          <ClockIcon className="h-4 w-4 text-gray-400 mr-2" />
+          <div className="text-sm text-gray-900">
+            {params.data.startTime} - {params.data.endTime}
+          </div>
+        </div>
+      )
+    },
+    {
+      headerName: 'Title',
+      field: 'title',
+      colId: 'title',
+      flex: 2,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center gap-2">
+          <div className={`w-1 h-6 rounded-sm ${
+            params.data.type === 'Individual' ? 'bg-blue-400' :
+            params.data.type === 'Group' ? 'bg-purple-400' :
+            'bg-red-400'
+          }`} />
+          <div>
+            <div className="text-sm font-medium text-gray-900">{params.data.title}</div>
+            <div className="text-xs text-gray-500">{params.data.patient}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      headerName: 'Category',
+      field: 'category',
+      colId: 'category',
+      width: 180,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">
+            {params.data.category || 'AdMission'}
+          </span>
+          <div className="flex gap-1">
+            {params.data.hasChart && (
+              <Tooltip content="Has Chart" side="top">
+                <DocumentTextIcon className="h-4 w-4 text-blue-500" />
+              </Tooltip>
+            )}
+            {params.data.hasLink && (
+              <Tooltip content="Has Link" side="top">
+                <ArrowTopRightOnSquareIcon className="h-4 w-4 text-blue-500" />
+              </Tooltip>
+            )}
+          </div>
+        </div>
+      )
+    },
+    {
+      headerName: 'Type',
+      field: 'type',
+      colId: 'type',
+      width: 130,
+      cellRenderer: (params: any) => {
+        const TypeIcon = params.data.type === 'Individual' 
+          ? UserIcon 
+          : params.data.type === 'Group' 
+            ? UserGroupIcon 
+            : BoltIcon;
+        
+        return (
+          <div className="flex items-center gap-2">
+            <TypeIcon className={`h-4 w-4 ${
+              params.data.type === 'Individual' ? 'text-blue-500' :
+              params.data.type === 'Group' ? 'text-purple-500' :
+              'text-red-500'
+            }`} />
+            <span className="text-sm text-gray-600">{params.data.type}</span>
+          </div>
+        );
+      }
+    },
+    {
+      headerName: 'Person',
+      field: 'provider',
+      colId: 'provider',
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center gap-2">
+          <UserIcon className="h-4 w-4 text-gray-400" />
+          <span className="text-sm text-gray-600">{params.data.provider}</span>
+        </div>
+      )
+    },
+    {
+      headerName: 'Room',
+      field: 'room',
+      colId: 'room',
+      width: 120,
+      cellRenderer: (params: any) => (
+        params.data.room ? (
+          <div className="flex items-center gap-2">
+            <MapPinIcon className="h-4 w-4 text-gray-400" />
+            <span className="text-sm text-gray-600">{params.data.room}</span>
+          </div>
+        ) : null
+      )
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      colId: 'status',
+      width: 120,
+      cellRenderer: (params: any) => (
+        <Badge 
+          variant="outline" 
+          className={cn(
+            "text-sm h-6",
+            params.data.status === 'Scheduled' ? "bg-green-50 text-green-700 border-green-200" :
+            params.data.status === 'Cancelled' ? "bg-red-50 text-red-700 border-red-200" :
+            "bg-gray-50 text-gray-700 border-gray-200"
+          )}
+        >
+          {params.data.status || 'Scheduled'}
+        </Badge>
+      )
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      colId: 'actions',
+      width: 120,
+      cellRenderer: (params: any) => (
+        <div className="flex gap-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7 text-xs px-2"
+            onClick={() => {
+              setSelectedAppointment(params.data);
+              setIsAppointmentDetailsModalOpen(true);
+            }}
+          >
+            View
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7 text-xs px-2"
+            onClick={() => handleEditAppointment()}
+          >
+            Edit
+          </Button>
+        </div>
+      )
+    }
+  ];
+
+  // Add new state for color schemes
+  const [activeColorScheme, setActiveColorScheme] = useState<'category' | 'facility' | 'location'>('category');
+
+  // Color scheme configurations
+  const colorSchemes = {
+    category: {
+      icon: SwatchIcon,
+      label: 'Category Color Scheme',
+      colors: ['#60A5FA', '#C084FC', '#F87171'],
+      iconColor: 'text-blue-500',
+      eventColors: {
+        individual: { bg: '#bfdbfe', border: '#93c5fd', text: '#1e40af' },
+        group: { bg: '#ddd6fe', border: '#c4b5fd', text: '#5b21b6' },
+        crisis: { bg: '#fecaca', border: '#fca5a5', text: '#b91c1c' }
+      }
+    },
+    facility: {
+      icon: BuildingOfficeIcon,
+      label: 'Facility Color Scheme',
+      colors: ['#34D399', '#A78BFA', '#FB923C'],
+      iconColor: 'text-green-500',
+      eventColors: {
+        individual: { bg: '#d1fae5', border: '#6ee7b7', text: '#065f46' },
+        group: { bg: '#ede9fe', border: '#c4b5fd', text: '#5b21b6' },
+        crisis: { bg: '#ffedd5', border: '#fdba74', text: '#9a3412' }
+      }
+    },
+    location: {
+      icon: MapIcon,
+      label: 'Location Color Scheme',
+      colors: ['#F472B6', '#FBBF24', '#2DD4BF'],
+      iconColor: 'text-pink-500',
+      eventColors: {
+        individual: { bg: '#fce7f3', border: '#f9a8d4', text: '#9d174d' },
+        group: { bg: '#fef3c7', border: '#fcd34d', text: '#92400e' },
+        crisis: { bg: '#ccfbf1', border: '#5eead4', text: '#115e59' }
+      }
+    }
+  };
+
+  // Update calendar when color scheme changes
+  useEffect(() => {
+    if (calendarRef.current) {
+      calendarRef.current.getApi().refetchEvents();
+    }
+  }, [activeColorScheme]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white">
       {/* Top Navigation Bar */}
       <TopNavigationBar 
         hospitalName="Mayank Hospitals"
         userAvatarUrl="https://ui-avatars.com/api/?name=Darlene+Robertson"
-        onSearch={(searchTerm) => console.log('Search:', searchTerm)}
+        onSearch={(searchTerm) => setSearchQuery(searchTerm)} // Update search query
       />
 
       {/* Main Navigation */}
@@ -1332,7 +1630,9 @@ const Schedule: FC = () => {
           console.log('Navigate to:', itemName);
           
           // Handle navigation to different pages
-          if (itemName === 'Inbox') {
+          if (itemName === 'Schedule') {
+            navigate('/schedule');
+          } else if (itemName === 'Inbox') {
             navigate('/inbox');
           } else if (itemName === 'Dashboard') {
             navigate('/dashboard');
@@ -1349,217 +1649,207 @@ const Schedule: FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Filter Sidebar */}
         {showFilters && (
-          <div className="w-72 bg-blue-50/20 border-r border-gray-200 overflow-y-auto flex-shrink-0 shadow-sm">
+          <div className="w-72 bg-gradient-to-b from-orange-50 to-blue-50 border-r border-gray-200 overflow-y-auto flex-shrink-0">
             <div className="p-5">
-              <div className="flex justify-between items-center mb-5">
-                <h3 className="text-base font-medium text-gray-800">Filter by:</h3>
-                <button 
-                  onClick={clearFilters}
-                  className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  Clear Selection
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="relative flex items-center">
-                    <input
-                      id="personApptsOnly"
-                      name="personApptsOnly"
-                      type="checkbox"
-                      checked={filters.personApptsOnly}
-                      onChange={handleFilterChange}
-                      className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
-                    />
-                    <label htmlFor="personApptsOnly" className="ml-2.5 text-sm text-gray-700">
-                      Person appts only
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="relative flex items-center">
-                    <input
-                      id="providerResvOnly"
-                      name="providerResvOnly"
-                      type="checkbox"
-                      checked={filters.providerResvOnly}
-                      onChange={handleFilterChange}
-                      className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
-                    />
-                    <label htmlFor="providerResvOnly" className="ml-2.5 text-sm text-gray-700">
-                      Provider resv. only
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="relative flex items-center">
-                    <input
-                      id="providerInOfficeResvOnly"
-                      name="providerInOfficeResvOnly"
-                      type="checkbox"
-                      checked={filters.providerInOfficeResvOnly}
-                      onChange={handleFilterChange}
-                      className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
-                    />
-                    <label htmlFor="providerInOfficeResvOnly" className="ml-2.5 text-sm text-gray-700">
-                      Provider in Office resv. only
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="relative flex items-center">
-                    <input
-                      id="groupApptsOnly"
-                      name="groupApptsOnly"
-                      type="checkbox"
-                      checked={filters.groupApptsOnly}
-                      onChange={handleFilterChange}
-                      className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
-                    />
-                    <label htmlFor="groupApptsOnly" className="ml-2.5 text-sm text-gray-700">
-                      Group appts only
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="relative flex items-center">
-                    <input
-                      id="filterByHours"
-                      name="filterByHours"
-                      type="checkbox"
-                      checked={filters.filterByHours}
-                      onChange={handleFilterChange}
-                      className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
-                    />
-                    <label htmlFor="filterByHours" className="ml-2.5 text-sm text-gray-700">
-                      Appts in next
-                    </label>
-                  </div>
-                  <select
-                    name="apptsInNextHours"
-                    value={filters.apptsInNextHours}
-                    onChange={handleFilterChange}
-                    disabled={!filters.filterByHours}
-                    className="ml-2 text-sm border border-gray-200 rounded p-1 w-16 text-gray-700 bg-white focus:ring-blue-400 focus:border-blue-400 focus:outline-none"
-                  >
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="8">8</option>
-                    <option value="12">12</option>
-                    <option value="24">24</option>
-                  </select>
-                  <span className="ml-2 text-sm text-gray-700">hours</span>
+              {/* Mini Calendar */}
+              <div className="rounded-[1.5rem] overflow-hidden bg-white">
+                <div className="filters-mini-calendar">
+                  <FullCalendar
+                    plugins={[dayGridPlugin, interactionPlugin]}
+                    initialView="dayGridMonth"
+                    headerToolbar={{
+                      left: '',
+                      center: 'title',
+                      right: 'prev,next'
+                    }}
+                    height={280}
+                    dayMaxEventRows={0}
+                    selectable={true}
+                    select={(info) => {
+                      if (calendarRef.current) {
+                        calendarRef.current.getApi().gotoDate(info.start);
+                      }
+                    }}
+                    dateClick={(info) => {
+                      if (calendarRef.current) {
+                        calendarRef.current.getApi().gotoDate(info.date);
+                      }
+                    }}
+                    events={getFilteredEvents()}
+                    eventDisplay="none"
+                    dayCellClassNames="cursor-pointer hover:bg-blue-50"
+                    titleFormat={{ month: 'short', year: 'numeric' }}
+                    dayHeaderFormat={{ weekday: 'narrow' }}
+                    datesSet={(dateInfo) => {
+                      // Keep mini calendar in sync with main calendar
+                      if (calendarRef.current) {
+                        const mainCalendarDate = calendarRef.current.getApi().getDate();
+                        if (dateInfo.view.currentStart.getMonth() !== mainCalendarDate.getMonth()) {
+                          dateInfo.view.calendar.gotoDate(mainCalendarDate);
+                        }
+                      }
+                    }}
+                    views={{
+                      dayGridMonth: {
+                        titleFormat: { month: 'long', year: 'numeric' },
+                        dayHeaderFormat: { weekday: 'narrow' },
+                        displayEventTime: false,
+                        dayMaxEvents: 0
+                      }
+                    }}
+                  />
                 </div>
               </div>
-              
-              <div className="mt-8">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-base font-medium text-gray-800">Programs</h3>
-                  <div className="flex items-center">
-                    <input
-                      id="includeInactivePrograms"
-                      name="includeInactivePrograms"
-                      type="checkbox"
-                      checked={filters.includeInactivePrograms}
-                      onChange={handleFilterChange}
-                      className="h-3.5 w-3.5 text-blue-500 border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
-                    />
-                    <label htmlFor="includeInactivePrograms" className="ml-1.5 text-xs text-gray-500">
-                      Include inactive Facilities
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="border bg-white border-gray-200 rounded-md overflow-hidden shadow-sm">
-                  <div className="p-2 border-b border-gray-200 bg-gray-50">
-                    <input
-                      type="text"
-                      placeholder="Search programs..."
-                      value={programSearch}
-                      onChange={(e) => setProgramSearch(e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:ring-blue-400 focus:border-blue-400 focus:outline-none"
-                    />
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    <div className="bg-blue-50 p-2.5 border-b border-gray-200">
-                      <div className="text-sm font-medium text-blue-700">All Programs</div>
+
+              {/* Filter Groups */}
+              <div className="space-y-4 mt-4">
+                {/* Appointment Type Filters */}
+                <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+                  <h3 className="text-base font-semibold text-gray-900 mb-3">Appointment Types</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center">
+                          <CheckIcon className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <span className="text-[0.9375rem] font-medium text-gray-700">Person appts only</span>
+                      </div>
                     </div>
-                    {programs.slice(1).filter(program => 
-                      program.name.toLowerCase().includes(programSearch.toLowerCase())
-                    ).map(program => (
-                      <div key={program.id} className="p-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0 transition-colors">
-                        <div className="text-sm text-gray-700">{program.name}</div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-md bg-purple-500 flex items-center justify-center">
+                          <CheckIcon className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <span className="text-[0.9375rem] font-medium text-gray-700">Provider resv. only</span>
                       </div>
-                    ))}
-                    {programs.slice(1).filter(program => 
-                      program.name.toLowerCase().includes(programSearch.toLowerCase())
-                    ).length === 0 && (
-                      <div className="p-3 text-sm text-gray-500 text-center">
-                        No matching programs found
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-8">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-base font-medium text-gray-800">Providers</h3>
-                  <div className="flex items-center">
-                    <input
-                      id="includeInactiveProviders"
-                      name="includeInactiveProviders"
-                      type="checkbox"
-                      checked={filters.includeInactiveProviders}
-                      onChange={handleFilterChange}
-                      className="h-3.5 w-3.5 text-blue-500 border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
-                    />
-                    <label htmlFor="includeInactiveProviders" className="ml-1.5 text-xs text-gray-500">
-                      Include inactive Providers
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="border bg-white border-gray-200 rounded-md overflow-hidden shadow-sm">
-                  <div className="p-2 border-b border-gray-200 bg-gray-50">
-                    <input
-                      type="text"
-                      placeholder="Search providers..."
-                      value={providerSearch}
-                      onChange={(e) => setProviderSearch(e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:ring-blue-400 focus:border-blue-400 focus:outline-none"
-                    />
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    <div className="bg-blue-50 p-2.5 border-b border-gray-200">
-                      <div className="text-sm font-medium text-blue-700">All Providers</div>
                     </div>
-                    {providers.filter(provider => 
-                      provider.name.toLowerCase().includes(providerSearch.toLowerCase())
-                    ).map(provider => (
-                      <div key={provider.id} className="p-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0 transition-colors flex justify-between items-center">
-                        <div className="text-sm text-gray-700">{provider.name}</div>
-                        {provider.count !== null && (
-                          <div className="text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-0.5">
-                            {provider.count}
-                          </div>
-                        )}
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-md bg-green-500 flex items-center justify-center">
+                          <CheckIcon className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <span className="text-[0.9375rem] font-medium text-gray-700">Provider in Office resv. only</span>
                       </div>
-                    ))}
-                    {providers.filter(provider => 
-                      provider.name.toLowerCase().includes(providerSearch.toLowerCase())
-                    ).length === 0 && (
-                      <div className="p-3 text-sm text-gray-500 text-center">
-                        No matching providers found
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-md bg-indigo-500 flex items-center justify-center">
+                          <CheckIcon className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <span className="text-[0.9375rem] font-medium text-gray-700">Group appts only</span>
                       </div>
-                    )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Time Filter */}
+                <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+                  <h3 className="text-base font-semibold text-gray-900 mb-3">Time Range</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center">
+                        <CheckIcon className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <span className="text-[0.9375rem] font-medium text-gray-700">Appts in next</span>
+                    </div>
+                    <select
+                      name="apptsInNextHours"
+                      value={filters.apptsInNextHours}
+                      onChange={handleFilterChange}
+                      disabled={!filters.filterByHours}
+                      className="text-sm border border-gray-200 rounded-md p-1 w-16 text-gray-700 bg-white focus:ring-blue-400 focus:border-blue-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
+                    >
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="8">8</option>
+                      <option value="12">12</option>
+                      <option value="24">24</option>
+                    </select>
+                    <span className="text-[0.9375rem] font-medium text-gray-700">hours</span>
+                  </div>
+                </div>
+
+                {/* Programs Section */}
+                <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-base font-semibold text-gray-900">Programs</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-gray-200 flex items-center justify-center">
+                        <CheckIcon className="w-3 h-3 text-gray-500" />
+                      </div>
+                      <span className="text-sm text-gray-500">Include inactive</span>
+                    </div>
+                  </div>
+                  
+                  <div className="rounded-xl border border-gray-100 overflow-hidden bg-gray-50">
+                    <div className="p-2 border-b border-gray-100">
+                      <input
+                        type="text"
+                        placeholder="Search programs..."
+                        value={programSearch}
+                        onChange={(e) => setProgramSearch(e.target.value)}
+                        className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:ring-blue-400 focus:border-blue-400 focus:outline-none"
+                      />
+                    </div>
+                    <div className="max-h-40 overflow-y-auto bg-white">
+                      <div className="p-2 border-b border-gray-100">
+                        <div className="text-[0.9375rem] font-medium text-gray-900">All Programs</div>
+                      </div>
+                      {programs.slice(1).filter(program => 
+                        program.name.toLowerCase().includes(programSearch.toLowerCase())
+                      ).map(program => (
+                        <div key={program.id} className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors">
+                          <div className="text-[0.9375rem] text-gray-700">{program.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Providers Section */}
+                <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-base font-semibold text-gray-900">Providers</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-gray-200 flex items-center justify-center">
+                        <CheckIcon className="w-3 h-3 text-gray-500" />
+                      </div>
+                      <span className="text-sm text-gray-500">Include inactive</span>
+                    </div>
+                  </div>
+                  
+                  <div className="rounded-xl border border-gray-100 overflow-hidden bg-gray-50">
+                    <div className="p-2 border-b border-gray-100">
+                      <input
+                        type="text"
+                        placeholder="Search providers..."
+                        value={providerSearch}
+                        onChange={(e) => setProviderSearch(e.target.value)}
+                        className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:ring-blue-400 focus:border-blue-400 focus:outline-none"
+                      />
+                    </div>
+                    <div className="max-h-40 overflow-y-auto bg-white">
+                      <div className="p-2 border-b border-gray-100">
+                        <div className="text-[0.9375rem] font-medium text-gray-900">All Providers</div>
+                      </div>
+                      {providers.filter(provider => 
+                        provider.name.toLowerCase().includes(providerSearch.toLowerCase())
+                      ).map(provider => (
+                        <div key={provider.id} className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors flex justify-between items-center">
+                          <div className="text-[0.9375rem] text-gray-700">{provider.name}</div>
+                          {provider.count !== null && (
+                            <div className="text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-0.5">
+                              {provider.count}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1570,7 +1860,7 @@ const Schedule: FC = () => {
         {/* Main Content */}
         <div className="flex-1 p-4 bg-white overflow-hidden flex flex-col">
           {/* Calendar Header */}
-          <div className="bg-orange-50/40 rounded-lg border border-gray-200 mb-4">
+          <div className="bg-gradient-to-b from-blue-50 to-orange-50 rounded-lg  mb-4">
             <div className="p-4 flex items-center justify-between border-b border-gray-200">
               <div className="flex items-center gap-4">
                 <Tooltip content="Create a new appointment" side="bottom">
@@ -1592,6 +1882,31 @@ const Schedule: FC = () => {
                     {showFilters ? 'Hide Filters' : 'Show Filters'}
                   </button>
                 </Tooltip>
+
+                {/* Repositioned Search Bar */}
+                <div className="relative w-72">
+                  <Input
+                    type="text"
+                    placeholder="Search appointments..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-9 pl-9 pr-4 w-full text-sm border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
                 
                 <div className="flex items-center gap-2">
                   <Tooltip content="Previous" side="bottom">
@@ -1621,7 +1936,7 @@ const Schedule: FC = () => {
                     </button>
                   </Tooltip>
                   
-                  <h2 className="text-lg font-semibold text-gray-800 ml-2">
+                  <h2 className="text-sm font-medium text-gray-700 ml-2">
                     {getHeaderTitle()}
                   </h2>
                 </div>
@@ -1678,6 +1993,55 @@ const Schedule: FC = () => {
                       <PrinterIcon className="w-5 h-5" />
                     </button>
                   </Tooltip>
+
+                  {/* Vertical Separator */}
+                  <div className="h-6 w-px bg-gray-200 mx-2 my-auto" />
+
+                  <DropdownMenu>
+                    <Tooltip content="Color Settings" side="bottom">
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className={cn(
+                            "p-1.5 rounded-md hover:bg-gray-100 transition-colors",
+                            colorSchemes[activeColorScheme].iconColor
+                          )}
+                        >
+                          <SwatchIcon className="w-5 h-5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                    </Tooltip>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuLabel className="text-sm">Color Scheme</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {Object.entries(colorSchemes).map(([key, scheme]) => (
+                        <DropdownMenuItem 
+                          key={key}
+                          className={cn(
+                            "flex items-center gap-2 cursor-pointer py-2",
+                            activeColorScheme === key && "bg-gray-50"
+                          )}
+                          onClick={() => setActiveColorScheme(key as keyof typeof colorSchemes)}
+                        >
+                          <div className="flex items-center gap-2 flex-1">
+                            <scheme.icon className={cn("w-4 h-4", scheme.iconColor)} />
+                            <span className="text-sm text-gray-700">{scheme.label}</span>
+                          </div>
+                          <div className="flex -space-x-1">
+                            {scheme.colors.map((color, index) => (
+                              <div
+                                key={index}
+                                className="w-3.5 h-3.5 rounded-full border border-gray-100 shadow-sm"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          {activeColorScheme === key && (
+                            <CheckIcon className="w-4 h-4 ml-2 text-blue-600" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   
                   <Tooltip content="Export to Outlook" side="bottom">
                     <button 
@@ -1734,12 +2098,21 @@ const Schedule: FC = () => {
                       Month
                     </button>
                   </Tooltip>
+
+                  <Tooltip content="Agenda view" side="bottom">
+                    <button 
+                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${currentView === 'agenda' ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                      onClick={() => setCurrentView('agenda')}
+                    >
+                      Agenda
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
             </div>
             
             {/* Legend for appointment types */}
-            <div className="px-4 py-2 bg-white flex items-center text-xs text-gray-600 border-b border-gray-200">
+            <div className="px-4 py-2 bg-white flex items-center text-xs text-gray-600">
               <div className="flex items-center mr-4">
                 <span className="w-3 h-3 rounded-full bg-blue-400 mr-1.5"></span>
                 <UserIcon className="w-4 h-4 text-blue-500 mr-1" />
@@ -1762,86 +2135,164 @@ const Schedule: FC = () => {
             </div>
           </div>
           
-          {/* FullCalendar */}
-          <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-visible">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, resourceTimeGridPlugin]}
-              initialView="timeGridDay"
-              headerToolbar={false} // We're using our custom header
-              events={getFilteredEvents()}
-              resources={resources} // Always show all resources
-              resourceAreaWidth="15%"
-              resourceLabelDidMount={(info: any) => {
-                // Customize resource labels if needed
-              }}
-              selectable={true}
-              selectMirror={true}
-              dayMaxEvents={true}
-              weekends={true}
-              select={handleDateSelect}
-              eventClick={handleEventClick}
-              slotMinTime="06:00:00"
-              slotMaxTime="22:00:00"
-              allDaySlot={false}
-              slotDuration="00:20:00"
-              height="100%"
-              resourceOrder="title"
-              schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
-              nowIndicator={true}
-              eventTimeFormat={{
-                hour: '2-digit',
-                minute: '2-digit',
-                meridiem: 'short'
-              }}
-              slotLabelFormat={{
-                hour: 'numeric',
-                minute: '2-digit',
-                omitZeroMinute: false,
-                meridiem: 'short'
-              }}
-              businessHours={{
-                daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-                startTime: '08:00',
-                endTime: '18:00',
-              }}
-              views={{
-                timeGridDay: {
-                  // Day view settings
-                  dayMaxEventRows: false,
-                  eventMinHeight: 30
-                },
-                timeGridWeek: {
-                  // Week view settings
-                  dayMaxEventRows: true,
-                  eventMinHeight: 25
-                },
-                dayGridMonth: {
-                  // Month view settings
-                  dayMaxEventRows: true,
-                  eventMinHeight: 20
-                }
-              }}
-              eventContent={(eventInfo) => {
-                const { title, extendedProps } = eventInfo.event;
-                const { patient, room, type, provider, patientInfo } = extendedProps;
-                const startTime = new Date(eventInfo.event.start!).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-                const endTime = new Date(eventInfo.event.end!).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-                
-                return (
-                  <EventWithTooltip
-                    title={title}
-                    startTime={startTime}
-                    endTime={endTime}
-                    patient={patient}
-                    room={room}
-                    type={type}
-                    provider={provider}
-                    patientInfo={patientInfo}
-                  />
-                );
-              }}
-            />
+          {/* Calendar/Agenda View */}
+          <div className="flex-1 bg-white rounded-[1.5rem] overflow-visible mt-4">
+            {currentView === 'agenda' ? (
+              <div className="h-full overflow-auto">
+                <div className="space-y-6 p-4">
+                  {groupAppointmentsByStaff(appointments).map((staff) => (
+                    <div key={staff.name} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      {/* Staff Header */}
+                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h3 className="text-sm font-medium text-gray-900">{staff.name}</h3>
+                        <p className="text-xs text-gray-500">{staff.role}</p>
+                      </div>
+                      
+                      {/* Staff Appointments */}
+                      <div className="divide-y divide-gray-100">
+                        {staff.appointments.map((appointment) => (
+                          <div 
+                            key={appointment.id} 
+                            className="px-4 py-3 hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-1 h-6 rounded-sm ${
+                                  appointment.type === 'Individual' ? 'bg-blue-400' :
+                                  appointment.type === 'Group' ? 'bg-purple-400' :
+                                  'bg-red-400'
+                                }`} />
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {appointment.startTime} - {appointment.endTime}
+                                    </span>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        "text-xs",
+                                        appointment.type === 'Individual' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                        appointment.type === 'Group' ? "bg-purple-50 text-purple-700 border-purple-200" :
+                                        "bg-red-50 text-red-700 border-red-200"
+                                      )}
+                                    >
+                                      {appointment.type}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-600">{appointment.title}</p>
+                                  <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                      <UserIcon className="h-3 w-3" />
+                                      {appointment.patient}
+                                    </span>
+                                    {appointment.room && (
+                                      <span className="flex items-center gap-1">
+                                        <MapPinIcon className="h-3 w-3" />
+                                        {appointment.room}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
+                                  {appointment.status || 'Scheduled'}
+                                </Badge>
+                                <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => {
+                                  setSelectedAppointment(appointment);
+                                  setIsAppointmentDetailsModalOpen(true);
+                                }}>
+                                  View
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, resourceTimeGridPlugin]}
+                initialView="timeGridDay"
+                headerToolbar={false} // We're using our custom header
+                events={getFilteredEvents()}
+                resources={resources} // Always show all resources
+                resourceAreaWidth="15%"
+                resourceLabelDidMount={(info: any) => {
+                  // Customize resource labels if needed
+                }}
+                selectable={true}
+                selectMirror={true}
+                dayMaxEvents={true}
+                weekends={true}
+                select={handleDateSelect}
+                eventClick={handleEventClick}
+                slotMinTime="06:00:00"
+                slotMaxTime="22:00:00"
+                allDaySlot={false}
+                slotDuration="00:20:00"
+                height="100%"
+                resourceOrder="title"
+                schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+                nowIndicator={true}
+                eventTimeFormat={{
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  meridiem: 'short'
+                }}
+                slotLabelFormat={{
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  omitZeroMinute: false,
+                  meridiem: 'short'
+                }}
+                businessHours={{
+                  daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+                  startTime: '08:00',
+                  endTime: '18:00',
+                }}
+                views={{
+                  timeGridDay: {
+                    // Day view settings
+                    dayMaxEventRows: false,
+                    eventMinHeight: 30
+                  },
+                  timeGridWeek: {
+                    // Week view settings
+                    dayMaxEventRows: true,
+                    eventMinHeight: 25
+                  },
+                  dayGridMonth: {
+                    // Month view settings
+                    dayMaxEventRows: true,
+                    eventMinHeight: 20
+                  }
+                }}
+                eventContent={(eventInfo) => {
+                  const { title, extendedProps } = eventInfo.event;
+                  const { patient, room, type, provider, patientInfo } = extendedProps;
+                  const startTime = new Date(eventInfo.event.start!).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+                  const endTime = new Date(eventInfo.event.end!).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+                  
+                  return (
+                    <EventWithTooltip
+                      title={title}
+                      startTime={startTime}
+                      endTime={endTime}
+                      patient={patient}
+                      room={room}
+                      type={type}
+                      provider={provider}
+                      patientInfo={patientInfo}
+                    />
+                  );
+                }}
+              />
+            )}
           </div>
         </div>
       </div>

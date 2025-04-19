@@ -33,7 +33,9 @@ import {
   ClipboardIcon,
   BeakerIcon,
   HeartIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  PencilSquareIcon,
+  PrinterIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/atoms/Checkbox/checkbox";
@@ -431,11 +433,11 @@ export const DocumentsWidget: FC<DocumentsWidgetProps> = ({ patientId }) => {
       <div className="flex items-center justify-between mb-2 gap-2">
         <div className="flex items-center gap-3 flex-1">
           <div className="relative flex-1 max-w-xs">
-            <Input
-              type="search"
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+          <Input
+            type="search"
+            placeholder="Search documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-lg border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-200"
             />
             <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
