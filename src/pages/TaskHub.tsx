@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopNavigationBar, MainNavigationBar } from '../components/old-ui';
-import { PlusIcon, XMarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon, ChatBubbleLeftIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import TaskHubDashboard from '../components/TaskHubDashboard';
 import AllTasksSection from '../components/AllTasksSection';
 import TaskDetailsPanel from '../components/TaskDetailsPanel';
@@ -152,10 +152,19 @@ const TaskHub: React.FC = () => {
     
     // Birthday tasks
     { id: '19', title: 'Patient birthday: James Wilson turns 42 today', priority: 'Low', program: 'PHP', type: 'Birthdays', due: 'Today' },
-    { id: '27', title: 'Staff birthday: Dr. Martinez celebration', priority: 'Low', program: 'Behavioral Health', type: 'Birthdays', due: 'Later' },
+    { id: '27', title: 'Staff birthday: Dr. Martinez celebration', priority: 'Low', program: 'Behavioral Health', type: 'Birthdays', due: 'Tomorrow' },
     { id: '51', title: 'Patient birthday: Sarah Johnson turns 35', priority: 'Low', program: 'IOP', type: 'Birthdays', due: 'Tomorrow' },
     { id: '52', title: 'Team member birthday: Office manager Lisa', priority: 'Low', program: 'Administrative', type: 'Birthdays', due: 'Today' },
-    { id: '53', title: 'Patient milestone: 1 year sobriety celebration', priority: 'Medium', program: 'SUD', type: 'Birthdays', due: 'This week' },
+    { id: '53', title: 'Patient milestone: 1 year sobriety celebration', priority: 'Low', program: 'SUD', type: 'Birthdays', due: 'This week' },
+    { id: '78', title: 'Patient birthday: Michael Brown turns 28', priority: 'Low', program: 'PHP', type: 'Birthdays', due: 'Today' },
+    { id: '79', title: 'Staff birthday: Nurse Emma Thompson', priority: 'Low', program: 'Medical', type: 'Birthdays', due: 'Tomorrow' },
+    { id: '80', title: 'Patient birthday: Emily Davis turns 45', priority: 'Low', program: 'IOP', type: 'Birthdays', due: 'This week' },
+    { id: '81', title: 'Team member birthday: Therapist John Smith', priority: 'Low', program: 'Behavioral Health', type: 'Birthdays', due: 'Today' },
+    { id: '82', title: 'Patient birthday: Robert Taylor turns 39', priority: 'Low', program: 'MAT', type: 'Birthdays', due: 'Tomorrow' },
+    { id: '83', title: 'Staff birthday: Dr. Sarah Williams', priority: 'Low', program: 'Medical', type: 'Birthdays', due: 'This week' },
+    { id: '84', title: 'Patient birthday: Jennifer Anderson turns 31', priority: 'Low', program: 'SUD', type: 'Birthdays', due: 'Today' },
+    { id: '85', title: 'Team member birthday: Receptionist Maria Garcia', priority: 'Low', program: 'Administrative', type: 'Birthdays', due: 'Tomorrow' },
+    { id: '86', title: 'Patient milestone: 2 years recovery celebration', priority: 'Low', program: 'SUD', type: 'Birthdays', due: 'This week' },
     
     // Agenda tasks
     { id: '20', title: 'Team meeting to discuss case management', priority: 'Medium', program: 'Behavioral Health', type: 'Agenda', due: 'This week' },
@@ -203,10 +212,9 @@ const TaskHub: React.FC = () => {
           task.due.includes('Overdue')
         );
       case 'fyi-zone':
-        // Return only low priority informational tasks
+        // Return only birthday related tasks
         return tasks.filter(task => 
-          task.priority === 'Low' && 
-          task.type !== 'Review Forms'
+          task.type === 'Birthdays'
         );
       case 'suggested-actions':
         // Return only Reminder type tasks
@@ -254,7 +262,7 @@ const TaskHub: React.FC = () => {
     {
       id: 'fyi-zone',
       count: getTasksForBlock('fyi-zone').length,
-      label: 'Info Only',
+      label: 'Birthdays',
       textColor: 'text-green-700',
       criticality: 'low'
     },
@@ -268,7 +276,7 @@ const TaskHub: React.FC = () => {
     {
       id: 'transaction-reviews',
       count: getTasksForBlock('transaction-reviews').length,
-      label: 'Transaction Reviews',
+      label: 'Treament Reviews',
       textColor: 'text-indigo-700',
       criticality: 'high'
     },
@@ -617,8 +625,8 @@ const TaskHub: React.FC = () => {
         className={cn(
           'relative rounded-xl border-2 border-white ring-2 ring-inset ring-white/80',
           getPastelGradient(index),
-          isSelected ? 'ring-2 ring-blue-300 scale-[1.02]' : '',
-          'hover:scale-[1.03] hover:border-blue-200 transition-all duration-200 cursor-pointer group p-5 h-full flex flex-col'
+          isSelected ? 'ring-2 ring-blue-300 scale-[1.02] z-10' : '',
+          'hover:scale-[1.03] hover:border-blue-200 hover:z-10 transition-all duration-200 cursor-pointer group p-5 h-full flex flex-col'
         )}
         tabIndex={0}
         aria-label={label}
@@ -656,8 +664,7 @@ const TaskHub: React.FC = () => {
             </span>
           </div>
           
-          {/* Priority badge */}
-          {getCriticalityBadge(criticality)}
+          {/* Priority badge - Removed as requested */}
         </div>
       </div>
     );
@@ -686,6 +693,79 @@ const TaskHub: React.FC = () => {
   
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
 
+  // Add refs for scroll containers
+  const highPriorityRef = useRef<HTMLDivElement>(null);
+  const mediumPriorityRef = useRef<HTMLDivElement>(null);
+  const lowPriorityRef = useRef<HTMLDivElement>(null);
+
+  // Scroll handler function
+  const handleScroll = (direction: 'left' | 'right', containerRef: React.RefObject<HTMLDivElement>) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const scrollAmount = 440; // Two cards width (220px * 2)
+    const targetScroll = direction === 'left' 
+      ? container.scrollLeft - scrollAmount
+      : container.scrollLeft + scrollAmount;
+
+    container.scrollTo({
+      left: targetScroll,
+      behavior: 'smooth'
+    });
+  };
+
+  // Add state for tracking scrollable status
+  const [scrollableContainers, setScrollableContainers] = useState({
+    high: false,
+    medium: false,
+    low: false
+  });
+
+  // Function to check if container is scrollable
+  const checkScrollable = useCallback((containerRef: React.RefObject<HTMLDivElement>, section: 'high' | 'medium' | 'low') => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const isScrollable = container.scrollWidth > container.clientWidth;
+    setScrollableContainers(prev => ({
+      ...prev,
+      [section]: isScrollable
+    }));
+  }, []);
+
+  // Add resize observer to check scrollable status
+  useEffect(() => {
+    const highContainer = highPriorityRef.current;
+    const mediumContainer = mediumPriorityRef.current;
+    const lowContainer = lowPriorityRef.current;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        const container = entry.target;
+        if (container === highContainer) {
+          checkScrollable(highPriorityRef, 'high');
+        } else if (container === mediumContainer) {
+          checkScrollable(mediumPriorityRef, 'medium');
+        } else if (container === lowContainer) {
+          checkScrollable(lowPriorityRef, 'low');
+        }
+      });
+    });
+
+    if (highContainer) resizeObserver.observe(highContainer);
+    if (mediumContainer) resizeObserver.observe(mediumContainer);
+    if (lowContainer) resizeObserver.observe(lowContainer);
+
+    // Initial check
+    checkScrollable(highPriorityRef, 'high');
+    checkScrollable(mediumPriorityRef, 'medium');
+    checkScrollable(lowPriorityRef, 'low');
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [checkScrollable]);
+
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-indigo-50 to-red-50/50">
       {/* Top Navigation */}
@@ -712,7 +792,7 @@ const TaskHub: React.FC = () => {
               {/* Smart Categorisation Section */}
               <div className={`w-full ${selectedBlockId ? 'lg:w-full' : 'lg:w-2/3'}`}>
                 <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                  <h2 className="text-lg font-semibold text-gray-800">Smart Categorisation</h2>
+                  <h2 className="text-lg font-semibold text-gray-800">Open Tasks</h2>
                   <div className="flex items-center gap-2 relative overflow-visible">
                     {/* The parent div for Filter/Sort buttons is now relative and overflow-visible to contain dropdowns */}
                     <Menubar className="bg-white border border-gray-200 rounded-md shadow-none px-4 mx-2">
@@ -769,46 +849,217 @@ const TaskHub: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Task Blocks Grid */}
-                <div className={`grid gap-4 sm:gap-6 ${
-                  selectedBlockId 
-                    ? 'grid-cols-1 sm:grid-cols-2'
-                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                }`}>
-                  {filteredAndSortedBlocks.map((block, index) => (
-                    <div
-                      key={block.id}
-                      onClick={() => handleTaskClick(block.id)}
-                      className="cursor-pointer"
-                    >
-                      <TaskBlockComponent
-                        {...block}
-                        index={index}
-                        isSelected={selectedBlockId === block.id}
-                      />
+                {/* Task Blocks Grid - Now with priority-based categorization */}
+                <div className="space-y-4">
+                  {/* High Priority Section */}
+                  <div>
+                    <h3 className="text-base font-medium text-red-700 mb-1 flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                        High Priority
+                      </div>
+                      {/* Card counter - Moved next to title */}
+                      {filteredAndSortedBlocks.filter(block => block.criticality === 'critical' || block.criticality === 'high').length > 0 && (
+                        <span className="text-sm text-gray-500">
+                          ({filteredAndSortedBlocks.filter(block => block.criticality === 'critical' || block.criticality === 'high').length} items)
+                        </span>
+                      )}
+                    </h3>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
+                      <div className="overflow-x-auto scrollbar-hide relative" ref={highPriorityRef}>
+                        <div className="flex gap-4 pb-4 px-2 pt-2">
+                          {filteredAndSortedBlocks
+                            .filter(block => block.criticality === 'critical' || block.criticality === 'high')
+                            .map((block, index) => (
+                              <div
+                                key={block.id}
+                                onClick={() => handleTaskClick(block.id)}
+                                className="cursor-pointer w-[220px] flex-shrink-0 p-0.5"
+                              >
+                                <TaskBlockComponent
+                                  {...block}
+                                  index={index}
+                                  isSelected={selectedBlockId === block.id}
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                      {/* Show gradients only when scrollable */}
+                      {scrollableContainers.high && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          
+                          {/* Scroll arrows - Only show when scrollable */}
+                          <button 
+                            onClick={() => handleScroll('left', highPriorityRef)}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                          >
+                            <ChevronLeftIcon className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => handleScroll('right', highPriorityRef)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                          >
+                            <ChevronRightIcon className="w-5 h-5" />
+                          </button>
+                        </>
+                      )}
                     </div>
-                  ))}
-                  
-                  {/* Add New Block Button */}
+                  </div>
+
+                  {/* Medium Priority Section */}
+                  <div>
+                    <h3 className="text-base font-medium text-amber-700 mb-2 flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                        Medium Priority
+                      </div>
+                      {/* Card counter - Moved next to title */}
+                      {filteredAndSortedBlocks.filter(block => block.criticality === 'medium').length > 0 && (
+                        <span className="text-sm text-gray-500">
+                          ({filteredAndSortedBlocks.filter(block => block.criticality === 'medium').length} items)
+                        </span>
+                      )}
+                    </h3>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
+                      <div className="overflow-x-auto scrollbar-hide relative" ref={mediumPriorityRef}>
+                        <div className="flex gap-4 pb-4 px-2 pt-2">
+                          {filteredAndSortedBlocks
+                            .filter(block => block.criticality === 'medium')
+                            .map((block, index) => (
+                              <div
+                                key={block.id}
+                                onClick={() => handleTaskClick(block.id)}
+                                className="cursor-pointer w-[220px] flex-shrink-0 p-0.5"
+                              >
+                                <TaskBlockComponent
+                                  {...block}
+                                  index={index}
+                                  isSelected={selectedBlockId === block.id}
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                      {/* Show gradients only when scrollable */}
+                      {scrollableContainers.medium && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          
+                          {/* Scroll arrows - Only show when scrollable */}
+                          <button 
+                            onClick={() => handleScroll('left', mediumPriorityRef)}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                          >
+                            <ChevronLeftIcon className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => handleScroll('right', mediumPriorityRef)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                          >
+                            <ChevronRightIcon className="w-5 h-5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Low Priority Section */}
+                  <div>
+                    <h3 className="text-base font-medium text-green-700 mb-2 flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                        Low Priority
+                      </div>
+                      {/* Card counter - Moved next to title */}
+                      {filteredAndSortedBlocks.filter(block => block.criticality === 'low').length > 0 && (
+                        <span className="text-sm text-gray-500">
+                          ({filteredAndSortedBlocks.filter(block => block.criticality === 'low').length} items)
+                        </span>
+                      )}
+                    </h3>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
+                      <div className="overflow-x-auto scrollbar-hide relative" ref={lowPriorityRef}>
+                        <div className="flex gap-4 pb-4 px-2 pt-2">
+                          {filteredAndSortedBlocks
+                            .filter(block => block.criticality === 'low')
+                            .map((block, index) => (
+                              <div
+                                key={block.id}
+                                onClick={() => handleTaskClick(block.id)}
+                                className="cursor-pointer w-[220px] flex-shrink-0 p-0.5"
+                              >
+                                <TaskBlockComponent
+                                  {...block}
+                                  index={index}
+                                  isSelected={selectedBlockId === block.id}
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                      {/* Show gradients only when scrollable */}
+                      {scrollableContainers.low && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          
+                          {/* Scroll arrows - Only show when scrollable */}
+                          <button 
+                            onClick={() => handleScroll('left', lowPriorityRef)}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                          >
+                            <ChevronLeftIcon className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => handleScroll('right', lowPriorityRef)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                          >
+                            <ChevronRightIcon className="w-5 h-5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add New Block Button - Horizontal layout */}
                   <div 
                     onClick={() => setShowAddBlockModal(true)}
-                    className="relative overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-transparent flex items-center justify-center h-[130px] cursor-pointer hover:border-blue-300 hover:bg-white hover:shadow-sm transition-all duration-300 group"
+                    className="relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white/50 flex items-center h-[60px] cursor-pointer hover:border-blue-300 hover:bg-white hover:shadow-sm transition-all duration-300 group mt-8 w-[220px] p-0.5"
                   >
-                    <div className="text-center">
-                      <div className="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 transition-colors">
-                        <PlusIcon className="h-5 w-5 text-blue-500" />
+                    <div className="flex items-center gap-3 px-4">
+                      <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors flex-shrink-0">
+                        <PlusIcon className="h-4 w-4 text-blue-500" />
                       </div>
                       <h3 className="text-sm font-medium text-gray-700">Add New Label</h3>
-                      <p className="text-xs text-gray-500 mt-1">Create custom categories</p>
                     </div>
                   </div>
                 </div>
+
+                {/* Add styles for hiding scrollbar */}
+                <style>
+                  {`
+                    .scrollbar-hide {
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    }
+                    .scrollbar-hide::-webkit-scrollbar {
+                      display: none;
+                    }
+                  `}
+                </style>
               </div>
               
               {/* Smart Assist Section - Hide when details panel is open */}
               {!selectedBlockId && (
                 <div className="w-full lg:w-1/3">
-                  <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                  <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 h-full">
                     <div className="p-3 border-b border-gray-200 bg-gray-50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -823,7 +1074,7 @@ const TaskHub: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="p-4 overflow-y-auto" style={{ maxHeight: '420px' }}>
+                    <div className="p-4 overflow-y-auto flex-1" style={{ height: 'calc(100% - 57px)' }}>
                       <div className="space-y-3">
                         {/* Risk Identified */}
                         <div className="bg-white rounded-md shadow-sm overflow-hidden border border-gray-200">
@@ -916,21 +1167,14 @@ const TaskHub: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="flex justify-center mt-4">
-                        <button className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-                          <span>View All Insights</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </div>
+                      
                     </div>
                   </div>
                 </div>
               )}
             </div>
             
-            {/* Quick Glance Section */}
+            {/* Quick Glance Section - Temporarily hidden
             <div className="mb-6">
               <TaskHubDashboard 
                 tasks={tasks}
@@ -938,6 +1182,7 @@ const TaskHub: React.FC = () => {
                 onGroupChange={setGroupBy}
               />
             </div>
+            */}
             
             {/* All Tasks Section */}
             <div className="mb-6">
@@ -1360,6 +1605,22 @@ const TaskHub: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+            
+            {/* Modal footer with actions */}
+            <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddBlockModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddCustomBlock}
+                disabled={!newBlockConfig.label.trim()}
+              >
+                Save Label
+              </Button>
             </div>
           </div>
         </div>

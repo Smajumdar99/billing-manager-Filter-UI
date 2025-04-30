@@ -143,7 +143,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       'expedite-queue': 'Urgent Tasks',
       'suggested-actions': 'All Reminders',
       'agenda': 'Agenda',
-      'fyi-zone': 'Info Only',
+      'fyi-zone': 'Birthdays',
       'prescriptions': 'Review Prescriptions',
       'aging-tasks': 'Pending Too Long',
       'transaction-reviews': 'Transaction Reviews'

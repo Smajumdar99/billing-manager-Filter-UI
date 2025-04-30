@@ -60,6 +60,12 @@ import { Tooltip } from '../components/ui/tooltip'
 import { Badge } from '../components/ui/badge'
 import { cn } from '../lib/utils'
 import { DataTable } from '../components/organisms/DataTable'  // Updated import path
+import { ScheduleFilters } from '../components/organisms/ScheduleFilters/schedule-filters'
+import { ScheduleHeader } from '../components/organisms/ScheduleHeader'
+import { ScheduleCalendar } from '../components/organisms/ScheduleCalendar'
+import { AppointmentModal } from '../components/organisms/AppointmentModal'
+import { AppointmentSearchResults } from '@/components/organisms/AppointmentSearchResults/appointment-search-results'
+import { SearchFilters } from '@/components/molecules/AppointmentSearch/appointment-search'
 
 // Types for our calendar
 interface Appointment {
@@ -103,571 +109,6 @@ interface Patient {
   id: string;
   name: string;
 }
-
-// Modal component for creating new appointments
-interface AppointmentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (appointment: Omit<Appointment, 'id'>) => void;
-  providers: Array<{ id: string; name: string }>;
-  patients: Array<{ id: string; name: string }>;
-  selectedDate?: Date;
-  selectedProvider?: string;
-  startTime?: string;
-  endTime?: string;
-}
-
-const AppointmentModal: FC<AppointmentModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onSave,
-  providers,
-  patients,
-  selectedDate,
-  selectedProvider,
-  startTime,
-  endTime
-}) => {
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'person' | 'provider' | 'group' | 'benefits'>('person');
-  
-  // Form state
-  const [title, setTitle] = useState('');
-  const [provider, setProvider] = useState(selectedProvider || '');
-  const [patient, setPatient] = useState('');
-  const [appointmentDate, setAppointmentDate] = useState(
-    selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-  );
-  const [appointmentStartTime, setAppointmentStartTime] = useState(startTime || '');
-  const [appointmentEndTime, setAppointmentEndTime] = useState(endTime || '');
-  const [isAllDay, setIsAllDay] = useState(false);
-  const [duration, setDuration] = useState('20');
-  const [encounterType, setEncounterType] = useState('');
-  const [program, setProgram] = useState('1111ADiamond1111 Facility');
-  const [billingProgram, setBillingProgram] = useState('');
-  const [supervisingProvider, setSupervisingProvider] = useState('');
-  const [status, setStatus] = useState('Scheduled');
-  const [room, setRoom] = useState('');
-  const [comments, setComments] = useState('');
-  const [type, setType] = useState<'Individual' | 'Group' | 'Crisis'>('Individual');
-  const [isRepeating, setIsRepeating] = useState(false);
-  const [repeatFrequency, setRepeatFrequency] = useState('every');
-  const [repeatInterval, setRepeatInterval] = useState('day');
-  const [isTelehealth, setIsTelehealth] = useState(false);
-  const [printAppointmentSlip, setPrintAppointmentSlip] = useState(false);
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
-
-  // Calculate end time based on start time and duration
-  useEffect(() => {
-    if (appointmentStartTime && duration && !isAllDay) {
-      const [hours, minutes] = appointmentStartTime.split(':').map(Number);
-      const durationMinutes = parseInt(duration);
-      
-      const endDate = new Date();
-      endDate.setHours(hours, minutes + durationMinutes, 0);
-      
-      const endHours = endDate.getHours().toString().padStart(2, '0');
-      const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
-      
-      setAppointmentEndTime(`${endHours}:${endMinutes}`);
-    }
-  }, [appointmentStartTime, duration, isAllDay]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({
-      title,
-      provider,
-      patient,
-      startTime: appointmentStartTime,
-      endTime: appointmentEndTime,
-      type,
-      room,
-      // Additional fields
-      date: appointmentDate,
-      isAllDay,
-      duration,
-      encounterType,
-      program,
-      billingProgram,
-      supervisingProvider,
-      status,
-      comments,
-      isRepeating,
-      repeatFrequency: isRepeating ? repeatFrequency : undefined,
-      repeatInterval: isRepeating ? repeatInterval : undefined,
-      isTelehealth,
-      printAppointmentSlip
-    });
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Modal Header */}
-        <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-blue-800">Add New Appointment</h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
-        
-        {/* Recipient Type Selection - using the same style as in Inbox.tsx */}
-        <div className="px-6 pt-6 pb-2">
-          <Label className="block mb-2">Appointment Type</Label>
-          <div className="flex space-x-2">
-            <Button 
-              type="button"
-              variant={activeTab === 'person' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('person')}
-              className="text-xs"
-            >
-              <UserIcon className="h-3.5 w-3.5 mr-1.5" />
-              PERSON
-            </Button>
-            <Button 
-              type="button"
-              variant={activeTab === 'provider' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('provider')}
-              className="text-xs"
-            >
-              <UserIcon className="h-3.5 w-3.5 mr-1.5" />
-              PROVIDER
-            </Button>
-            <Button 
-              type="button"
-              variant={activeTab === 'group' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('group')}
-              className="text-xs"
-            >
-              <UserGroupIcon className="h-3.5 w-3.5 mr-1.5" />
-              GROUP
-            </Button>
-            <Button 
-              type="button"
-              variant={activeTab === 'benefits' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('benefits')}
-              className="text-xs"
-            >
-              <InformationCircleIcon className="h-3.5 w-3.5 mr-1.5" />
-              Benefits
-            </Button>
-          </div>
-        </div>
-        
-        {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Main appointment information */}
-            <Card>
-              <CardHeader className="bg-gray-50 border-b border-gray-200 py-3">
-                <CardTitle>Basic Information</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 grid grid-cols-2 gap-x-6 gap-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="patient">Person:</Label>
-                  <Select 
-                    id="patient"
-                    value={patient} 
-                    onValueChange={setPatient}
-                    placeholder="Click to select"
-                  >
-                    {patients.map(p => (
-                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                    ))}
-                  </Select>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <div className="flex justify-between">
-                    <Label htmlFor="encounterType">Category:*</Label>
-                    <div className="flex items-center">
-                      <Checkbox
-                        id="showOnlyMine"
-                        checked={showOnlyMine}
-                        onCheckedChange={(checked) => setShowOnlyMine(checked)}
-                        className="h-4 w-4"
-                      />
-                      <label htmlFor="showOnlyMine" className="ml-2 text-xs text-gray-600">
-                        Show Only Mine
-                      </label>
-                    </div>
-                  </div>
-                  <Select 
-                    id="encounterType"
-                    value={encounterType} 
-                    onValueChange={setEncounterType}
-                    placeholder="-- Select Encounter Type --"
-                  >
-                    <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
-                    <SelectItem value="Follow-up">Follow-up</SelectItem>
-                    <SelectItem value="Therapy">Therapy</SelectItem>
-                    <SelectItem value="Medication Management">Medication Management</SelectItem>
-                    <SelectItem value="Crisis Intervention">Crisis Intervention</SelectItem>
-                  </Select>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="title">Title:</Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <div className="flex-1 space-y-1.5">
-                    <Label htmlFor="type">Type:</Label>
-                    <Select 
-                      id="type"
-                      value={type} 
-                      onValueChange={(value) => setType(value as 'Individual' | 'Group' | 'Crisis')}
-                    >
-                      <SelectItem value="Individual">Individual</SelectItem>
-                      <SelectItem value="Group">Group</SelectItem>
-                      <SelectItem value="Crisis">Crisis</SelectItem>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex-1 space-y-1.5">
-                    <Label htmlFor="room">Room:</Label>
-                    <Input
-                      id="room"
-                      value={room}
-                      onChange={(e) => setRoom(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Time and scheduling */}
-            <Card>
-              <CardHeader className="bg-gray-50 border-b border-gray-200 py-3">
-                <CardTitle>Date & Time</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="appointmentDate">Date:</Label>
-                    <div className="relative">
-                      <Input
-                        id="appointmentDate"
-                        type="date"
-                        value={appointmentDate}
-                        onChange={(e) => setAppointmentDate(e.target.value)}
-                        required
-                      />
-                      <CalendarIcon className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center mb-2">
-                      <Checkbox
-                        id="allDayEvent"
-                        checked={isAllDay}
-                        onCheckedChange={(checked) => setIsAllDay(checked)}
-                        className="h-4 w-4"
-                      />
-                      <label htmlFor="allDayEvent" className="ml-2 text-sm text-gray-700">
-                        All day event
-                      </label>
-                    </div>
-                    
-                    {!isAllDay && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="startTime" className="text-xs text-gray-500">
-                            Start Time
-                          </Label>
-                          <Input
-                            id="startTime"
-                            type="time"
-                            value={appointmentStartTime}
-                            onChange={(e) => setAppointmentStartTime(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="endTime" className="text-xs text-gray-500">
-                            End Time
-                          </Label>
-                          <Input
-                            id="endTime"
-                            type="time"
-                            value={appointmentEndTime}
-                            onChange={(e) => setAppointmentEndTime(e.target.value)}
-                            required
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {!isAllDay && (
-                  <div className="flex items-center">
-                    <Label htmlFor="duration" className="w-20">
-                      Duration:
-                    </Label>
-                    <div className="flex items-center">
-                      <Input
-                        id="duration"
-                        type="number"
-                        value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
-                        min="0"
-                        className="w-16"
-                      />
-                      <span className="ml-2 text-sm text-gray-600">minutes</span>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="pt-2">
-                  <div className="flex items-center mb-2">
-                    <Checkbox
-                      id="repeats"
-                      checked={isRepeating}
-                      onCheckedChange={(checked) => setIsRepeating(checked)}
-                      className="h-4 w-4"
-                    />
-                    <label htmlFor="repeats" className="ml-2 text-sm font-medium text-gray-700">
-                      Repeating Appointment
-                    </label>
-                  </div>
-                  
-                  {isRepeating && (
-                    <div className="ml-6 flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">Repeat</span>
-                      <Select 
-                        value={repeatFrequency} 
-                        onValueChange={setRepeatFrequency}
-                        className="w-auto"
-                      >
-                        <SelectItem value="every">every</SelectItem>
-                        <SelectItem value="every other">every other</SelectItem>
-                        <SelectItem value="every third">every third</SelectItem>
-                        <SelectItem value="every fourth">every fourth</SelectItem>
-                      </Select>
-                      
-                      <Select 
-                        value={repeatInterval} 
-                        onValueChange={setRepeatInterval}
-                        className="w-auto"
-                      >
-                        <SelectItem value="day">day</SelectItem>
-                        <SelectItem value="week">week</SelectItem>
-                        <SelectItem value="month">month</SelectItem>
-                        <SelectItem value="year">year</SelectItem>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Provider information */}
-            <Card>
-              <CardHeader className="bg-gray-50 border-b border-gray-200 py-3">
-                <CardTitle>Provider Information</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 grid grid-cols-2 gap-x-6 gap-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="provider">Provider:</Label>
-                  <Select 
-                    id="provider"
-                    value={provider} 
-                    onValueChange={setProvider}
-                    placeholder="Select Provider"
-                  >
-                    {providers.map(p => (
-                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                    ))}
-                  </Select>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="supervisingProvider">Supervising provider:*</Label>
-                  <Select 
-                    id="supervisingProvider"
-                    value={supervisingProvider} 
-                    onValueChange={setSupervisingProvider}
-                    placeholder="-- Unassigned --"
-                  >
-                    {providers.map(p => (
-                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                    ))}
-                  </Select>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="program">Program:*</Label>
-                  <Select 
-                    id="program"
-                    value={program} 
-                    onValueChange={setProgram}
-                  >
-                    <SelectItem value="1111ADiamond1111 Facility">1111ADiamond1111 Facility</SelectItem>
-                    <SelectItem value="A-AADO">A-AADO</SelectItem>
-                    <SelectItem value="A-METH">A-METH</SelectItem>
-                    <SelectItem value="ABCXYZ">ABCXYZ</SelectItem>
-                  </Select>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="billingProgram">Billing Program:*</Label>
-                  <Select 
-                    id="billingProgram"
-                    value={billingProgram} 
-                    onValueChange={setBillingProgram}
-                    placeholder="Select Billing Program"
-                  >
-                    <SelectItem value="APOLLO1234">APOLLO1234</SelectItem>
-                    <SelectItem value="BILLING123">BILLING123</SelectItem>
-                    <SelectItem value="INSURANCE456">INSURANCE456</SelectItem>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Additional options */}
-            <Card>
-              <CardHeader className="bg-gray-50 border-b border-gray-200 py-3">
-                <CardTitle>Additional Options</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="status">Status:</Label>
-                  <Select 
-                    id="status"
-                    value={status} 
-                    onValueChange={setStatus}
-                  >
-                    <SelectItem value="Scheduled">Scheduled</SelectItem>
-                    <SelectItem value="Confirmed">Confirmed</SelectItem>
-                    <SelectItem value="Checked In">Checked In</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                    <SelectItem value="No Show">No Show</SelectItem>
-                  </Select>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="comments">Comments:</Label>
-                  <Textarea
-                    id="comments"
-                    value={comments}
-                    onChange={(e) => setComments(e.target.value)}
-                    rows={2}
-                  />
-                </div>
-                
-                <div className="flex flex-wrap gap-4 pt-2">
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="telehealth"
-                      checked={isTelehealth}
-                      onCheckedChange={(checked) => setIsTelehealth(checked)}
-                      className="h-4 w-4"
-                    />
-                    <label htmlFor="telehealth" className="ml-2 text-sm text-gray-600">
-                      <PhoneIcon className="w-4 h-4 inline mr-1 text-blue-500" />
-                      Telehealth Appointment
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="printAppointmentSlip"
-                      checked={printAppointmentSlip}
-                      onCheckedChange={(checked) => setPrintAppointmentSlip(checked)}
-                      className="h-4 w-4"
-                    />
-                    <label htmlFor="printAppointmentSlip" className="ml-2 text-sm text-gray-600">
-                      <PrinterIcon className="w-4 h-4 inline mr-1 text-blue-500" />
-                      Print Appointment Slip
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="text-blue-600"
-                  >
-                    <UserIcon className="w-4 h-4 mr-1.5" />
-                    Check-In as Arrived
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </form>
-        </div>
-        
-        {/* Modal Footer */}
-        <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 flex justify-between items-center">
-          <div className="flex items-center text-sm">
-            {isTelehealth && (
-              <div className="flex items-center text-blue-600">
-                <PhoneIcon className="h-4 w-4 mr-1" />
-                <span>Telehealth appointment</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            
-            <Button
-              type="button"
-              variant="outline"
-              className="text-blue-600"
-            >
-              Find Available
-            </Button>
-            
-            <Button
-              type="button"
-              variant="outline"
-              className="text-red-600 hover:bg-red-50"
-            >
-              Delete
-            </Button>
-            
-            <Button
-              type="submit"
-              onClick={handleSubmit}
-            >
-              Save Appointment
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Appointment details modal
 interface AppointmentDetailsModalProps {
@@ -986,10 +427,11 @@ const Schedule: FC = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isAppointmentDetailsModalOpen, setIsAppointmentDetailsModalOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth' | 'agenda'>('timeGridDay');
-  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchFilters, setSearchFilters] = useState<SearchFilters | null>(null);
   
   // Filter states
-  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     personApptsOnly: false,
     providerResvOnly: false,
@@ -1620,7 +1062,19 @@ const Schedule: FC = () => {
       <TopNavigationBar 
         hospitalName="Mayank Hospitals"
         userAvatarUrl="https://ui-avatars.com/api/?name=Darlene+Robertson"
-        onSearch={(searchTerm) => setSearchQuery(searchTerm)} // Update search query
+        onSearch={(searchTerm) => {
+          setSearchQuery(searchTerm);
+          setShowSearchResults(true);
+          setSearchFilters({
+            query: searchTerm,
+            appointmentTypes: [],
+            status: [],
+            providers: [],
+            facilities: [],
+            sortBy: 'date',
+            sortOrder: 'asc'
+          });
+        }}
       />
 
       {/* Main Navigation */}
@@ -1629,7 +1083,6 @@ const Schedule: FC = () => {
         onNavigate={(itemName) => {
           console.log('Navigate to:', itemName);
           
-          // Handle navigation to different pages
           if (itemName === 'Schedule') {
             navigate('/schedule');
           } else if (itemName === 'Inbox') {
@@ -1641,505 +1094,75 @@ const Schedule: FC = () => {
           } else if (itemName === 'Clients') {
             navigate('/old-ui');
           }
-          // Other navigation will be handled by the MainNavigationBar component
         }}
       />
 
       {/* Calendar Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Filter Sidebar */}
-        {showFilters && (
-          <div className="w-72 bg-gradient-to-b from-orange-50 to-blue-50 border-r border-gray-200 overflow-y-auto flex-shrink-0">
-            <div className="p-5">
-              {/* Mini Calendar */}
-              <div className="rounded-[1.5rem] overflow-hidden bg-white">
-                <div className="filters-mini-calendar">
-                  <FullCalendar
-                    plugins={[dayGridPlugin, interactionPlugin]}
-                    initialView="dayGridMonth"
-                    headerToolbar={{
-                      left: '',
-                      center: 'title',
-                      right: 'prev,next'
-                    }}
-                    height={280}
-                    dayMaxEventRows={0}
-                    selectable={true}
-                    select={(info) => {
-                      if (calendarRef.current) {
-                        calendarRef.current.getApi().gotoDate(info.start);
-                      }
-                    }}
-                    dateClick={(info) => {
-                      if (calendarRef.current) {
-                        calendarRef.current.getApi().gotoDate(info.date);
-                      }
-                    }}
-                    events={getFilteredEvents()}
-                    eventDisplay="none"
-                    dayCellClassNames="cursor-pointer hover:bg-blue-50"
-                    titleFormat={{ month: 'short', year: 'numeric' }}
-                    dayHeaderFormat={{ weekday: 'narrow' }}
-                    datesSet={(dateInfo) => {
-                      // Keep mini calendar in sync with main calendar
-                      if (calendarRef.current) {
-                        const mainCalendarDate = calendarRef.current.getApi().getDate();
-                        if (dateInfo.view.currentStart.getMonth() !== mainCalendarDate.getMonth()) {
-                          dateInfo.view.calendar.gotoDate(mainCalendarDate);
-                        }
-                      }
-                    }}
-                    views={{
-                      dayGridMonth: {
-                        titleFormat: { month: 'long', year: 'numeric' },
-                        dayHeaderFormat: { weekday: 'narrow' },
-                        displayEventTime: false,
-                        dayMaxEvents: 0
-                      }
-                    }}
-                  />
-                </div>
-              </div>
+        {/* Left Sidebar - Fixed width */}
+        <div className="w-[280px] h-full border-r border-gray-200 bg-white overflow-y-auto flex-shrink-0">
+          <ScheduleFilters
+            filters={filters}
+            onFilterChange={setFilters}
+            providers={providers}
+            programs={programs}
+            onProviderSelect={(providerId) => {
+              const provider = providers.find(p => p.id === providerId);
+              if (provider) {
+                setSelectedProvider(provider.name);
+              }
+            }}
+            onProgramSelect={(programId) => {
+              console.log('Selected program:', programId);
+            }}
+            calendarRef={calendarRef}
+          />
+        </div>
 
-              {/* Filter Groups */}
-              <div className="space-y-4 mt-4">
-                {/* Appointment Type Filters */}
-                <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
-                  <h3 className="text-base font-semibold text-gray-900 mb-3">Appointment Types</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center">
-                          <CheckIcon className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <span className="text-[0.9375rem] font-medium text-gray-700">Person appts only</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-purple-500 flex items-center justify-center">
-                          <CheckIcon className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <span className="text-[0.9375rem] font-medium text-gray-700">Provider resv. only</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-green-500 flex items-center justify-center">
-                          <CheckIcon className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <span className="text-[0.9375rem] font-medium text-gray-700">Provider in Office resv. only</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-indigo-500 flex items-center justify-center">
-                          <CheckIcon className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <span className="text-[0.9375rem] font-medium text-gray-700">Group appts only</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Time Filter */}
-                <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
-                  <h3 className="text-base font-semibold text-gray-900 mb-3">Time Range</h3>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center">
-                        <CheckIcon className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <span className="text-[0.9375rem] font-medium text-gray-700">Appts in next</span>
-                    </div>
-                    <select
-                      name="apptsInNextHours"
-                      value={filters.apptsInNextHours}
-                      onChange={handleFilterChange}
-                      disabled={!filters.filterByHours}
-                      className="text-sm border border-gray-200 rounded-md p-1 w-16 text-gray-700 bg-white focus:ring-blue-400 focus:border-blue-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="8">8</option>
-                      <option value="12">12</option>
-                      <option value="24">24</option>
-                    </select>
-                    <span className="text-[0.9375rem] font-medium text-gray-700">hours</span>
-                  </div>
-                </div>
-
-                {/* Programs Section */}
-                <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-base font-semibold text-gray-900">Programs</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-gray-200 flex items-center justify-center">
-                        <CheckIcon className="w-3 h-3 text-gray-500" />
-                      </div>
-                      <span className="text-sm text-gray-500">Include inactive</span>
-                    </div>
-                  </div>
-                  
-                  <div className="rounded-xl border border-gray-100 overflow-hidden bg-gray-50">
-                    <div className="p-2 border-b border-gray-100">
-                      <input
-                        type="text"
-                        placeholder="Search programs..."
-                        value={programSearch}
-                        onChange={(e) => setProgramSearch(e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:ring-blue-400 focus:border-blue-400 focus:outline-none"
-                      />
-                    </div>
-                    <div className="max-h-40 overflow-y-auto bg-white">
-                      <div className="p-2 border-b border-gray-100">
-                        <div className="text-[0.9375rem] font-medium text-gray-900">All Programs</div>
-                      </div>
-                      {programs.slice(1).filter(program => 
-                        program.name.toLowerCase().includes(programSearch.toLowerCase())
-                      ).map(program => (
-                        <div key={program.id} className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors">
-                          <div className="text-[0.9375rem] text-gray-700">{program.name}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Providers Section */}
-                <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-base font-semibold text-gray-900">Providers</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-gray-200 flex items-center justify-center">
-                        <CheckIcon className="w-3 h-3 text-gray-500" />
-                      </div>
-                      <span className="text-sm text-gray-500">Include inactive</span>
-                    </div>
-                  </div>
-                  
-                  <div className="rounded-xl border border-gray-100 overflow-hidden bg-gray-50">
-                    <div className="p-2 border-b border-gray-100">
-                      <input
-                        type="text"
-                        placeholder="Search providers..."
-                        value={providerSearch}
-                        onChange={(e) => setProviderSearch(e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:ring-blue-400 focus:border-blue-400 focus:outline-none"
-                      />
-                    </div>
-                    <div className="max-h-40 overflow-y-auto bg-white">
-                      <div className="p-2 border-b border-gray-100">
-                        <div className="text-[0.9375rem] font-medium text-gray-900">All Providers</div>
-                      </div>
-                      {providers.filter(provider => 
-                        provider.name.toLowerCase().includes(providerSearch.toLowerCase())
-                      ).map(provider => (
-                        <div key={provider.id} className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors flex justify-between items-center">
-                          <div className="text-[0.9375rem] text-gray-700">{provider.name}</div>
-                          {provider.count !== null && (
-                            <div className="text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-0.5">
-                              {provider.count}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Main Calendar Area - Flex grow */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Schedule Header */}
+          <div className="flex-shrink-0 p-4 border-b border-gray-200">
+            <ScheduleHeader
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onSearch={async (filters) => {
+                setShowSearchResults(true);
+                setSearchFilters({
+                  query: searchQuery,
+                  appointmentTypes: [],
+                  status: [],
+                  providers: [],
+                  facilities: [],
+                  sortBy: 'date',
+                  sortOrder: 'asc'
+                });
+              }}
+              handlePrev={handlePrev}
+              handleNext={handleNext}
+              handleToday={handleToday}
+              getHeaderTitle={getHeaderTitle}
+              currentView={currentView}
+              setCurrentView={setCurrentView}
+              calendarRef={calendarRef}
+              onNewAppointment={() => setIsNewAppointmentModalOpen(true)}
+              activeColorScheme={activeColorScheme}
+              setActiveColorScheme={setActiveColorScheme}
+              colorScheme={{
+                eventColors: {
+                  individual: { bg: '#bfdbfe', border: '#93c5fd', text: '#1e40af' },
+                  group: { bg: '#ddd6fe', border: '#c4b5fd', text: '#5b21b6' },
+                  crisis: { bg: '#fecaca', border: '#fca5a5', text: '#b91c1c' }
+                }
+              }}
+            />
           </div>
-        )}
-        
-        {/* Main Content */}
-        <div className="flex-1 p-4 bg-white overflow-hidden flex flex-col">
-          {/* Calendar Header */}
-          <div className="bg-gradient-to-b from-blue-50 to-orange-50 rounded-lg  mb-4">
-            <div className="p-4 flex items-center justify-between border-b border-gray-200">
-              <div className="flex items-center gap-4">
-                <Tooltip content="Create a new appointment" side="bottom">
-                  <button 
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-sm"
-                    onClick={() => setIsNewAppointmentModalOpen(true)}
-                  >
-                    <PlusIcon className="w-4 h-4" />
-                    Add Appointment
-                  </button>
-                </Tooltip>
-                
-                <Tooltip content={showFilters ? "Hide filter options" : "Show filter options"} side="bottom">
-                  <button
-                    className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border ${showFilters ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'} transition-colors shadow-sm`}
-                    onClick={() => setShowFilters(!showFilters)}
-                  >
-                    <AdjustmentsHorizontalIcon className="w-4 h-4" />
-                    {showFilters ? 'Hide Filters' : 'Show Filters'}
-                  </button>
-                </Tooltip>
 
-                {/* Repositioned Search Bar */}
-                <div className="relative w-72">
-                  <Input
-                    type="text"
-                    placeholder="Search appointments..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-9 pl-9 pr-4 w-full text-sm border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  />
-                  <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Tooltip content="Previous" side="bottom">
-                    <button 
-                      onClick={handlePrev}
-                      className="p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500"
-                    >
-                      <ChevronLeftIcon className="w-5 h-5" />
-                    </button>
-                  </Tooltip>
-                  
-                  <Tooltip content="Go to today" side="bottom">
-                    <button 
-                      className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                      onClick={handleToday}
-                    >
-                      Today
-                    </button>
-                  </Tooltip>
-                  
-                  <Tooltip content="Next" side="bottom">
-                    <button 
-                      onClick={handleNext}
-                      className="p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500"
-                    >
-                      <ChevronRightIcon className="w-5 h-5" />
-                    </button>
-                  </Tooltip>
-                  
-                  <h2 className="text-sm font-medium text-gray-700 ml-2">
-                    {getHeaderTitle()}
-                  </h2>
-                </div>
-              </div>
-              
-              {/* View selection buttons */}
-              <div className="flex items-center">
-                <div className="flex mr-3">
-                  <Tooltip content="Refresh calendar" side="bottom">
-                    <button 
-                      className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-500"
-                      onClick={() => {
-                        if (calendarRef.current) {
-                          calendarRef.current.getApi().refetchEvents();
-                        }
-                      }}
-                    >
-                      <ArrowPathIcon className="w-5 h-5" />
-                    </button>
-                  </Tooltip>
-                  
-                  <Tooltip content="Export calendar" side="bottom">
-                    <button 
-                      className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-500 ml-1"
-                      onClick={() => console.log('Export calendar')}
-                    >
-                      <ArrowTopRightOnSquareIcon className="w-5 h-5" />
-                    </button>
-                  </Tooltip>
-                  
-                  <Tooltip content="Transfer appointments" side="bottom">
-                    <button 
-                      className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-500 ml-1"
-                      onClick={() => console.log('Transfer appointments')}
-                    >
-                      <ArrowsRightLeftIcon className="w-5 h-5" />
-                    </button>
-                  </Tooltip>
-                  
-                  <Tooltip content="My Calendar" side="bottom">
-                    <button 
-                      className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-500 ml-1"
-                      onClick={() => console.log('My Calendar')}
-                    >
-                      <CalendarIcon className="w-5 h-5" />
-                    </button>
-                  </Tooltip>
-                  
-                  <Tooltip content="Print calendar" side="bottom">
-                    <button 
-                      className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-500 ml-1"
-                      onClick={() => console.log('Print calendar')}
-                    >
-                      <PrinterIcon className="w-5 h-5" />
-                    </button>
-                  </Tooltip>
-
-                  {/* Vertical Separator */}
-                  <div className="h-6 w-px bg-gray-200 mx-2 my-auto" />
-
-                  <DropdownMenu>
-                    <Tooltip content="Color Settings" side="bottom">
-                      <DropdownMenuTrigger asChild>
-                        <button 
-                          className={cn(
-                            "p-1.5 rounded-md hover:bg-gray-100 transition-colors",
-                            colorSchemes[activeColorScheme].iconColor
-                          )}
-                        >
-                          <SwatchIcon className="w-5 h-5" />
-                        </button>
-                      </DropdownMenuTrigger>
-                    </Tooltip>
-                    <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuLabel className="text-sm">Color Scheme</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {Object.entries(colorSchemes).map(([key, scheme]) => (
-                        <DropdownMenuItem 
-                          key={key}
-                          className={cn(
-                            "flex items-center gap-2 cursor-pointer py-2",
-                            activeColorScheme === key && "bg-gray-50"
-                          )}
-                          onClick={() => setActiveColorScheme(key as keyof typeof colorSchemes)}
-                        >
-                          <div className="flex items-center gap-2 flex-1">
-                            <scheme.icon className={cn("w-4 h-4", scheme.iconColor)} />
-                            <span className="text-sm text-gray-700">{scheme.label}</span>
-                          </div>
-                          <div className="flex -space-x-1">
-                            {scheme.colors.map((color, index) => (
-                              <div
-                                key={index}
-                                className="w-3.5 h-3.5 rounded-full border border-gray-100 shadow-sm"
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
-                          {activeColorScheme === key && (
-                            <CheckIcon className="w-4 h-4 ml-2 text-blue-600" />
-                          )}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  
-                  <Tooltip content="Export to Outlook" side="bottom">
-                    <button 
-                      className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-500 ml-1"
-                      onClick={() => console.log('Export to Outlook')}
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M21 6L15.7071 11.2929C15.3166 11.6834 15.3166 12.3166 15.7071 12.7071L21 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M3 14V10C3 9.44772 3.44772 9 4 9H13C13.5523 9 14 9.44772 14 10V14C14 14.5523 13.5523 15 13 15H4C3.44772 15 3 14.5523 3 14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                  </Tooltip>
-                </div>
-                
-                <div className="flex border border-gray-200 rounded-md overflow-hidden shadow-sm">
-                  <Tooltip content="Day view" side="bottom">
-                    <button 
-                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${currentView === 'timeGridDay' ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                      onClick={() => {
-                        setCurrentView('timeGridDay');
-                        if (calendarRef.current) {
-                          calendarRef.current.getApi().changeView('timeGridDay');
-                        }
-                      }}
-                    >
-                      Day
-                    </button>
-                  </Tooltip>
-                  
-                  <Tooltip content="Week view" side="bottom">
-                    <button 
-                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${currentView === 'timeGridWeek' ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                      onClick={() => {
-                        setCurrentView('timeGridWeek');
-                        if (calendarRef.current) {
-                          calendarRef.current.getApi().changeView('timeGridWeek');
-                        }
-                      }}
-                    >
-                      Week
-                    </button>
-                  </Tooltip>
-                  
-                  <Tooltip content="Month view" side="bottom">
-                    <button 
-                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${currentView === 'dayGridMonth' ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                      onClick={() => {
-                        setCurrentView('dayGridMonth');
-                        if (calendarRef.current) {
-                          calendarRef.current.getApi().changeView('dayGridMonth');
-                        }
-                      }}
-                    >
-                      Month
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip content="Agenda view" side="bottom">
-                    <button 
-                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${currentView === 'agenda' ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                      onClick={() => setCurrentView('agenda')}
-                    >
-                      Agenda
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-            
-            {/* Legend for appointment types */}
-            <div className="px-4 py-2 bg-white flex items-center text-xs text-gray-600">
-              <div className="flex items-center mr-4">
-                <span className="w-3 h-3 rounded-full bg-blue-400 mr-1.5"></span>
-                <UserIcon className="w-4 h-4 text-blue-500 mr-1" />
-                Individual
-              </div>
-              <div className="flex items-center mr-4">
-                <span className="w-3 h-3 rounded-full bg-purple-400 mr-1.5"></span>
-                <UserGroupIcon className="w-4 h-4 text-purple-500 mr-1" />
-                Group
-              </div>
-              <div className="flex items-center">
-                <span className="w-3 h-3 rounded-full bg-red-400 mr-1.5"></span>
-                <BoltIcon className="w-4 h-4 text-red-500 mr-1" />
-                Crisis
-              </div>
-              <div className="ml-auto flex items-center text-xs text-gray-500">
-                <span className="mr-1">Business hours:</span>
-                <span className="font-medium">8:00am - 6:00pm</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Calendar/Agenda View */}
-          <div className="flex-1 bg-white rounded-[1.5rem] overflow-visible mt-4">
+          {/* Calendar/Agenda View - Flex grow */}
+          <div className="flex-1 overflow-hidden p-4">
             {currentView === 'agenda' ? (
               <div className="h-full overflow-auto">
-                <div className="space-y-6 p-4">
+                <div className="space-y-6">
                   {groupAppointmentsByStaff(appointments).map((staff) => (
                     <div key={staff.name} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                       {/* Staff Header */}
@@ -2214,87 +1237,48 @@ const Schedule: FC = () => {
                 </div>
               </div>
             ) : (
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, resourceTimeGridPlugin]}
-                initialView="timeGridDay"
-                headerToolbar={false} // We're using our custom header
-                events={getFilteredEvents()}
-                resources={resources} // Always show all resources
-                resourceAreaWidth="15%"
-                resourceLabelDidMount={(info: any) => {
-                  // Customize resource labels if needed
-                }}
-                selectable={true}
-                selectMirror={true}
-                dayMaxEvents={true}
-                weekends={true}
-                select={handleDateSelect}
-                eventClick={handleEventClick}
-                slotMinTime="06:00:00"
-                slotMaxTime="22:00:00"
-                allDaySlot={false}
-                slotDuration="00:20:00"
-                height="100%"
-                resourceOrder="title"
-                schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
-                nowIndicator={true}
-                eventTimeFormat={{
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  meridiem: 'short'
-                }}
-                slotLabelFormat={{
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  omitZeroMinute: false,
-                  meridiem: 'short'
-                }}
-                businessHours={{
-                  daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-                  startTime: '08:00',
-                  endTime: '18:00',
-                }}
-                views={{
-                  timeGridDay: {
-                    // Day view settings
-                    dayMaxEventRows: false,
-                    eventMinHeight: 30
-                  },
-                  timeGridWeek: {
-                    // Week view settings
-                    dayMaxEventRows: true,
-                    eventMinHeight: 25
-                  },
-                  dayGridMonth: {
-                    // Month view settings
-                    dayMaxEventRows: true,
-                    eventMinHeight: 20
-                  }
-                }}
-                eventContent={(eventInfo) => {
-                  const { title, extendedProps } = eventInfo.event;
-                  const { patient, room, type, provider, patientInfo } = extendedProps;
-                  const startTime = new Date(eventInfo.event.start!).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-                  const endTime = new Date(eventInfo.event.end!).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-                  
-                  return (
-                    <EventWithTooltip
-                      title={title}
-                      startTime={startTime}
-                      endTime={endTime}
-                      patient={patient}
-                      room={room}
-                      type={type}
-                      provider={provider}
-                      patientInfo={patientInfo}
-                    />
-                  );
-                }}
-              />
+              <div className="h-full">
+                <ScheduleCalendar
+                  calendarRef={calendarRef}
+                  events={getFilteredEvents()}
+                  resources={resources}
+                  currentView={currentView}
+                  onDateSelect={handleDateSelect}
+                  onEventClick={handleEventClick}
+                />
+              </div>
             )}
           </div>
         </div>
+
+        {/* Search Results Sidebar - Conditional */}
+        {showSearchResults && (
+          <div className="w-[384px] border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0">
+            <div className="p-4 flex justify-between items-center border-b">
+              <h2 className="text-lg font-semibold">Search Results</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowSearchResults(false);
+                  setSearchQuery('');
+                  setSearchFilters(null);
+                }}
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </Button>
+            </div>
+            <AppointmentSearchResults
+              initialSearchQuery={searchQuery}
+              initialFilters={searchFilters}
+              onClose={() => {
+                setShowSearchResults(false);
+                setSearchQuery('');
+                setSearchFilters(null);
+              }}
+            />
+          </div>
+        )}
       </div>
       
       {/* New Appointment Modal */}
