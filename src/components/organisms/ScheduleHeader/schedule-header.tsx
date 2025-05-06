@@ -1,4 +1,5 @@
 import React, { FC, Dispatch, SetStateAction, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../../ui/button'
 import { Tooltip } from '../../ui/tooltip'
 import { Badge } from '../../ui/badge'
@@ -113,6 +114,12 @@ export const ScheduleHeader: FC<ScheduleHeaderProps> = ({
   colorScheme
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Function to navigate to My Calendar page
+  const handleMyCalendarClick = () => {
+    navigate('/my-calendar');
+  };
 
   return (
     <div className="bg-gradient-to-b from-blue-50 to-orange-50 rounded-lg mb-4">
@@ -207,7 +214,7 @@ export const ScheduleHeader: FC<ScheduleHeaderProps> = ({
                     <ArrowsRightLeftIcon className="w-5 h-5 mr-2" />
                     Transfer
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => console.log('My Calendar')}>
+                  <DropdownMenuItem onClick={handleMyCalendarClick}>
                     <CalendarIcon className="w-5 h-5 mr-2" />
                     My Calendar
                   </DropdownMenuItem>
@@ -240,7 +247,7 @@ export const ScheduleHeader: FC<ScheduleHeaderProps> = ({
                 <Tooltip content="My Calendar" side="bottom">
                   <button 
                     className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-500"
-                    onClick={() => console.log('My Calendar')}
+                    onClick={handleMyCalendarClick}
                   >
                     <CalendarIcon className="w-5 h-5" />
                   </button>
