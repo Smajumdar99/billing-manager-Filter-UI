@@ -8,7 +8,8 @@ import TaskDetailsPanel from '../components/TaskDetailsPanel';
 import { NewTaskDialog } from '@/components/molecules/NewTaskDialog/new-task-dialog';
 import { Button } from '@/components/atoms/Button';
 import { Badge } from '@/components/atoms/Badge';
-import { BlurIn } from '@/components/ui/blur-in';
+import { Task as ContextTask } from '@/context/TaskContext';
+import { Task as DetailTask } from '@/types/task';
 
 import {
   Select,
@@ -55,7 +56,11 @@ interface Task {
   due: string;
   assignedTo?: string;
   person?: string;
+  message: string; // Required by DetailTask
 }
+
+// Update type for sort criteria
+type SortCriteria = 'count-asc' | 'count-desc' | 'label-asc' | 'label-desc' | 'criticality-asc' | 'criticality-desc';
 
 /**
  * TaskHub Page
@@ -74,11 +79,99 @@ const TaskHub: React.FC = () => {
   
   // Filter and sort state
   const [filterCriteria, setFilterCriteria] = useState<string[]>([]);
-  const [sortCriteria, setSortCriteria] = useState<'count-asc' | 'count-desc' | 'label-asc' | 'label-desc' | 'criticality-asc' | 'criticality-desc'>('criticality-desc');
+  const [sortCriteria, setSortCriteria] = useState<SortCriteria>('criticality-desc');
   
   // Sample tasks data
   const tasks: Task[] = [
     // Original tasks
+    { id: '1', title: 'Complete patient assessment for John D.', priority: 'High', program: 'Behavioral Health', type: 'Assessment', due: 'Today', person: 'John Doe', message: 'Assessment notes' },
+    { id: '2', title: 'Review medication plan for Sarah M.', priority: 'Medium', program: 'Medical', type: 'Medication', due: 'Tomorrow', person: 'Sarah Miller', message: 'Medication questions' },
+    { id: '3', title: 'Update treatment notes for group therapy', priority: 'Low', program: 'PHP', type: 'Treatment', due: 'Today', person: 'Group A Patients', message: 'Treatment notes' },
+    { id: '4', title: 'Insurance verification for new patient', priority: 'Medium', program: 'Administrative', type: 'Insurance', due: 'Today', person: 'Emma Wilson', message: 'Insurance verification' },
+    { id: '5', title: 'Follow up on lab results for Michael K.', priority: 'High', program: 'Medical', type: 'Clinical', due: 'Yesterday - Overdue', person: 'Michael Klein', message: 'Lab results follow-up' },
+    { id: '6', title: 'Schedule next appointment for anxiety group', priority: 'Low', program: 'Behavioral Health', type: 'Administrative', due: 'This week', person: 'Anxiety Support Group', message: 'Appointment scheduling' },
+    { id: '7', title: 'Complete discharge paperwork for Robert J.', priority: 'Medium', program: 'PHP', type: 'Administrative', due: 'Tomorrow', person: 'Robert Johnson', message: 'Discharge paperwork' },
+    { id: '8', title: 'Crisis intervention plan review', priority: 'Blockers', program: 'IOP', type: 'Treatment', due: 'Today', person: 'Lisa Thompson', message: 'Crisis intervention plan' },
+    { id: '9', title: 'Medication reconciliation for Lisa T.', priority: 'High', program: 'MAT', type: 'Medication', due: 'Today', person: 'Lisa Thompson', message: 'Medication reconciliation' },
+    { id: '10', title: 'Update treatment plan for David W.', priority: 'Medium', program: 'SUD', type: 'Treatment', due: 'This week', person: 'David Williams', message: 'Treatment plan update' },
+    
+    // Reminder tasks
+    { id: '11', title: 'Call pharmacy about prescription refill', priority: 'High', program: 'Medical', type: 'Reminder', due: 'Today', person: 'James Wilson', message: 'Prescription refill reminder' },
+    { id: '23', title: 'Reminder: Call patient about appointment', priority: 'Medium', program: 'Administrative', type: 'Reminder', due: 'Tomorrow', person: 'Carlos Rodriguez', message: 'Appointment reminder' },
+    { id: '31', title: 'Reminder: Submit weekly report to supervisor', priority: 'Medium', program: 'Behavioral Health', type: 'Reminder', due: 'Today', message: 'Weekly report submission' },
+    { id: '32', title: 'Reminder: Order lab tests for patient follow-up', priority: 'High', program: 'Medical', type: 'Reminder', due: 'Tomorrow', message: 'Lab tests order' },
+    { id: '33', title: 'Reminder: Check in with high-risk patient', priority: 'Blockers', program: 'PHP', type: 'Reminder', due: 'Today', message: 'High-risk patient check-in' },
+    { id: '34', title: 'Reminder: Complete continuing education credits', priority: 'Low', program: 'Administrative', type: 'Reminder', due: 'This week', message: 'Continuing education credits completion' },
+    
+    // Messages tasks
+    { id: '12', title: 'New message from Dr. Johnson about patient care', priority: 'Medium', program: 'Behavioral Health', type: 'Messages', due: 'Tomorrow', message: 'Patient care message' },
+    { id: '24', title: 'New secure message from patient family', priority: 'Medium', program: 'Behavioral Health', type: 'Messages', due: 'Today', message: 'Secure message from patient family' },
+    { id: '35', title: 'Message: Question about medication side effects', priority: 'High', program: 'Medical', type: 'Messages', due: 'Today', message: 'Medication side effects question' },
+    { id: '36', title: 'Message: Patient requesting appointment change', priority: 'Low', program: 'Administrative', type: 'Messages', due: 'Tomorrow', message: 'Appointment change request' },
+    { id: '37', title: 'Message: Consultation request from primary care', priority: 'Medium', program: 'PHP', type: 'Messages', due: 'Today', message: 'Consultation request from primary care' },
+    { id: '38', title: 'Message: Insurance inquiry about coverage', priority: 'Medium', program: 'Administrative', type: 'Messages', due: 'This week', message: 'Insurance coverage inquiry' },
+    
+    // Assessment tasks
+    { id: '13', title: 'High risk assessment for Kevin L.', priority: 'Blockers', program: 'PHP', type: 'Assessment', due: 'Today', message: 'High risk assessment' },
+    { id: '18', title: 'Review treatment compliance for MAT patients', priority: 'High', program: 'MAT', type: 'Assessment', due: 'Today', message: 'MAT treatment compliance review' },
+    { id: '22', title: 'Review lab results for substance screening', priority: 'High', program: 'SUD', type: 'Assessment', due: 'Today', message: 'Substance screening lab results' },
+    { id: '39', title: 'Initial assessment for new referral patient', priority: 'Medium', program: 'Behavioral Health', type: 'Assessment', due: 'Tomorrow', message: 'New referral patient initial assessment' },
+    { id: '40', title: 'Quarterly assessment update for chronic care', priority: 'Medium', program: 'Medical', type: 'Assessment', due: 'This week', message: 'Chronic care quarterly update' },
+    
+    // Dr First Notifications tasks
+    { id: '14', title: 'DrFirst: New prescription alert for patient #12345', priority: 'Medium', program: 'Medical', type: 'Dr First Notifications', due: 'This week', message: 'New prescription alert' },
+    { id: '25', title: 'DrFirst: Medication interaction warning', priority: 'High', program: 'PHP', type: 'Dr First Notifications', due: 'Tomorrow', message: 'Medication interaction warning' },
+    { id: '41', title: 'DrFirst: Prescription renewal needed', priority: 'Medium', program: 'MAT', type: 'Dr First Notifications', due: 'Today', message: 'Prescription renewal needed' },
+    { id: '42', title: 'DrFirst: Prior authorization required', priority: 'High', program: 'Administrative', type: 'Dr First Notifications', due: 'Today', message: 'Prior authorization required' },
+    { id: '43', title: 'DrFirst: Controlled substance monitoring alert', priority: 'Blockers', program: 'SUD', type: 'Dr First Notifications', due: 'Today', message: 'Controlled substance monitoring alert' },
+    
+    // Insurance tasks
+    { id: '15', title: 'Process insurance claim for therapy sessions', priority: 'Low', program: 'Administrative', type: 'Insurance', due: 'Later', message: 'Insurance claim processing' },
+    { id: '30', title: 'Follow up on insurance authorization', priority: 'High', program: 'Administrative', type: 'Insurance', due: 'Today', message: 'Insurance authorization follow-up' },
+    { id: '44', title: 'Insurance appeal for denied claim', priority: 'Medium', program: 'Behavioral Health', type: 'Insurance', due: 'This week', message: 'Insurance appeal for denied claim' },
+    { id: '45', title: 'Verify insurance benefits for new treatment', priority: 'Medium', program: 'Medical', type: 'Insurance', due: 'Tomorrow', message: 'Insurance benefits verification' },
+    
+    // Review Forms tasks
+    { id: '16', title: 'Review intake form for new patient consultation', priority: 'Medium', program: 'Behavioral Health', type: 'Review Forms', due: 'Tomorrow', message: 'New patient intake form review' },
+    { id: '26', title: 'Review consent forms for group therapy', priority: 'Medium', program: 'Medical', type: 'Review Forms', due: 'This week', message: 'Group therapy consent forms review' },
+    { id: '46', title: 'Review patient satisfaction survey results', priority: 'Low', program: 'Administrative', type: 'Review Forms', due: 'This week', message: 'Patient satisfaction survey results' },
+    { id: '47', title: 'Review treatment authorization request forms', priority: 'High', program: 'PHP', type: 'Review Forms', due: 'Today', message: 'Treatment authorization request forms' },
+    { id: '48', title: 'Review updated HIPAA compliance forms', priority: 'Medium', program: 'Administrative', type: 'Review Forms', due: 'Tomorrow', message: 'Updated HIPAA compliance forms' },
+    { id: '71', title: 'Review medication consent forms', priority: 'High', program: 'Medical', type: 'Review Forms', due: 'Today', message: 'Medication consent forms' },
+    { id: '72', title: 'Review discharge summary forms', priority: 'Medium', program: 'PHP', type: 'Review Forms', due: 'Tomorrow', message: 'Discharge summary forms' },
+    { id: '73', title: 'Review insurance pre-authorization forms', priority: 'High', program: 'Administrative', type: 'Review Forms', due: 'Today', message: 'Insurance pre-authorization forms' },
+    { id: '74', title: 'Review therapy progress note forms', priority: 'Medium', program: 'IOP', type: 'Review Forms', due: 'Today', message: 'Therapy progress note forms' },
+    { id: '75', title: 'Review patient feedback forms', priority: 'Low', program: 'SUD', type: 'Review Forms', due: 'This week', message: 'Patient feedback forms' },
+    { id: '76', title: 'Review telehealth consent forms', priority: 'High', program: 'MAT', type: 'Review Forms', due: 'Today', message: 'Telehealth consent forms' },
+    { id: '77', title: 'Review behavioral health assessment forms', priority: 'Medium', program: 'Behavioral Health', type: 'Review Forms', due: 'Tomorrow', message: 'Behavioral health assessment forms' },
+
+    // Transaction Reviews tasks - reduce to 2 tasks
+    { id: '66', title: 'Review insurance claim transactions', priority: 'High', program: 'Administrative', type: 'Transaction Reviews', due: 'Today', message: 'Insurance claim transactions' },
+    { id: '67', title: 'Verify patient billing transactions', priority: 'Medium', program: 'Administrative', type: 'Transaction Reviews', due: 'Tomorrow', message: 'Patient billing transactions' },
+    
+    // Administrative tasks
+    { id: '17', title: 'Follow up on missed appointment for Emily R.', priority: 'High', program: 'IOP', type: 'Administrative', due: 'Today', message: 'Missed appointment follow-up' },
+    { id: '21', title: 'Document group therapy attendance', priority: 'Low', program: 'IOP', type: 'Administrative', due: 'Today', message: 'Group therapy attendance documentation' },
+    { id: '49', title: 'Update patient contact information', priority: 'Low', program: 'Administrative', type: 'Administrative', due: 'This week', message: 'Patient contact information update' },
+    { id: '50', title: 'Schedule staff training session', priority: 'Medium', program: 'Behavioral Health', type: 'Administrative', due: 'Tomorrow', message: 'Staff training session' },
+    
+    // Birthday tasks
+    { id: '19', title: 'Patient birthday: James Wilson turns 42 today', priority: 'Low', program: 'PHP', type: 'Birthdays', due: 'Today', message: 'James Wilson birthday' },
+    { id: '27', title: 'Staff birthday: Dr. Martinez celebration', priority: 'Low', program: 'Behavioral Health', type: 'Birthdays', due: 'Tomorrow', message: 'Dr. Martinez birthday' },
+    { id: '51', title: 'Patient birthday: Sarah Johnson turns 35', priority: 'Low', program: 'IOP', type: 'Birthdays', due: 'Tomorrow', message: 'Sarah Johnson birthday' },
+    { id: '52', title: 'Team member birthday: Office manager Lisa', priority: 'Low', program: 'Administrative', type: 'Birthdays', due: 'Today', message: 'Office manager Lisa birthday' },
+    { id: '53', title: 'Patient milestone: 1 year sobriety celebration', priority: 'Low', program: 'SUD', type: 'Birthdays', due: 'This week', message: '1 year sobriety celebration' },
+    { id: '78', title: 'Patient birthday: Michael Brown turns 28', priority: 'Low', program: 'PHP', type: 'Birthdays', due: 'Today', message: 'Michael Brown birthday' },
+    { id: '79', title: 'Staff birthday: Nurse Emma Thompson', priority: 'Low', program: 'Medical', type: 'Birthdays', due: 'Tomorrow', message: 'Nurse Emma Thompson birthday' },
+    { id: '80', title: 'Patient birthday: Emily Davis turns 45', priority: 'Low', program: 'IOP', type: 'Birthdays', due: 'This week', message: 'Emily Davis birthday' },
+    { id: '81', title: 'Team member birthday: Therapist John Smith', priority: 'Low', program: 'Behavioral Health', type: 'Birthdays', due: 'Today', message: 'Therapist John Smith birthday' },
+    { id: '82', title: 'Patient birthday: Robert Taylor turns 39', priority: 'Low', program: 'MAT', type: 'Birthdays', due: 'Tomorrow', message: 'Robert Taylor birthday' },
+    { id: '83', title: 'Staff birthday: Dr. Sarah Williams', priority: 'Low', program: 'Medical', type: 'Birthdays', due: 'This week', message: 'Dr. Sarah Williams birthday' },
+    { id: '84', title: 'Patient birthday: Jennifer Anderson turns 31', priority: 'Low', program: 'SUD', type: 'Birthdays', due: 'Today', message: 'Jennifer Anderson birthday' },
+    { id: '85', title: 'Team member birthday: Receptionist Maria Garcia', priority: 'Low', program: 'Administrative', type: 'Birthdays', due: 'Tomorrow', message: 'Receptionist Maria Garcia birthday' },
+    { id: '86', title: 'Patient milestone: 2 years recovery celebration', priority: 'Low', program: 'SUD', type: 'Birthdays', due: 'This week', message: '2 years recovery celebration' },
+    
+    // Agenda tasks
     { id: '1', title: 'Complete patient assessment for John D.', priority: 'High', program: 'Behavioral Health', type: 'Assessment', due: 'Today', person: 'John Doe' },
     { id: '2', title: 'Review medication plan for Sarah M.', priority: 'Medium', program: 'Medical', type: 'Medication', due: 'Tomorrow', person: 'Sarah Miller' },
     { id: '3', title: 'Update treatment notes for group therapy', priority: 'Low', program: 'PHP', type: 'Treatment', due: 'Today', person: 'Group A Patients' },
@@ -191,49 +284,59 @@ const TaskHub: React.FC = () => {
   ];
 
   // Get filtered tasks for each block
-  const getTasksForBlock = (blockId: string): Task[] => {
-    switch (blockId) {
-      case 'expedite-queue':
-        // Only return tasks with Blockers priority and due Today
-        return tasks.filter(task => 
-          task.priority === 'Blockers' && 
-          task.due === 'Today'
-        );
-      case 'needs-review':
-        // Return only Review Forms type tasks
-        return tasks.filter(task => task.type === 'Review Forms');
-      case 'transaction-reviews':
-        // Return only Transaction Reviews type tasks
-        return tasks.filter(task => task.type === 'Transaction Reviews');
-      case 'aging-tasks':
-        // Return tasks that are overdue
-        return tasks.filter(task => 
-          task.due === 'Yesterday - Overdue' || 
-          task.due.includes('Overdue')
-        );
-      case 'fyi-zone':
-        // Return only birthday related tasks
-        return tasks.filter(task => 
-          task.type === 'Birthdays'
-        );
-      case 'suggested-actions':
-        // Return only Reminder type tasks
-        return tasks.filter(task => task.type === 'Reminder');
-      case 'agenda':
-        // Return only Agenda type tasks
-        return tasks.filter(task => task.type === 'Agenda');
-      case 'prescriptions':
-        // Return only Medication type tasks
-        return tasks.filter(task => task.type === 'Medication');
-      case 'assigned-to-me':
-        // Return tasks assigned to the current user
-        return tasks.filter(task => task.assignedTo === 'me');
-      case 'created-by-me':
-        // Return tasks created by the user from context
-        return myTasks;
-      default:
-        return [];
-    }
+  const getTasksForBlock = (blockId: string): DetailTask[] => {
+    const blockTasks = (() => {
+      switch (blockId) {
+        case 'expedite-queue':
+          // Only return tasks with Blockers priority and due Today
+          return tasks.filter(task => 
+            task.priority === 'Blockers' && 
+            task.due === 'Today'
+          );
+        case 'needs-review':
+          // Return only Review Forms type tasks
+          return tasks.filter(task => task.type === 'Review Forms');
+        case 'transaction-reviews':
+          // Return only Transaction Reviews type tasks
+          return tasks.filter(task => task.type === 'Transaction Reviews');
+        case 'aging-tasks':
+          // Return tasks that are overdue
+          return tasks.filter(task => 
+            task.due === 'Yesterday - Overdue' || 
+            task.due.includes('Overdue')
+          );
+        case 'fyi-zone':
+          // Return only birthday related tasks
+          return tasks.filter(task => 
+            task.type === 'Birthdays'
+          );
+        case 'suggested-actions':
+          // Return only Reminder type tasks
+          return tasks.filter(task => task.type === 'Reminder');
+        case 'agenda':
+          // Return only Agenda type tasks
+          return tasks.filter(task => task.type === 'Agenda');
+        case 'prescriptions':
+          // Return only Medication type tasks
+          return tasks.filter(task => task.type === 'Medication');
+        case 'assigned-to-me':
+          // Return tasks assigned to the current user
+          return tasks.filter(task => task.assignedTo === 'me');
+        case 'created-by-me':
+          // Convert context tasks to DetailTask type
+          return myTasks.map(task => ({
+            ...task,
+            message: task.message || '', // Provide default empty string for message
+            type: task.type as Task['type'], // Assert the type
+            program: task.program || 'Unknown', // Provide defaults for required fields
+            due: task.due || 'Not set'
+          }));
+        default:
+          return [] as DetailTask[];
+      }
+    })();
+
+    return blockTasks;
   };
 
   // Task blocks data with dynamic counts
@@ -339,8 +442,8 @@ const TaskHub: React.FC = () => {
     }
   };
   
-  const handleSortChange = (criteria: 'count-asc' | 'count-desc' | 'label-asc' | 'label-desc' | 'criticality-asc' | 'criticality-desc') => {
-    setSortCriteria(criteria);
+  const handleSortChange = (value: string) => {
+    setSortCriteria(value as 'count-asc' | 'count-desc' | 'label-asc' | 'label-desc' | 'criticality-asc' | 'criticality-desc');
   };
   
   // Apply filters and sorting to task blocks
@@ -626,7 +729,7 @@ const TaskHub: React.FC = () => {
           'relative rounded-xl border-2 border-white ring-2 ring-inset ring-white/80',
           getPastelGradient(index),
           isSelected ? 'ring-2 ring-blue-300 scale-[1.02] z-10' : '',
-          'hover:scale-[1.03] hover:border-blue-200 hover:z-10 transition-all duration-200 cursor-pointer group p-5 h-full flex flex-col'
+          'hover:scale-[1.03] hover:border-blue-200 hover:z-10 transition-all duration-200 cursor-pointer group p-3 h-full flex flex-col'
         )}
         tabIndex={0}
         aria-label={label}
@@ -635,27 +738,25 @@ const TaskHub: React.FC = () => {
         {/* White overlay for ultra-light pastel effect with frosted hover */}
         <div className="absolute inset-0 rounded-xl bg-white/70 pointer-events-none z-0 group-hover:bg-white/80" />
         {/* Header with icon and label */}
-        <div className="flex items-center gap-3 z-10 relative">
-          <div className={`w-9 h-9 rounded-full ${colors.iconBg} flex items-center justify-center`}>
+        <div className="flex items-center gap-2 z-10 relative">
+          <div className={`w-7 h-7 rounded-full ${colors.iconBg} flex items-center justify-center`}>
             <div className={colors.icon}>
               {getIcon()}
             </div>
           </div>
-          <BlurIn
-            word={label}
-            className="bg-gradient-to-r from-muted-foreground to-foreground bg-clip-text text-transparent text-md md:text-sm lg:text-md text-left"
-            duration={1.2}
-          />
+          <span className="text-gray-800 font-medium text-sm md:text-xs lg:text-sm text-left line-clamp-2">
+            {label}
+          </span>
         </div>
         
         {/* Bottom section with count and priority */}
-        <div className="mt-auto flex justify-between items-end z-10 relative">
+        <div className="mt-2 flex justify-between items-end z-10 relative">
           {/* Count display */}
           <div>
             {/* Count display: bold for critical, normal for others */}
             <span
               className={cn(
-                "text-4xl",
+                "text-3xl",
                 criticality === "critical" ? "font-bold" : "font-normal",
                 colors.number
               )}
@@ -663,8 +764,6 @@ const TaskHub: React.FC = () => {
               {count}
             </span>
           </div>
-          
-          {/* Priority badge - Removed as requested */}
         </div>
       </div>
     );
@@ -850,15 +949,14 @@ const TaskHub: React.FC = () => {
                 </div>
                 
                 {/* Task Blocks Grid - Now with priority-based categorization */}
-                <div className="space-y-4">
+                <div className="space-y-2 md:space-y-4">
                   {/* High Priority Section */}
                   <div>
-                    <h3 className="text-base font-medium text-red-700 mb-1 flex items-center gap-2">
+                    <h3 className="text-base font-medium text-red-700 mb-1 flex items-center gap-2 px-2 md:px-0">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                         High Priority
                       </div>
-                      {/* Card counter - Moved next to title */}
                       {filteredAndSortedBlocks.filter(block => block.criticality === 'critical' || block.criticality === 'high').length > 0 && (
                         <span className="text-sm text-gray-500">
                           ({filteredAndSortedBlocks.filter(block => block.criticality === 'critical' || block.criticality === 'high').length} items)
@@ -868,14 +966,14 @@ const TaskHub: React.FC = () => {
                     <div className="relative group">
                       <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
                       <div className="overflow-x-auto scrollbar-hide relative" ref={highPriorityRef}>
-                        <div className="flex gap-4 pb-4 px-2 pt-2">
+                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
                           {filteredAndSortedBlocks
                             .filter(block => block.criticality === 'critical' || block.criticality === 'high')
                             .map((block, index) => (
                               <div
                                 key={block.id}
                                 onClick={() => handleTaskClick(block.id)}
-                                className="cursor-pointer w-[220px] flex-shrink-0 p-0.5"
+                                className="cursor-pointer w-full sm:w-[180px] md:w-[220px] flex-shrink-0 p-0.5"
                               >
                                 <TaskBlockComponent
                                   {...block}
@@ -886,22 +984,22 @@ const TaskHub: React.FC = () => {
                             ))}
                         </div>
                       </div>
-                      {/* Show gradients only when scrollable */}
+
+                      {/* Show scroll controls only on tablet and above */}
                       {scrollableContainers.high && (
                         <>
-                          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="hidden sm:block absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
                           
-                          {/* Scroll arrows - Only show when scrollable */}
                           <button 
                             onClick={() => handleScroll('left', highPriorityRef)}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
                           >
                             <ChevronLeftIcon className="w-5 h-5" />
                           </button>
                           <button 
                             onClick={() => handleScroll('right', highPriorityRef)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
                           >
                             <ChevronRightIcon className="w-5 h-5" />
                           </button>
@@ -912,12 +1010,11 @@ const TaskHub: React.FC = () => {
 
                   {/* Medium Priority Section */}
                   <div>
-                    <h3 className="text-base font-medium text-amber-700 mb-2 flex items-center gap-2">
+                    <h3 className="text-base font-medium text-amber-700 mb-1 flex items-center gap-2 px-2 md:px-0">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
                         Medium Priority
                       </div>
-                      {/* Card counter - Moved next to title */}
                       {filteredAndSortedBlocks.filter(block => block.criticality === 'medium').length > 0 && (
                         <span className="text-sm text-gray-500">
                           ({filteredAndSortedBlocks.filter(block => block.criticality === 'medium').length} items)
@@ -927,14 +1024,14 @@ const TaskHub: React.FC = () => {
                     <div className="relative group">
                       <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
                       <div className="overflow-x-auto scrollbar-hide relative" ref={mediumPriorityRef}>
-                        <div className="flex gap-4 pb-4 px-2 pt-2">
+                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
                           {filteredAndSortedBlocks
                             .filter(block => block.criticality === 'medium')
                             .map((block, index) => (
                               <div
                                 key={block.id}
                                 onClick={() => handleTaskClick(block.id)}
-                                className="cursor-pointer w-[220px] flex-shrink-0 p-0.5"
+                                className="cursor-pointer w-full sm:w-[180px] md:w-[220px] flex-shrink-0 p-0.5"
                               >
                                 <TaskBlockComponent
                                   {...block}
@@ -945,22 +1042,22 @@ const TaskHub: React.FC = () => {
                             ))}
                         </div>
                       </div>
-                      {/* Show gradients only when scrollable */}
+
+                      {/* Show scroll controls only on tablet and above */}
                       {scrollableContainers.medium && (
                         <>
-                          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="hidden sm:block absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
                           
-                          {/* Scroll arrows - Only show when scrollable */}
                           <button 
                             onClick={() => handleScroll('left', mediumPriorityRef)}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
                           >
                             <ChevronLeftIcon className="w-5 h-5" />
                           </button>
                           <button 
                             onClick={() => handleScroll('right', mediumPriorityRef)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
                           >
                             <ChevronRightIcon className="w-5 h-5" />
                           </button>
@@ -971,12 +1068,11 @@ const TaskHub: React.FC = () => {
 
                   {/* Low Priority Section */}
                   <div>
-                    <h3 className="text-base font-medium text-green-700 mb-2 flex items-center gap-2">
+                    <h3 className="text-base font-medium text-green-700 mb-1 flex items-center gap-2 px-2 md:px-0">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
                         Low Priority
                       </div>
-                      {/* Card counter - Moved next to title */}
                       {filteredAndSortedBlocks.filter(block => block.criticality === 'low').length > 0 && (
                         <span className="text-sm text-gray-500">
                           ({filteredAndSortedBlocks.filter(block => block.criticality === 'low').length} items)
@@ -986,14 +1082,14 @@ const TaskHub: React.FC = () => {
                     <div className="relative group">
                       <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
                       <div className="overflow-x-auto scrollbar-hide relative" ref={lowPriorityRef}>
-                        <div className="flex gap-4 pb-4 px-2 pt-2">
+                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
                           {filteredAndSortedBlocks
                             .filter(block => block.criticality === 'low')
                             .map((block, index) => (
                               <div
                                 key={block.id}
                                 onClick={() => handleTaskClick(block.id)}
-                                className="cursor-pointer w-[220px] flex-shrink-0 p-0.5"
+                                className="cursor-pointer w-full sm:w-[180px] md:w-[220px] flex-shrink-0 p-0.5"
                               >
                                 <TaskBlockComponent
                                   {...block}
@@ -1004,22 +1100,22 @@ const TaskHub: React.FC = () => {
                             ))}
                         </div>
                       </div>
-                      {/* Show gradients only when scrollable */}
+
+                      {/* Show scroll controls only on tablet and above */}
                       {scrollableContainers.low && (
                         <>
-                          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="hidden sm:block absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
+                          <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
                           
-                          {/* Scroll arrows - Only show when scrollable */}
                           <button 
                             onClick={() => handleScroll('left', lowPriorityRef)}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
                           >
                             <ChevronLeftIcon className="w-5 h-5" />
                           </button>
                           <button 
                             onClick={() => handleScroll('right', lowPriorityRef)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
                           >
                             <ChevronRightIcon className="w-5 h-5" />
                           </button>
