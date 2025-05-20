@@ -13,4 +13,6 @@ export interface Task {
   updatedAt?: string;
   dueDate?: string;
   person?: string;
+  message: string;
+  date?: string;
 } 

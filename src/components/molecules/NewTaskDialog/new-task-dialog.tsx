@@ -54,10 +54,10 @@ interface Priority {
 interface Task {
   id: string;
   title: string;
-  person: string;
+  person?: string;
   message: string;
   priority: string;
-  due: Date;
+  due: string;
 }
 
 interface NewTaskDialogProps {
@@ -250,14 +250,14 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
       setSelectedRecipients(task.person ? [{ id: '', name: task.person, role: '', type: 'patient' }] : []);
       setMessage(task.message || '');
       setSelectedPriority(task.priority || 'medium');
-      setDueDate(task.due ? new Date(task.due) : null);
+      setDueDate(task.due || '');
       // Add any other fields as needed
     } else {
       setSubject('');
       setSelectedRecipients([]);
       setMessage('');
       setSelectedPriority('medium');
-      setDueDate(null);
+      setDueDate('');
     }
   }, [task, isOpen]);
 

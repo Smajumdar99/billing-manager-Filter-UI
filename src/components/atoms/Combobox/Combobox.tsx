@@ -77,7 +77,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
       <button
         type="button"
         className={cn(
-          "flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm text-left shadow-sm",
+          "flex w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-sm text-left shadow-sm",
           open ? "ring-2 ring-primary" : ""
         )}
         onClick={() => setOpen((o) => !o)}
@@ -88,13 +88,13 @@ export const Combobox: React.FC<ComboboxProps> = ({
           {value.length === 0
             ? <span className="text-muted-foreground">{placeholder}</span>
             : options.filter((opt) => value.includes(opt.value)).map((opt) => (
-                <span key={opt.value} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                <span key={opt.value} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-gray-700">
                   {opt.label}
                   {multiple && (
                     <button
                       type="button"
                       tabIndex={-1}
-                      className="text-primary/70 hover:text-primary"
+                      className="text-primary hover:text-primary"
                       onClick={e => {
                         e.stopPropagation();
                         handleSelect(opt.value);
@@ -110,7 +110,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
       </button>
       {open && (
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-96 overflow-auto">
-          <div className="p-2">
+          <div className="p-2 bg-white">
             {/* Filter toggle for staff/groups */}
             <div className="flex flex-col gap-1">
               {/* Filter Tabs (conditionally render) */}
@@ -144,7 +144,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
               )}
               <input
                 ref={inputRef}
-                className="w-full rounded border px-2 py-1 text-sm mb-2"
+                className="w-full rounded border px-2 py-1 text-sm mb-2 bg-white"
                 placeholder="Search..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -153,7 +153,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
               {filtered.length === 0 ? (
                 <div className="p-2 text-sm text-gray-500">No options found.</div>
               ) : (
-                <ul className="max-h-80 overflow-auto" role="listbox">
+                <ul className="max-h-80 overflow-auto bg-white" role="listbox">
                   {filtered.map((opt) => (
                     <li
                       key={opt.value}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Task } from '../types/task';
 import { Badge } from '@/components/atoms/Badge';
@@ -31,6 +31,69 @@ interface TaskDetailsPanelProps {
   onClose: () => void;
 }
 
+const mockUrgentTasks = [
+  {
+    id: 'crisis1',
+    title: 'Crisis intervention needed',
+    description: 'Patient reported severe anxiety symptoms during telehealth session. Immediate assessment and intervention required. Previous history of panic attacks.',
+    message: 'Urgent: Patient experiencing acute anxiety symptoms - requires immediate telehealth follow-up',
+    date: '2024-04-19 09:15 AM',
+    priority: 'High',
+    due: 'Today',
+    status: 'Pending',
+    assignedTo: 'Lisa Thompson',
+    person: 'John Doe'
+  },
+  {
+    id: 'check1',
+    title: 'Reminder: Check vitals',
+    description: 'Critical patient requires immediate vital signs check. Blood pressure was elevated during last reading. Monitor for any changes in condition.',
+    message: 'Follow-up required for elevated BP readings from morning check - Please review latest vitals',
+    date: '2024-04-19 10:30 AM',
+    priority: 'High',
+    due: 'Today',
+    status: 'Pending',
+    assignedTo: 'System',
+    person: 'John Doe'
+  },
+  {
+    id: 'assess1',
+    title: 'High risk assessment',
+    description: 'Patient reported concerning symptoms during last visit. Need immediate follow-up assessment. Family history of cardiac issues.',
+    message: 'Urgent assessment needed - Patient reported chest pain during morning rounds',
+    date: '2024-04-19 11:45 AM',
+    priority: 'High',
+    due: 'Today',
+    status: 'Pending',
+    assignedTo: 'System',
+    person: 'John Doe'
+  },
+  {
+    id: 'med1',
+    title: 'DrFirst: Controlled substance',
+    description: 'New controlled substance prescription requires immediate review and approval. Check for drug interactions and verify dosage.',
+    message: 'Pending controlled medication approval - Please review prescription details and patient history',
+    date: '2024-04-19 01:20 PM',
+    priority: 'High',
+    due: 'Today',
+    status: 'Pending',
+    assignedTo: 'System',
+    person: 'John Doe'
+  },
+  {
+    id: 'doc1',
+    title: 'Document crisis plan',
+    description: 'Update crisis intervention plan for high-risk patient. Recent changes in medication require documentation update.',
+    message: 'Crisis plan needs immediate update - Recent medication changes must be documented',
+    date: '2024-04-19 02:30 PM',
+    priority: 'High',
+    due: 'Today',
+    status: 'Pending',
+    assignedTo: 'System',
+    person: 'John Doe'
+  }
+];
+
 const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onClose }) => {
   const navigate = useNavigate();
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -40,6 +103,14 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
   const [initialWidth, setInitialWidth] = useState(0);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  // Define the tasks to display based on blockId
+  const displayTasks = useMemo(() => {
+    if (blockId === 'expedite-queue') {
+      return mockUrgentTasks;
+    }
+    return tasks;
+  }, [blockId, tasks]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
@@ -197,7 +268,172 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     navigate(`/patient-chart/${patientId}`);
   };
 
-  // Render different content based on blockId
+  const columnDefs = [
+    {
+      headerName: '',
+      field: 'checkbox',
+      colId: 'checkbox',
+      width: 50,
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+      pinned: 'left' as const
+    },
+    {
+      headerName: 'Subject',
+      field: 'title',
+      colId: 'title',
+      flex: 1.5,
+      cellRenderer: (params: any) => (
+        <div 
+          className="text-sm font-medium text-gray-900 truncate cursor-pointer hover:text-blue-600" 
+          onClick={() => handleSendMessage(params.data)}
+          title={params.data.title || 'No subject'}
+        >
+          {params.data.title || <span className="text-gray-400 italic">No subject</span>}
+        </div>
+      )
+    },
+    {
+      headerName: 'Message',
+      field: 'message',
+      colId: 'message',
+      flex: 2,
+      cellRenderer: (params: any) => {
+        const messageText = params.data.description || params.data.message || 'No message';
+        
+        return (
+          <div 
+            className="text-sm text-gray-600 line-clamp-2 hover:line-clamp-none cursor-pointer py-2" 
+            title={messageText}
+          >
+            {messageText}
+          </div>
+        );
+      }
+    },
+    // Category column removed as per UX simplification request (2025-04-18)
+    // {
+    //   headerName: 'Category',
+    //   field: 'type',
+    //   colId: 'type',
+    //   flex: 1,
+    //   cellRenderer: (params: any) => (
+    //     <div className="flex items-center">
+    //       <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center mr-2">
+    //         {getCategoryIcon(params.data.type)}
+    //       </div>
+    //       <span className="text-sm text-gray-600">{params.data.type}</span>
+    //     </div>
+    //   )
+    // },
+    {
+      headerName: 'Priority',
+      field: 'priority',
+      flex: 1,
+      // Only display allowed priorities, and map to label
+      cellRenderer: (params: any) => {
+        // For URGENT TASKS (expedite-queue), always show High Priority
+        if (blockId === 'expedite-queue') {
+          return (
+            <Badge 
+              variant="outline" 
+              className={cn("text-sm h-6", getPriorityBadgeStyles('High'))}
+            >
+              High Priority
+            </Badge>
+          );
+        }
+        // Enforce only the 3 allowed priorities
+        const value = (params.data.priority || '').toLowerCase();
+        const label = PRIORITY_LABELS[value] || 'Unknown';
+        return (
+          <Badge 
+            variant="outline" 
+            className={cn("text-sm h-6", getPriorityBadgeStyles(label.replace(' Priority','')))}
+          >
+            {label}
+          </Badge>
+        );
+      }
+    },
+    {
+      headerName: 'Due',
+      field: 'due',
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <Clock className="h-3.5 w-3.5 mr-1 text-gray-400" />
+          {params.data.due}
+        </div>
+      )
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <Badge 
+          variant="outline" 
+          className={cn("text-sm h-6", getStatusBadgeStyles(params.data.status || 'Pending'))}
+        >
+          {params.data.status || 'Pending'}
+        </Badge>
+      )
+    },
+    {
+      headerName: 'Received from',
+      field: 'assignedTo',
+      flex: 1,
+      // Use consistent mapping as in dialog
+      cellRenderer: (params: any) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <User className="h-3.5 w-3.5 mr-1 text-gray-400" />
+          {/* Use getReceivedFrom to match dialog logic */}
+          {getReceivedFrom(params.data)}
+        </div>
+      )
+    },
+    {
+      headerName: 'Person',
+      field: 'person',
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div 
+          className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+          onClick={() => handlePersonClick(params.data.person || 'John Doe')}
+          title={`View patient chart for ${params.data.person || 'John Doe'}`}
+        >
+          <User className="h-3.5 w-3.5 mr-1 text-blue-400" />
+          {params.data.person || 'John Doe'}
+        </div>
+      )
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      colId: 'actions',
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div className="flex gap-1 justify-end">
+          <Button 
+            size="sm"
+            variant="ghost"
+            className="text-blue-600 hover:text-blue-800 px-2 py-0.5 text-xs h-6"
+            onClick={() => handleSendMessage(params.data)}
+          >
+            Reply
+          </Button>
+          <button 
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-sm hover:bg-gray-50"
+            title="Complete task"
+          >
+            <CheckCircle className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )
+    }
+  ];
+
   const renderContent = () => {
     if (blockId === 'needs-review') {
       return <ReviewFormsWidget />;
@@ -207,165 +443,12 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       return <TransactionsReviewsWidget />;
     }
 
-    const columnDefs = [
-      {
-        headerName: '',
-        field: 'checkbox',
-        colId: 'checkbox',
-        width: 50,
-        checkboxSelection: true,
-        headerCheckboxSelection: true,
-        pinned: 'left' as const
-      },
-      {
-        headerName: 'Task',
-        field: 'title',
-        colId: 'title',
-        flex: 2,
-        cellRenderer: (params: any) => (
-          <div className="flex flex-col gap-0.5 cursor-pointer" onClick={() => handleSendMessage(params.data)}>
-            {/* Task title clickable for details/reply */}
-            <div className="text-sm font-medium text-gray-900 hover:underline">
-              {params.data.title}
-            </div>
-            <div className="text-sm text-gray-600">
-              {params.data.message}
-            </div>
-            <div className="text-xs text-gray-500">
-              {params.data.date}
-            </div>
-          </div>
-        )
-      },
-      // Category column removed as per UX simplification request (2025-04-18)
-      // {
-      //   headerName: 'Category',
-      //   field: 'type',
-      //   colId: 'type',
-      //   flex: 1,
-      //   cellRenderer: (params: any) => (
-      //     <div className="flex items-center">
-      //       <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center mr-2">
-      //         {getCategoryIcon(params.data.type)}
-      //       </div>
-      //       <span className="text-sm text-gray-600">{params.data.type}</span>
-      //     </div>
-      //   )
-      // },
-      {
-        headerName: 'Priority',
-        field: 'priority',
-        flex: 1,
-        // Only display allowed priorities, and map to label
-        cellRenderer: (params: any) => {
-          // For URGENT TASKS (expedite-queue), always show High Priority
-          if (blockId === 'expedite-queue') {
-            return (
-              <Badge 
-                variant="outline" 
-                className={cn("text-sm h-6", getPriorityBadgeStyles('High'))}
-              >
-                High Priority
-              </Badge>
-            );
-          }
-          // Enforce only the 3 allowed priorities
-          const value = (params.data.priority || '').toLowerCase();
-          const label = PRIORITY_LABELS[value] || 'Unknown';
-          return (
-            <Badge 
-              variant="outline" 
-              className={cn("text-sm h-6", getPriorityBadgeStyles(label.replace(' Priority','')))}
-            >
-              {label}
-            </Badge>
-          );
-        }
-      },
-      {
-        headerName: 'Due',
-        field: 'due',
-        flex: 1,
-        cellRenderer: (params: any) => (
-          <div className="flex items-center text-sm text-gray-600">
-            <Clock className="h-3.5 w-3.5 mr-1 text-gray-400" />
-            {params.data.due}
-          </div>
-        )
-      },
-      {
-        headerName: 'Status',
-        field: 'status',
-        flex: 1,
-        cellRenderer: (params: any) => (
-          <Badge 
-            variant="outline" 
-            className={cn("text-sm h-6", getStatusBadgeStyles(params.data.status || 'Pending'))}
-          >
-            {params.data.status || 'Pending'}
-          </Badge>
-        )
-      },
-      {
-        headerName: 'Received from',
-        field: 'assignedTo',
-        flex: 1,
-        // Use consistent mapping as in dialog
-        cellRenderer: (params: any) => (
-          <div className="flex items-center text-sm text-gray-600">
-            <User className="h-3.5 w-3.5 mr-1 text-gray-400" />
-            {/* Use getReceivedFrom to match dialog logic */}
-            {getReceivedFrom(params.data)}
-          </div>
-        )
-      },
-      {
-        headerName: 'Person',
-        field: 'person',
-        flex: 1,
-        cellRenderer: (params: any) => (
-          <div 
-            className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-            onClick={() => handlePersonClick(params.data.person || 'John Doe')}
-            title={`View patient chart for ${params.data.person || 'John Doe'}`}
-          >
-            <User className="h-3.5 w-3.5 mr-1 text-blue-400" />
-            {params.data.person || 'John Doe'}
-          </div>
-        )
-      },
-      {
-        headerName: 'Actions',
-        field: 'actions',
-        colId: 'actions',
-        flex: 1,
-        cellRenderer: (params: any) => (
-          <div className="flex gap-1 justify-end">
-            <Button 
-              size="sm"
-              variant="ghost"
-              className="text-blue-600 hover:text-blue-800 px-2 py-0.5 text-xs h-6"
-              onClick={() => handleSendMessage(params.data)}
-            >
-              Reply
-            </Button>
-            <button 
-              className="text-gray-400 hover:text-gray-600 p-1 rounded-sm hover:bg-gray-50"
-              title="Complete task"
-            >
-              <CheckCircle className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )
-      }
-    ];
-
     return (
       <>
-        {tasks.length > 0 ? (
+        {displayTasks.length > 0 ? (
           <div className="w-full h-[calc(100vh-200px)]">
             <DataTable
-              rowData={tasks}
+              rowData={displayTasks}
               columnDefs={columnDefs}
               className="w-full h-full rounded-lg"
               gridOptions={{
@@ -420,7 +503,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
             <h2 className="text-lg font-medium text-gray-900">{getBlockTitle(blockId)}</h2>
             {blockId !== 'needs-review' && (
               <Badge variant="outline" className="text-xs font-normal text-gray-600 bg-gray-50">
-                {tasks.length} tasks
+                {displayTasks.length} tasks
               </Badge>
             )}
           </div>

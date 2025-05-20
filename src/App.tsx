@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/toaster"
 import OldUI from './pages/OldUI'
 import Inbox from './pages/Inbox'
 import Schedule from './pages/Schedule'
+import MyCalendar from './pages/MyCalendar'
 import TaskHub from './pages/TaskHub'
 import { TaskProvider } from '@/context/TaskContext'
 
@@ -84,6 +85,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Schedule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/my-calendar" 
+        element={
+          <ProtectedRoute>
+            <MyCalendar />
           </ProtectedRoute>
         } 
       />
