@@ -62,6 +62,7 @@
     "echarts": "^5.4.3",
     "firebase": "^11.1.0",
     "framer-motion": "^10.18.0",
+    "healthicons-react": "^3.2.5",
     "lucide-react": "^0.469.0",
     "motion": "^11.15.0",
     "postcss": "^8.4.33",

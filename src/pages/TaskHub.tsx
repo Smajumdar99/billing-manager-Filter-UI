@@ -294,8 +294,17 @@ const TaskHub: React.FC = () => {
             task.due === 'Today'
           );
         case 'needs-review':
-          // Return only Review Forms type tasks
-          return tasks.filter(task => task.type === 'Review Forms');
+          // Return only Review Forms type tasks with High priority
+          return tasks.filter(task => 
+            task.type === 'Review Forms' && 
+            (task.priority === 'High' || task.priority === 'Blockers')
+          );
+        case 'needs-review-medium':
+          // Return only Review Forms type tasks with Medium priority
+          return tasks.filter(task => 
+            task.type === 'Review Forms' && 
+            task.priority === 'Medium'
+          );
         case 'transaction-reviews':
           // Return only Transaction Reviews type tasks
           return tasks.filter(task => task.type === 'Transaction Reviews');
@@ -316,6 +325,9 @@ const TaskHub: React.FC = () => {
         case 'agenda':
           // Return only Agenda type tasks
           return tasks.filter(task => task.type === 'Agenda');
+        case 'messages':
+          // Return only Messages type tasks
+          return tasks.filter(task => task.type === 'Messages');
         case 'prescriptions':
           // Return only Medication type tasks
           return tasks.filter(task => task.type === 'Medication');
@@ -349,6 +361,20 @@ const TaskHub: React.FC = () => {
       criticality: 'critical'
     },
     {
+      id: 'needs-review',
+      count: getTasksForBlock('needs-review').length,
+      label: 'Review Forms',
+      textColor: 'text-purple-700',
+      criticality: 'high'
+    },
+    {
+      id: 'needs-review-medium',
+      count: getTasksForBlock('needs-review-medium').length,
+      label: 'Review Forms',
+      textColor: 'text-purple-700',
+      criticality: 'medium'
+    },
+    {
       id: 'suggested-actions',
       count: getTasksForBlock('suggested-actions').length,
       label: 'All Reminders',
@@ -356,25 +382,11 @@ const TaskHub: React.FC = () => {
       criticality: 'medium'
     },
     {
-      id: 'agenda',
-      count: getTasksForBlock('agenda').length,
-      label: 'Agenda',
-      textColor: 'text-blue-700',
-      criticality: 'low'
-    },
-    {
       id: 'fyi-zone',
       count: getTasksForBlock('fyi-zone').length,
       label: 'Birthdays',
       textColor: 'text-green-700',
       criticality: 'low'
-    },
-    {
-      id: 'needs-review',
-      count: getTasksForBlock('needs-review').length,
-      label: 'Review Forms',
-      textColor: 'text-purple-700',
-      criticality: 'high'
     },
     {
       id: 'transaction-reviews',
@@ -411,6 +423,21 @@ const TaskHub: React.FC = () => {
       textColor: 'text-blue-700',
       criticality: 'medium',
     },
+    // Everything Else section
+    {
+      id: 'messages',
+      count: tasks.filter(task => task.type === 'Messages').length,
+      label: 'Messages',
+      textColor: 'text-blue-700',
+      criticality: 'low'
+    },
+    {
+      id: 'agenda',
+      count: getTasksForBlock('agenda').length,
+      label: 'Agenda',
+      textColor: 'text-blue-700',
+      criticality: 'low'
+    }
   ];
   
   // State for adding custom blocks
@@ -866,7 +893,7 @@ const TaskHub: React.FC = () => {
   }, [checkScrollable]);
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-indigo-50 to-red-50/50">
+    <div className="flex flex-col h-screen">
       {/* Top Navigation */}
       <TopNavigationBar 
         hospitalName="Dr. Cloud EHR"
@@ -885,7 +912,7 @@ const TaskHub: React.FC = () => {
         <main className={`flex-1 p-3 sm:p-4 md:p-6 overflow-auto transition-all duration-300 ${
           selectedBlockId ? 'min-w-0 w-0 flex-shrink' : 'w-full'
         }`}>
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-8xl mx-auto">
             {/* Smart Categorisation and Smart Assist Sections */}
             <div className="flex flex-col gap-4 lg:flex-row lg:gap-8 mb-6 md:mb-8">
               {/* Smart Categorisation Section */}
@@ -964,7 +991,7 @@ const TaskHub: React.FC = () => {
                       )}
                     </h3>
                     <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
+                      <div className="absolute inset-0 pointer-events-none" />
                       <div className="overflow-x-auto scrollbar-hide relative" ref={highPriorityRef}>
                         <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
                           {filteredAndSortedBlocks
@@ -1022,7 +1049,7 @@ const TaskHub: React.FC = () => {
                       )}
                     </h3>
                     <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
+                      <div className="absolute inset-0 pointer-events-none" />
                       <div className="overflow-x-auto scrollbar-hide relative" ref={mediumPriorityRef}>
                         <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
                           {filteredAndSortedBlocks
@@ -1073,18 +1100,18 @@ const TaskHub: React.FC = () => {
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
                         Low Priority
                       </div>
-                      {filteredAndSortedBlocks.filter(block => block.criticality === 'low').length > 0 && (
+                      {filteredAndSortedBlocks.filter(block => block.criticality === 'low' && block.id !== 'agenda' && block.id !== 'messages').length > 0 && (
                         <span className="text-sm text-gray-500">
-                          ({filteredAndSortedBlocks.filter(block => block.criticality === 'low').length} items)
+                          ({filteredAndSortedBlocks.filter(block => block.criticality === 'low' && block.id !== 'agenda' && block.id !== 'messages').length} items)
                         </span>
                       )}
                     </h3>
                     <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-red-50/50 pointer-events-none" />
+                      <div className="absolute inset-0 pointer-events-none" />
                       <div className="overflow-x-auto scrollbar-hide relative" ref={lowPriorityRef}>
                         <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
                           {filteredAndSortedBlocks
-                            .filter(block => block.criticality === 'low')
+                            .filter(block => block.criticality === 'low' && block.id !== 'agenda' && block.id !== 'messages')
                             .map((block, index) => (
                               <div
                                 key={block.id}
@@ -1100,27 +1127,43 @@ const TaskHub: React.FC = () => {
                             ))}
                         </div>
                       </div>
+                    </div>
+                  </div>
 
-                      {/* Show scroll controls only on tablet and above */}
-                      {scrollableContainers.low && (
-                        <>
-                          <div className="hidden sm:block absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          
-                          <button 
-                            onClick={() => handleScroll('left', lowPriorityRef)}
-                            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
-                          >
-                            <ChevronLeftIcon className="w-5 h-5" />
-                          </button>
-                          <button 
-                            onClick={() => handleScroll('right', lowPriorityRef)}
-                            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
-                          >
-                            <ChevronRightIcon className="w-5 h-5" />
-                          </button>
-                        </>
+                  {/* Everything Else Section */}
+                  <div>
+                    <h3 className="text-base font-medium text-blue-700 mb-1 flex items-center gap-2 px-2 md:px-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        Everything Else
+                      </div>
+                      {filteredAndSortedBlocks.filter(block => block.id === 'agenda' || block.id === 'messages').length > 0 && (
+                        <span className="text-sm text-gray-500">
+                          ({filteredAndSortedBlocks.filter(block => block.id === 'agenda' || block.id === 'messages').length} items)
+                        </span>
                       )}
+                    </h3>
+                    <div className="relative group">
+                      <div className="absolute inset-0  pointer-events-none" />
+                      <div className="overflow-x-auto scrollbar-hide relative">
+                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
+                          {filteredAndSortedBlocks
+                            .filter(block => block.id === 'agenda' || block.id === 'messages')
+                            .map((block, index) => (
+                              <div
+                                key={block.id}
+                                onClick={() => handleTaskClick(block.id)}
+                                className="cursor-pointer w-full sm:w-[180px] md:w-[220px] flex-shrink-0 p-0.5"
+                              >
+                                <TaskBlockComponent
+                                  {...block}
+                                  index={index}
+                                  isSelected={selectedBlockId === block.id}
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
 

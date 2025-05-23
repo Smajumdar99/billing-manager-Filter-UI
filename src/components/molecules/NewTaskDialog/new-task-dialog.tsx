@@ -15,7 +15,16 @@ import {
 } from "@/components/atoms/Select/select";
 import { Checkbox } from '@/components/atoms/Checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/atoms/RadioGroup';
-import { EyeIcon, XMarkIcon, XCircleIcon, ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import { 
+  EyeIcon, 
+  XMarkIcon, 
+  XCircleIcon, 
+  ArrowLeftIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon, 
+  PaperAirplaneIcon,
+  UserIcon
+} from "@heroicons/react/24/outline";
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/atoms/Command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/atoms/Popover";
@@ -39,6 +48,8 @@ interface Recipient {
   name: string;
   role: string;
   type: 'staff' | 'patient' | 'group';
+  gender?: 'M' | 'F' | 'O';  // Optional gender field
+  age?: number;              // Optional age field
 }
 
 interface DeliveryMethod {
@@ -53,11 +64,17 @@ interface Priority {
 
 interface Task {
   id: string;
-  title: string;
-  person?: string;
+  subject: string;
   message: string;
+  recipients: Recipient[];
+  linkedPatientId: string | null;
+  progress: string;
   priority: string;
-  due: string;
+  startDate: string;
+  dueDate: string;
+  createdAt: string;
+  createdBy: string;
+  attachments: File[];
 }
 
 interface NewTaskDialogProps {
@@ -76,17 +93,17 @@ const mockRecipients: Recipient[] = [
   { id: '3', name: 'Nurse Rebecca Adams', role: 'Registered Nurse', type: 'staff' },
   { id: '4', name: 'Cardiology Department', role: 'Department', type: 'group' },
   { id: '5', name: 'Emergency Team', role: 'Team', type: 'group' },
-  { id: '6', name: 'John Smith', role: 'Patient', type: 'patient' },
-  { id: '7', name: 'Emma Davis', role: 'Patient', type: 'patient' },
-  { id: '8', name: 'John Doe', role: 'Patient', type: 'patient' },
-  { id: '9', name: 'Sarah Miller', role: 'Patient', type: 'patient' },
-  { id: '10', name: 'Michael Klein', role: 'Patient', type: 'patient' },
-  { id: '11', name: 'Lisa Thompson', role: 'Patient', type: 'patient' },
-  { id: '12', name: 'Robert Johnson', role: 'Patient', type: 'patient' },
-  { id: '13', name: 'David Williams', role: 'Patient', type: 'patient' },
-  { id: '14', name: 'Emma Wilson', role: 'Patient', type: 'patient' },
-  { id: '15', name: 'James Wilson', role: 'Patient', type: 'patient' },
-  { id: '16', name: 'Carlos Rodriguez', role: 'Patient', type: 'patient' },
+  { id: '6', name: 'John Smith', role: '', type: 'patient', gender: 'M', age: 45 },
+  { id: '7', name: 'Emma Davis', role: '', type: 'patient', gender: 'F', age: 32 },
+  { id: '8', name: 'John Doe', role: '', type: 'patient', gender: 'M', age: 28 },
+  { id: '9', name: 'Sarah Miller', role: '', type: 'patient', gender: 'F', age: 56 },
+  { id: '10', name: 'Michael Klein', role: '', type: 'patient', gender: 'M', age: 39 },
+  { id: '11', name: 'Lisa Thompson', role: '', type: 'patient', gender: 'F', age: 41 },
+  { id: '12', name: 'Robert Johnson', role: '', type: 'patient', gender: 'M', age: 62 },
+  { id: '13', name: 'David Williams', role: '', type: 'patient', gender: 'M', age: 35 },
+  { id: '14', name: 'Emma Wilson', role: '', type: 'patient', gender: 'F', age: 29 },
+  { id: '15', name: 'James Wilson', role: '', type: 'patient', gender: 'M', age: 48 },
+  { id: '16', name: 'Carlos Rodriguez', role: '', type: 'patient', gender: 'M', age: 52 },
   { id: '17', name: 'Group A Patients', role: 'Patient Group', type: 'group' },
   { id: '18', name: 'Anxiety Support Group', role: 'Patient Group', type: 'group' },
 ];
@@ -157,10 +174,7 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
   const [dueDate, setDueDate] = useState('');
   const [startDateType, setStartDateType] = useState<'today' | 'tomorrow' | 'custom'>('today');
   const [dueDateType, setDueDateType] = useState<'today' | 'tomorrow' | 'custom'>('tomorrow');
-  const [attachments, setAttachments] = useState<File[]>([]);
-  // --- Linked Patient/Client State ---
   const [linkedPatientId, setLinkedPatientId] = useState<string | null>(null);
-  // Add state for message
   const [message, setMessage] = useState('');
   const [subject, setSubject] = useState('');
 
@@ -172,18 +186,6 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
   // --- Task Context ---
   const { addTask } = useTaskContext();
   const { toast } = useToast();
-
-  // Handler for file input change
-  const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setAttachments(prev => [...prev, ...Array.from(e.target.files)]);
-      e.target.value = '';
-    }
-  };
-  // Handler to remove a file
-  const removeAttachment = (idx: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== idx));
-  };
 
   // Helper to get today's and tomorrow's date in yyyy-MM-dd
   const todayStr = formatDate(new Date(), 'yyyy-MM-dd');
@@ -246,18 +248,27 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
   // Prefill dialog fields if a task is provided (for reply/view)
   useEffect(() => {
     if (task) {
-      setSubject(task.title || '');
-      setSelectedRecipients(task.person ? [{ id: '', name: task.person, role: '', type: 'patient' }] : []);
+      setSubject(task.subject || '');
+      setSelectedRecipients(task.recipients || []);
       setMessage(task.message || '');
       setSelectedPriority(task.priority || 'medium');
-      setDueDate(task.due || '');
-      // Add any other fields as needed
+      setDueDate(task.dueDate || '');
+      setLinkedPatientId(task.linkedPatientId || null);
+      setProgress(task.progress || 'not_started');
+      setStartDate(task.startDate || '');
+      setStartDateType('today');
+      setDueDateType('today');
     } else {
       setSubject('');
       setSelectedRecipients([]);
       setMessage('');
       setSelectedPriority('medium');
       setDueDate('');
+      setLinkedPatientId(null);
+      setProgress('not_started');
+      setStartDate('');
+      setStartDateType('today');
+      setDueDateType('today');
     }
   }, [task, isOpen]);
 
@@ -297,27 +308,27 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
     setSubjectError('');
     setMessageError('');
     // Create new task object
-    const newTask = {
+    const newTask: Task = {
       id: `${Date.now()}`,
       subject,
       message,
       recipients: selectedRecipients,
       linkedPatientId,
-      progress: progress,
+      progress,
       priority: selectedPriority,
       startDate: computedStartDate,
       dueDate: computedDueDate,
-      attachments,
       createdAt: new Date().toISOString(),
       createdBy: 'You', // Replace with actual user if available
+      attachments: []
     };
+    
     console.log('Adding new task:', newTask);
     addTask(newTask);
     if (onTaskAdded) onTaskAdded();
     // Optionally reset form and close dialog
     setMessage('');
     setSelectedRecipients([]);
-    setAttachments([]);
     setLinkedPatientId(null);
     setSubject('');
     setProgress('not_started');
@@ -332,22 +343,25 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         aria-describedby="new-task-dialog-desc"
-        className="sm:max-w-[900px] lg:max-w-4xl p-0 flex flex-col h-[800px] max-h-[90vh] overflow-auto bg-gradient-to-br from-orange-50 to-blue-100"
+        className="sm:max-w-[1000px] lg:max-w-[1200px] p-0 flex flex-col h-[800px] max-h-[90vh] overflow-auto bg-gradient-to-br from-orange-50 to-blue-100"
       >
         {/* Accessible dialog title for screen readers, visually hidden */}
-        <DialogTitle className="sr-only">New Task</DialogTitle>
+        <DialogTitle className="sr-only">{task ? 'View or Edit Task' : 'New Task'}</DialogTitle>
         {/* Accessible dialog description for screen readers, visually hidden */}
         <DialogDescription id="new-task-dialog-desc" className="sr-only">
-          Create a new task and optionally send a message to recipients. Fill out the form fields to specify task details.
+          {task ? 'View or edit existing task details' : 'Create a new task and optionally send a message to recipients'}
         </DialogDescription>
         {/* Dialog Title */}
         <div className="px-4 py-2 rounded-t-xl">
-          <h2 className="text-base font-semibold text-gray-900">New Task</h2>
+          <h2 className="text-base font-semibold text-gray-900">{task ? 'View or Edit Task' : 'New Task'}</h2>
         </div>
         {/* Main two-column layout for compact, beautiful UX */}
-        <div className="flex flex-1 min-h-0 overflow-hidden gap-4 p-4">
+        <div className="flex flex-1 min-h-0 overflow-hidden gap-6 p-4">
           {/* Left: Task Creation Form */}
-          <div className="flex-1 min-w-0 p-4 space-y-4 bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
+          <div className={cn(
+            "min-w-0 p-6 space-y-4 bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col",
+            task ? "w-[calc(100%-460px)]" : "w-full" // Give more space to form in view/edit mode
+          )}>
             {/* Recipients/Assignees and Link to Patient/Client side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Recipients/Assignees Section - using shadcn Combobox */}
@@ -379,13 +393,12 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Link to Patient/Client <span className='text-gray-400'>(optional)</span></label>
                 <Combobox
-                  // Hide filter tabs for a cleaner UI
                   hideFilters={true}
                   options={filteredRecipients.filter(r => r.type === 'patient').map(r => ({
                     value: r.id,
                     label: r.name,
-                    description: r.role,
-                    type: 'staff' // not used for filtering here
+                    description: r.gender && r.age ? `${r.gender}, ${r.age} years` : '',
+                    type: 'staff'
                   }))}
                   value={linkedPatientId ? [linkedPatientId] : []}
                   onChange={ids => setLinkedPatientId(ids[0] || null)}
@@ -554,17 +567,11 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
               </label>
               {/* Inline error message for Message */}
               {messageError && <div className="text-xs text-red-500 mb-1">{messageError}</div>}
-              <Select value={''} onValueChange={() => {}}>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="template1">Template 1</SelectItem>
-                    <SelectItem value="template2">Template 2</SelectItem>
-                    <SelectItem value="template3">Template 3</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
               <Textarea
-                className="w-full mt-2"
+                className={cn(
+                  "w-full mt-2",
+                  !task && "min-h-[200px]" // Increase height only in New Task mode
+                )}
                 placeholder="Enter your task details here..."
                 value={message}
                 onChange={e => {
@@ -573,91 +580,78 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
                 }}
               />
             </div>
-            {/* Attachments Section */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Attachments</label>
-              <Input
-                type="file"
-                multiple
-                className="w-full text-xs text-gray-700 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-50 file:text-primary hover:file:bg-blue-100"
-                onChange={handleAttachmentChange}
-              />
-              {attachments.length > 0 && (
-                <ul className="mt-2 space-y-1">
-                  {attachments.map((file, idx) => (
-                    <li key={idx} className="flex items-center text-xs text-gray-800">
-                      <span className="truncate max-w-[200px]" title={file.name}>{file.name}</span>
-                      <button
-                        type="button"
-                        className="ml-2 text-gray-400 hover:text-red-500"
-                        onClick={() => removeAttachment(idx)}
-                        aria-label="Remove attachment"
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            
+            {/* Created By information - Only show in View/Edit mode */}
+            {task && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Created By</label>
+                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-md border border-gray-100">
+                  <UserIcon className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-700">Dr. Sarah Johnson</span>
+                  <span className="text-xs text-gray-400 ml-2">on {formatDate(new Date(task.createdAt || new Date()), 'MMM dd, yyyy')}</span>
+                </div>
+              </div>
+            )}
            
           </div>
-          {/* Right: Conversation History */}
-          <div className="w-[320px] min-w-[240px] max-w-[400px] bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
-            <div className="p-3 border-b border-gray-100">
-              <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">Conversation</h3>
-            </div>
-            {/* Stylish, modern message list */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-white">
-              {conversation.length === 0 && (
-                <div className="text-xs text-gray-400 text-center mt-10">No conversation yet for this task.</div>
-              )}
-              {conversation.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={[
-                    'flex flex-col px-3 py-2 rounded-lg shadow-xs border',
-                    msg.type === 'status'
-                      ? 'bg-blue-50 border-blue-100 border-l-4'
-                      : 'bg-white border-gray-100 border-l-4 border-primary/20',
-                  ].join(' ')}
-                >
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-semibold text-gray-900 text-sm">
-                      {msg.user}
-                    </span>
-                    <span className="text-[11px] text-gray-400 ml-2">{msg.time}</span>
+          {/* Right: Conversation History - Only show when viewing/editing task */}
+          {task && (
+            <div className="w-[440px] min-w-[440px] bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
+              <div className="p-3 border-b border-gray-100">
+                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">Conversation</h3>
+              </div>
+              {/* Stylish, modern message list */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-white">
+                {conversation.length === 0 && (
+                  <div className="text-xs text-gray-400 text-center mt-10">No conversation yet for this task.</div>
+                )}
+                {conversation.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={[
+                      'flex flex-col px-3 py-2 rounded-lg shadow-xs border',
+                      msg.type === 'status'
+                        ? 'bg-blue-50 border-blue-100 border-l-4'
+                        : 'bg-white border-gray-100 border-l-4 border-primary/20',
+                    ].join(' ')}
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-semibold text-gray-900 text-sm">
+                        {msg.user}
+                      </span>
+                      <span className="text-[11px] text-gray-400 ml-2">{msg.time}</span>
+                    </div>
+                    <div className={msg.type === 'status' ? 'text-xs font-medium text-blue-700' : 'text-sm text-gray-700'}>{msg.text}</div>
                   </div>
-                  <div className={msg.type === 'status' ? 'text-xs font-medium text-blue-700' : 'text-sm text-gray-700'}>{msg.text}</div>
-                </div>
-              ))}
+                ))}
+              </div>
+              {/* Modern reply box */}
+              <div className="border-t border-gray-100 bg-white p-2 flex items-center gap-2 shadow-inner rounded-b-xl">
+                <Input
+                  className="flex-1 rounded-full border border-gray-200 px-3 py-1 text-sm bg-gray-50 focus:outline-none focus:border-primary"
+                  placeholder="Add a comment..."
+                  value={reply}
+                  onChange={e => setReply(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSendReply(); }}
+                  aria-label="Add a comment"
+                />
+                <button
+                  type="button"
+                  className="bg-blue-100 text-blue-600 font-semibold px-4 py-2 rounded-full transition-colors hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleSendReply}
+                  disabled={!reply.trim()}
+                  aria-label="Send"
+                >
+                  <PaperAirplaneIcon className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            {/* Modern reply box */}
-            <div className="border-t border-gray-100 bg-white p-2 flex items-center gap-2 shadow-inner rounded-b-xl">
-              <Input
-                className="flex-1 rounded-full border border-gray-200 px-3 py-1 text-sm bg-gray-50 focus:outline-none focus:border-primary"
-                placeholder="Add a comment..."
-                value={reply}
-                onChange={e => setReply(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleSendReply(); }}
-                aria-label="Add a comment"
-              />
-              <button
-                type="button"
-                className="bg-blue-100 text-blue-600 font-semibold px-4 py-2 rounded-full transition-colors hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleSendReply}
-                disabled={!reply.trim()}
-                aria-label="Send"
-              >
-                <PaperAirplaneIcon className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          )}
         </div>
         {/* Footer */}
         <DialogFooter className="py-2.5 px-4">
-          <Button variant="ghose" onClick={onClose} className="px-3 h-9 font-normal border-gray-200 text-sm">Cancel</Button>
-          <Button variant="default" onClick={handleSendTask}>Send</Button>
+          <Button variant="ghost" onClick={onClose} className="px-3 h-9 font-normal border-gray-200 text-sm">Cancel</Button>
+          <Button variant="default" onClick={handleSendTask}>{task ? 'Update' : 'Send'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

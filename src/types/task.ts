@@ -3,7 +3,10 @@ export interface Task {
   title: string;
   priority: 'Blockers' | 'High' | 'Medium' | 'Low';
   program: string;
-  type: 'Reminder' | 'Messages' | 'Dr First Notifications' | 'Review Forms' | 'Birthdays' | 'Agenda' | 'Assessment' | 'Medication' | 'Treatment' | 'Insurance' | 'Clinical' | 'Administrative' | 'Transaction Reviews';
+  type: 'Admit/Discharge' | 'Appointment' | 'Authorizations' | 'Billing alerts' | 
+        'Billing statement' | 'Deceased' | 'Encounter' | 'Messages' | 'Dr First Notifications' | 
+        'Review Forms' | 'Birthdays' | 'Agenda' | 'Assessment' | 'Medication' | 
+        'Treatment' | 'Insurance' | 'Clinical' | 'Administrative' | 'Transaction Reviews';
   due: string;
   status?: string;
   description?: string;
@@ -15,4 +18,5 @@ export interface Task {
   person?: string;
   message: string;
   date?: string;
+  isAdmitted?: boolean;
 } 

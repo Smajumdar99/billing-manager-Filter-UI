@@ -153,7 +153,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
           <button 
             className="rounded-full bg-white border border-gray-300 hover:bg-gray-50 p-2 shadow-sm"
             onClick={handleOpenModal}
-            title="New Appointment"
+            title="..."
           >
             <PlusIcon className="w-4 h-4 text-gray-700" />
           </button>

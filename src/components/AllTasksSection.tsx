@@ -29,6 +29,8 @@ import {
   MenubarSeparator,
   MenubarLabel
 } from '@/components/ui/menubar';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import TaskDetailsPanel from '@/components/TaskDetailsPanel';
 
 // Task interface for the table
 interface Task {
@@ -952,6 +954,60 @@ const CATEGORIES = [
   { id: 'assessment', label: 'Assessment', icon: <PresentationChartLineIcon /> },
 ];
 
+// Add new TaskCard component for mobile view
+const TaskCard: React.FC<{ task: Task; onSelect: (task: Task) => void }> = ({ task, onSelect }) => {
+  return (
+    <div 
+      className="bg-white rounded-lg border border-gray-100 p-4 mb-3 shadow-sm active:bg-gray-50"
+      onClick={() => onSelect(task)}
+    >
+      {/* Title and Priority */}
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="text-sm font-medium text-gray-900 flex-1 mr-2">
+          {task.title || <span className="text-gray-400 italic">No subject</span>}
+        </h3>
+        <Badge variant="outline" className={cn('text-xs h-6 shrink-0', getPriorityBadgeStyles(task.priority))}>
+          {PRIORITY_LABELS[task.priority.toLowerCase()] || 'Unknown'}
+        </Badge>
+      </div>
+      
+      {/* Description */}
+      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+        {task.description}
+      </p>
+      
+      {/* Meta Information */}
+      <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
+        <div className="flex items-center">
+          <ClockIcon className="h-3.5 w-3.5 mr-1 text-gray-400" />
+          {task.dueDate}
+        </div>
+        <div className="flex items-center">
+          <UserIcon className="h-3.5 w-3.5 mr-1 text-blue-400" />
+          {task.assignedTo}
+        </div>
+      </div>
+      
+      {/* Status and Actions */}
+      <div className="flex items-center justify-between">
+        <Badge variant="outline" className={cn('text-xs h-6', getStatusBadgeStyles(task.status))}>
+          {task.status}
+        </Badge>
+        <div className="flex gap-2">
+          <button className="text-blue-600 hover:text-blue-800 text-xs font-medium underline px-1 py-0.5">
+            Reply
+          </button>
+          <button className="text-gray-400 hover:text-gray-600 p-1 rounded-sm hover:bg-gray-50">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /**
  * AllTasksSection Component
  * 
@@ -964,6 +1020,18 @@ const AllTasksSection: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [activeCategory, setActiveCategory] = useState<string>('reminders');
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const isMobile = useMediaQuery('(max-width: 640px)');
+
+  // Handle task selection
+  const handleTaskSelect = (task: Task) => {
+    setSelectedTask(task);
+  };
+
+  // Handle panel close
+  const handlePanelClose = () => {
+    setSelectedTask(null);
+  };
 
   // Helper function to match task program with category
   const matchesCategory = (program: string, categoryId: string): boolean => {
@@ -989,9 +1057,13 @@ const AllTasksSection: React.FC = () => {
         task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.program.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesFilter = activeFilter === 'all' || 
-        task.priority.toLowerCase() === activeFilter.toLowerCase() ||
-        task.status.toLowerCase() === activeFilter.toLowerCase();
+      let matchesFilter = true;
+      if (activeFilter === 'no_subject') {
+        matchesFilter = !task.title;
+      } else if (activeFilter !== 'all') {
+        matchesFilter = task.priority.toLowerCase() === activeFilter.toLowerCase() ||
+          task.status.toLowerCase() === activeFilter.toLowerCase();
+      }
       
       const matchesCategoryType = matchesCategory(task.program, activeCategory);
       
@@ -1004,7 +1076,9 @@ const AllTasksSection: React.FC = () => {
       headerName: '',
       field: 'checkbox',
       colId: 'checkbox',
-      width: 50,
+      width: 35,
+      minWidth: 35,
+      maxWidth: 35,
       checkboxSelection: true,
       headerCheckboxSelection: true,
       pinned: 'left' as const
@@ -1139,21 +1213,23 @@ const AllTasksSection: React.FC = () => {
       
       {isExpanded && (
         <div className="p-4">
-          {/* Search, Tabs and Filter Controls */}
-          <div className="flex items-center gap-3 mb-4">
+          {/* Search and Controls - Mobile Optimized */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
             <Input
               type="text"
               placeholder="Search"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-64 shrink-0"
+              className="w-full sm:w-64"
             />
-            <Tabs
-              tabs={CATEGORIES}
-              activeTab={activeCategory}
-              onTabChange={setActiveCategory}
-              className="flex-1 min-w-0"
-            />
+            <div className="flex-1 min-w-0 overflow-x-auto">
+              <Tabs
+                tabs={CATEGORIES}
+                activeTab={activeCategory}
+                onTabChange={setActiveCategory}
+                className="w-full"
+              />
+            </div>
             <Menubar className="bg-white border rounded-lg px-2 py-1 shrink-0">
               <MenubarMenu>
                 <MenubarTrigger>Filters</MenubarTrigger>
@@ -1167,6 +1243,9 @@ const AllTasksSection: React.FC = () => {
                   <MenubarItem onClick={() => setActiveFilter('Overdue')}>
                     Overdue
                   </MenubarItem>
+                  <MenubarItem onClick={() => setActiveFilter('no_subject')}>
+                    No Subject
+                  </MenubarItem>
                   <MenubarSeparator />
                   <MenubarLabel>Status</MenubarLabel>
                   {['Pending', 'In Progress', 'Completed', 'Overdue'].map(status => (
@@ -1179,24 +1258,47 @@ const AllTasksSection: React.FC = () => {
             </Menubar>
           </div>
           
-          {/* Tasks Table */}
           {filteredTasks.length > 0 ? (
-            <div className="w-full h-[calc(100vh-350px)]">
-              <DataTable
-                rowData={filteredTasks}
-                columnDefs={columnDefs}
-                className="w-full h-full rounded-lg"
-                gridOptions={{
-                  suppressCellFocus: true,
-                  animateRows: true,
-                  pagination: true,
-                  paginationPageSize: 20,
-                  domLayout: 'autoHeight',
-                  rowHeight: 48,
-                  headerHeight: 40,
-                  suppressHorizontalScroll: true
-                }}
-              />
+            <>
+              {/* Desktop View */}
+              <div className="hidden sm:block w-full h-[calc(100vh-350px)]">
+                <DataTable
+                  rowData={filteredTasks}
+                  columnDefs={columnDefs}
+                  className="w-full h-full rounded-lg"
+                  gridOptions={{
+                    suppressCellFocus: true,
+                    animateRows: true,
+                    pagination: true,
+                    paginationPageSize: 20,
+                    domLayout: 'autoHeight',
+                    rowHeight: 48,
+                    headerHeight: 40,
+                    suppressHorizontalScroll: true,
+                    onRowClicked: (params) => handleTaskSelect(params.data)
+                  }}
+                />
+              </div>
+              
+              {/* Mobile View */}
+              <div className="sm:hidden">
+                {filteredTasks.map((task) => (
+                  <TaskCard 
+                    key={task.id} 
+                    task={task}
+                    onSelect={handleTaskSelect}
+                  />
+                ))}
+              </div>
+              
+              {/* Task Details Panel */}
+              {selectedTask && (
+                <TaskDetailsPanel
+                  blockId={activeCategory}
+                  tasks={[selectedTask]}
+                  onClose={handlePanelClose}
+                />
+              )}
               
               <div className="flex justify-between items-center text-sm text-gray-500 px-2 mt-4">
                 <div>
@@ -1211,7 +1313,7 @@ const AllTasksSection: React.FC = () => {
                   Add New Task
                 </Button>
               </div>
-            </div>
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center text-center h-48">
               <RectangleStackIcon className="h-10 w-10 text-gray-300 mb-2" />
