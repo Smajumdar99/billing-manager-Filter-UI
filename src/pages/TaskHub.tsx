@@ -305,9 +305,9 @@ const TaskHub: React.FC = () => {
             task.type === 'Review Forms' && 
             task.priority === 'Medium'
           );
-        case 'transaction-reviews':
-          // Return only Transaction Reviews type tasks
-          return tasks.filter(task => task.type === 'Transaction Reviews');
+        case 'treatment-reviews':
+          // Return only Treatment Review type tasks
+          return tasks.filter(task => task.type === 'Treatment Reviews');
         case 'aging-tasks':
           // Return tasks that are overdue
           return tasks.filter(task => 
@@ -389,9 +389,9 @@ const TaskHub: React.FC = () => {
       criticality: 'low'
     },
     {
-      id: 'transaction-reviews',
-      count: getTasksForBlock('transaction-reviews').length,
-      label: 'Treament Reviews',
+      id: 'treatment-reviews',
+      count: getTasksForBlock('treatment-reviews').length,
+      label: 'Treatment Reviews',
       textColor: 'text-indigo-700',
       criticality: 'high'
     },
@@ -814,6 +814,7 @@ const TaskHub: React.FC = () => {
   }, [showCreatedByMeGuide]);
 
   const handleTaskClick = (blockId: string) => {
+    console.log('Clicked block ID:', blockId);
     setSelectedBlockId(blockId);
   };
   

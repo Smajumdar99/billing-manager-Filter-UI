@@ -5,6 +5,7 @@ import { Input } from '@/components/atoms/Input';
 import { Tabs } from '@/components/atoms/Tabs';
 import { cn } from '@/lib/utils';
 import { DataTable } from '@/components/organisms/DataTable';
+import { ColumnMenuTab, GridOptions } from 'ag-grid-community';
 import {
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
@@ -18,7 +19,7 @@ import {
   UserIcon,
   ChatBubbleLeftRightIcon,
   RectangleStackIcon,
-  PlusIcon
+  FunnelIcon
 } from '@heroicons/react/24/outline';
 import {
   Menubar,
@@ -940,18 +941,18 @@ const getStatusBadgeStyles = (status: string) => {
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  high: 'High Priority',
-  medium: 'Medium Priority',
-  low: 'Low Priority'
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low'
 };
 
 const CATEGORIES = [
   { id: 'reminders', label: 'Reminders', icon: <BellIcon /> },
-  { id: 'review-form', label: 'Review Form', icon: <DocumentTextIcon /> },
-  { id: 'agenda', label: 'Agenda', icon: <CalendarIcon /> },
-  { id: 'prescriptions', label: 'Review Prescriptions', icon: <DocumentCheckIcon /> },
-  { id: 'message', label: 'Message', icon: <ChatBubbleLeftRightIcon /> },
-  { id: 'assessment', label: 'Assessment', icon: <PresentationChartLineIcon /> },
+  { id: 'review-form', label: 'Review Forms', icon: <DocumentTextIcon /> },
+  { id: 'treatment-plan', label: 'Treatment Plan Reviews', icon: <DocumentCheckIcon /> },
+  { id: 'drfirst', label: 'DrFirst Notifications', icon: <RectangleStackIcon /> },
+  { id: 'messages', label: 'Messages', icon: <ChatBubbleLeftRightIcon /> },
+  { id: 'birthdays', label: 'Birthdays', icon: <CalendarIcon /> },
 ];
 
 // Add new TaskCard component for mobile view
@@ -1021,6 +1022,7 @@ const AllTasksSection: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('reminders');
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const isMobile = useMediaQuery('(max-width: 640px)');
 
   // Handle task selection
@@ -1031,6 +1033,20 @@ const AllTasksSection: React.FC = () => {
   // Handle panel close
   const handlePanelClose = () => {
     setSelectedTask(null);
+  };
+
+  // Handle row selection
+  const onSelectionChanged = (event: any) => {
+    const selectedNodes = event.api.getSelectedNodes();
+    setSelectedRows(selectedNodes.map((node: any) => node.data));
+  };
+
+  // Handle complete selected tasks
+  const handleCompleteSelected = () => {
+    // Here you would typically make an API call to update the tasks
+    console.log('Completing tasks:', selectedRows);
+    // Clear selection after completion
+    setSelectedRows([]);
   };
 
   // Helper function to match task program with category
@@ -1071,6 +1087,31 @@ const AllTasksSection: React.FC = () => {
     });
   }, [searchQuery, activeFilter, activeCategory]);
 
+  const gridOptions: GridOptions = {
+    suppressCellFocus: true,
+    animateRows: true,
+    pagination: true,
+    paginationPageSize: 20,
+    domLayout: 'autoHeight',
+    rowHeight: 48,
+    headerHeight: 40,
+    onRowClicked: (params: any) => handleTaskSelect(params.data),
+    rowSelection: 'multiple',
+    onSelectionChanged: onSelectionChanged,
+    defaultColDef: {
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      menuTabs: ['filterMenuTab'] as ColumnMenuTab[],
+      filterParams: {
+        buttons: ['reset', 'apply'],
+        closeOnApply: true
+      },
+      floatingFilter: false,
+      resizable: true,
+      flex: 1
+    }
+  };
+
   const columnDefs = [
     {
       headerName: '',
@@ -1081,13 +1122,18 @@ const AllTasksSection: React.FC = () => {
       maxWidth: 35,
       checkboxSelection: true,
       headerCheckboxSelection: true,
-      pinned: 'left' as const
+      pinned: 'left' as const,
+      filter: false,
+      menuTabs: [] as ColumnMenuTab[],
+      suppressMenu: true,
+      resizable: false
     },
     {
       headerName: 'Subject',
       field: 'title',
       colId: 'title',
-      flex: 1.5,
+      minWidth: 200,
+      filter: 'agTextColumnFilter',
       cellRenderer: (params: any) => (
         <div className="text-sm font-medium text-gray-900 truncate" title={params.data.title || 'No subject'}>
           {params.data.title || <span className="text-gray-400 italic">No subject</span>}
@@ -1098,7 +1144,8 @@ const AllTasksSection: React.FC = () => {
       headerName: 'Message',
       field: 'description',
       colId: 'description',
-      flex: 2,
+      minWidth: 250,
+      filter: 'agTextColumnFilter',
       cellRenderer: (params: any) => (
         <div className="text-sm text-gray-600 line-clamp-2" title={params.data.description}>
           {params.data.description}
@@ -1108,7 +1155,8 @@ const AllTasksSection: React.FC = () => {
     {
       headerName: 'Priority',
       field: 'priority',
-      flex: 1,
+      minWidth: 120,
+      filter: 'agSetColumnFilter',
       cellRenderer: (params: any) => {
         const value = (params.data.priority || '').toLowerCase();
         const label = PRIORITY_LABELS[value] || 'Unknown';
@@ -1122,10 +1170,13 @@ const AllTasksSection: React.FC = () => {
     {
       headerName: 'Due',
       field: 'dueDate',
-      flex: 0.8,
+      minWidth: 120,
+      filter: 'agTextColumnFilter',
+      sort: 'asc' as const,
+      sortIndex: 0,
       cellRenderer: (params: any) => (
         <div className="flex items-center text-sm text-gray-600">
-          <ClockIcon className="h-3.5 w-3.5 mr-1 text-gray-400" />
+          <ClockIcon className="h-5 w-5 mr-2 text-gray-500" />
           {params.data.dueDate}
         </div>
       )
@@ -1133,7 +1184,8 @@ const AllTasksSection: React.FC = () => {
     {
       headerName: 'Status',
       field: 'status',
-      flex: 1,
+      minWidth: 120,
+      filter: 'agSetColumnFilter',
       cellRenderer: (params: any) => (
         <Badge variant="outline" className={cn('text-sm h-6', getStatusBadgeStyles(params.data.status))}>
           {params.data.status}
@@ -1143,10 +1195,11 @@ const AllTasksSection: React.FC = () => {
     {
       headerName: 'Received from',
       field: 'assignedTo',
-      flex: 1,
+      minWidth: 150,
+      filter: 'agTextColumnFilter',
       cellRenderer: (params: any) => (
         <div className="flex items-center text-sm text-gray-600">
-          <UserIcon className="h-3.5 w-3.5 mr-1 text-blue-400" />
+          <UserIcon className="h-5 w-5 mr-2 text-gray-600" />
           {params.data.assignedTo}
         </div>
       )
@@ -1154,15 +1207,11 @@ const AllTasksSection: React.FC = () => {
     {
       headerName: 'Person',
       field: 'person',
-      flex: 1,
+      minWidth: 150,
+      filter: 'agTextColumnFilter',
       cellRenderer: (params: any) => (
-        <div
-          className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-          tabIndex={0}
-          role="button"
-          title={`View patient chart for ${params.data.person}`}
-        >
-          <UserIcon className="h-3.5 w-3.5 mr-1 text-blue-400" />
+        <div className="flex items-center text-sm text-gray-600">
+          <UserIcon className="h-5 w-5 mr-2 text-gray-600" />
           {params.data.person}
         </div>
       )
@@ -1170,7 +1219,11 @@ const AllTasksSection: React.FC = () => {
     {
       headerName: 'Actions',
       field: 'actions',
-      flex: 0.8,
+      minWidth: 120,
+      filter: false,
+      menuTabs: [] as ColumnMenuTab[],
+      suppressMenu: true,
+      resizable: false,
       cellRenderer: (params: any) => (
         <div className="flex gap-2 items-center justify-end">
           <button
@@ -1181,10 +1234,10 @@ const AllTasksSection: React.FC = () => {
             Reply
           </button>
           <button
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-sm hover:bg-gray-50"
+            className="text-gray-400 hover:text-gray-600 p-2 rounded-sm hover:bg-gray-50"
             title="Complete task"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            <CheckCircleIcon className="h-6 w-6 text-green-500 hover:text-green-600" />
           </button>
         </div>
       )
@@ -1230,54 +1283,114 @@ const AllTasksSection: React.FC = () => {
                 className="w-full"
               />
             </div>
-            <Menubar className="bg-white border rounded-lg px-2 py-1 shrink-0">
-              <MenubarMenu>
-                <MenubarTrigger>Filters</MenubarTrigger>
-                <MenubarContent>
-                  <MenubarItem onClick={() => setActiveFilter('all')}>
-                    All
-                  </MenubarItem>
-                  <MenubarItem onClick={() => setActiveFilter('High')}>
-                    High Priority
-                  </MenubarItem>
-                  <MenubarItem onClick={() => setActiveFilter('Overdue')}>
-                    Overdue
-                  </MenubarItem>
-                  <MenubarItem onClick={() => setActiveFilter('no_subject')}>
-                    No Subject
-                  </MenubarItem>
-                  <MenubarSeparator />
-                  <MenubarLabel>Status</MenubarLabel>
-                  {['Pending', 'In Progress', 'Completed', 'Overdue'].map(status => (
-                    <MenubarItem key={status} onClick={() => setActiveFilter(status)}>
-                      {status}
+            <div className="flex items-center gap-2">
+              {selectedRows.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50"
+                  onClick={handleCompleteSelected}
+                >
+                  <CheckCircleIcon className="w-4 h-4 mr-1" />
+                  Mark Complete ({selectedRows.length})
+                </Button>
+              )}
+              <Menubar className="bg-white border rounded-lg px-2 py-1 shrink-0">
+                <MenubarMenu>
+                  <MenubarTrigger>
+                    <div className="flex items-center gap-2">
+                      <span>Filters</span>
+                      {activeFilter !== 'all' && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600">
+                          1
+                        </span>
+                      )}
+                    </div>
+                  </MenubarTrigger>
+                  <MenubarContent>
+                    <MenubarItem 
+                      onClick={() => setActiveFilter('all')}
+                      className={cn(
+                        "flex items-center gap-2",
+                        activeFilter === 'all' && "bg-blue-50 text-blue-600"
+                      )}
+                    >
+                      All
+                      {activeFilter === 'all' && (
+                        <CheckCircleIcon className="h-4 w-4 ml-2" />
+                      )}
                     </MenubarItem>
-                  ))}
-                </MenubarContent>
-              </MenubarMenu>
-            </Menubar>
+                    <MenubarItem 
+                      onClick={() => setActiveFilter('High')}
+                      className={cn(
+                        "flex items-center gap-2",
+                        activeFilter === 'High' && "bg-blue-50 text-blue-600"
+                      )}
+                    >
+                      High Priority
+                      {activeFilter === 'High' && (
+                        <CheckCircleIcon className="h-4 w-4 ml-2" />
+                      )}
+                    </MenubarItem>
+                    <MenubarItem 
+                      onClick={() => setActiveFilter('Overdue')}
+                      className={cn(
+                        "flex items-center gap-2",
+                        activeFilter === 'Overdue' && "bg-blue-50 text-blue-600"
+                      )}
+                    >
+                      Overdue
+                      {activeFilter === 'Overdue' && (
+                        <CheckCircleIcon className="h-4 w-4 ml-2" />
+                      )}
+                    </MenubarItem>
+                    <MenubarItem 
+                      onClick={() => setActiveFilter('no_subject')}
+                      className={cn(
+                        "flex items-center gap-2",
+                        activeFilter === 'no_subject' && "bg-blue-50 text-blue-600"
+                      )}
+                    >
+                      No Subject
+                      {activeFilter === 'no_subject' && (
+                        <CheckCircleIcon className="h-4 w-4 ml-2" />
+                      )}
+                    </MenubarItem>
+                    <MenubarSeparator />
+                    <MenubarLabel>Status</MenubarLabel>
+                    {['Pending', 'Completed', 'Overdue'].map(status => (
+                      <MenubarItem 
+                        key={status}
+                        onClick={() => setActiveFilter(status)}
+                        className={cn(
+                          "flex items-center gap-2",
+                          activeFilter === status && "bg-blue-50 text-blue-600"
+                        )}
+                      >
+                        {status}
+                        {activeFilter === status && (
+                          <CheckCircleIcon className="h-4 w-4 ml-2" />
+                        )}
+                      </MenubarItem>
+                    ))}
+                  </MenubarContent>
+                </MenubarMenu>
+              </Menubar>
+            </div>
           </div>
           
           {filteredTasks.length > 0 ? (
             <>
               {/* Desktop View */}
-              <div className="hidden sm:block w-full h-[calc(100vh-350px)]">
-                <DataTable
-                  rowData={filteredTasks}
-                  columnDefs={columnDefs}
-                  className="w-full h-full rounded-lg"
-                  gridOptions={{
-                    suppressCellFocus: true,
-                    animateRows: true,
-                    pagination: true,
-                    paginationPageSize: 20,
-                    domLayout: 'autoHeight',
-                    rowHeight: 48,
-                    headerHeight: 40,
-                    suppressHorizontalScroll: true,
-                    onRowClicked: (params) => handleTaskSelect(params.data)
-                  }}
-                />
+              <div className="hidden sm:block w-full overflow-x-auto">
+                <div className="min-w-[1200px] h-[calc(100vh-350px)]">
+                  <DataTable
+                    rowData={filteredTasks}
+                    columnDefs={columnDefs}
+                    className="w-full h-full rounded-lg"
+                    gridOptions={gridOptions}
+                  />
+                </div>
               </div>
               
               {/* Mobile View */}
@@ -1304,14 +1417,6 @@ const AllTasksSection: React.FC = () => {
                 <div>
                   Showing {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-8 text-xs flex items-center gap-1"
-                >
-                  <PlusIcon className="h-3.5 w-3.5" />
-                  Add New Task
-                </Button>
               </div>
             </>
           ) : (

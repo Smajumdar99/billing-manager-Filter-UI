@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Task } from '../types/task';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { cn } from '@/lib/utils';
@@ -26,12 +25,65 @@ import {
   AlertCircle,
   Receipt,
   Skull,
-  UserRound
+  UserRound,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  MoreHorizontal,
+  ClockIcon,
+  XCircleIcon,
 } from 'lucide-react';
 import { ReviewFormsWidget } from './widgets/ReviewFormsWidget/review-forms-widget';
-import { TransactionsReviewsWidget } from './widgets/TransactionsReviewsWidget/transactions-reviews-widget';
 import { NewTaskDialog } from './molecules/NewTaskDialog/new-task-dialog';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { ReviewPrescriptionsWidget } from './widgets/ReviewPrescriptionsWidget/review-prescriptions-widget';
+import { format } from 'date-fns';
+
+// Define ColumnMenuTab type since it's not exported from DataTable
+type ColumnMenuTab = 'filterMenuTab' | 'generalMenuTab' | 'columnsMenuTab';
+
+// Define the Task type based on the existing usage
+interface Task {
+  id: string;
+  title: string;
+  priority: 'Blockers' | 'High' | 'Medium' | 'Low';
+  program: string;
+  type: string;
+  due: string;
+  status?: string;
+  description?: string;
+  assignedTo?: string;
+  category?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  dueDate?: string;
+  person?: string;
+  message: string;
+  date?: string;
+  isAdmitted?: boolean;
+}
+
+// Add types for agenda
+type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no-show' | 'in-progress';
+type AppointmentType = 'Initial Assessment' | 'Follow-up' | 'Medication Review' | 'Group Therapy' | 'Individual Therapy' | 'Crisis Intervention' | 'Telehealth';
+type Program = 'Adult Mental Health' | 'Substance Use' | 'Child & Adolescent' | 'Crisis Services' | 'Dual Diagnosis' | 'IOP' | 'MAT Program';
+type Category = 'Urgent' | 'Routine' | 'New Patient' | 'Established' | 'Walk-in';
+
+interface AgendaEventType {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  isAllDay?: boolean;
+  program: Program;
+  appointmentType: AppointmentType;
+  category: Category;
+  person: string;
+  copay: number;
+  insuranceVerified?: boolean;
+  paperworkComplete?: boolean;
+  status: AppointmentStatus;
+}
 
 interface TaskDetailsPanelProps {
   blockId: string;
@@ -254,6 +306,77 @@ const TaskCard: React.FC<{ task: any; onReply: (task: any) => void; onPersonClic
   );
 };
 
+// Helper functions
+const formatDate = (dateString: string, formatStr: string): string => {
+  try {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return format(date, formatStr);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return '-';
+  }
+};
+
+const formatTimeRange = (startTime: string, endTime: string, isAllDay?: boolean): string => {
+  try {
+    if (isAllDay) return 'All Day';
+    if (!startTime || !endTime) return '-';
+    
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return '-';
+    
+    return `${format(start, 'hh:mm a')} - ${format(end, 'hh:mm a')}`;
+  } catch (error) {
+    console.error('Error formatting time range:', error);
+    return '-';
+  }
+};
+
+// Status badge component
+const StatusBadge: React.FC<{ status: AppointmentStatus }> = ({ status }) => {
+  const statusConfig = {
+    'scheduled': { bg: 'bg-blue-50', text: 'text-blue-700', icon: ClockIcon },
+    'completed': { bg: 'bg-green-50', text: 'text-green-700', icon: CheckCircle },
+    'cancelled': { bg: 'bg-red-50', text: 'text-red-700', icon: XCircleIcon },
+    'no-show': { bg: 'bg-yellow-50', text: 'text-yellow-700', icon: XCircleIcon },
+    'in-progress': { bg: 'bg-purple-50', text: 'text-purple-700', icon: ClockIcon }
+  };
+
+  const config = statusConfig[status];
+  const Icon = config.icon;
+
+  return (
+    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+      <Icon className="w-3 h-3 mr-1" />
+      {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
+    </span>
+  );
+};
+
+// Action buttons component
+const ActionButtons: React.FC<{ data: AgendaEventType }> = ({ data }) => {
+  return (
+    <div className="flex items-center space-x-2">
+      <button className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50">
+        <EyeIcon className="w-4 h-4" />
+      </button>
+      <button className="p-1 text-gray-400 hover:text-green-600 rounded-full hover:bg-green-50">
+        <PencilIcon className="w-4 h-4" />
+      </button>
+      <button className="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50">
+        <TrashIcon className="w-4 h-4" />
+      </button>
+      <button className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-50">
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
+
 const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onClose }) => {
   const navigate = useNavigate();
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -267,56 +390,168 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
   const isMobile = useMediaQuery('(max-width: 640px)');
   const [showOnlyAdmitted, setShowOnlyAdmitted] = useState(false);
 
+  // Agenda table definitions
+  const agendaColumnDefs = [
+    {
+      headerName: 'Appointment Date',
+      field: 'startTime',
+      cellRenderer: (params: any) => formatDate(params.value, 'MMM dd, yyyy'),
+      minWidth: 130,
+    },
+    {
+      headerName: 'Time',
+      field: 'startTime',
+      cellRenderer: (params: any) => 
+        formatTimeRange(params.data.startTime, params.data.endTime, params.data.isAllDay),
+      minWidth: 150,
+    },
+    {
+      headerName: 'Program',
+      field: 'program',
+      minWidth: 120,
+      cellRenderer: (params: any) => params.value || '-',
+    },
+    {
+      headerName: 'Type',
+      field: 'appointmentType',
+      minWidth: 120,
+      cellRenderer: (params: any) => params.value || '-',
+    },
+    {
+      headerName: 'Category',
+      field: 'category',
+      minWidth: 120,
+      cellRenderer: (params: any) => params.value || '-',
+    },
+    {
+      headerName: 'Person',
+      field: 'person',
+      minWidth: 150,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center">
+          <div className="w-6 h-6 rounded-full bg-gray-100 mr-2 flex items-center justify-center text-xs text-gray-600">
+            {params.value?.charAt(0) || '?'}
+          </div>
+          {params.value || '-'}
+        </div>
+      ),
+    },
+    {
+      headerName: 'Copay',
+      field: 'copay',
+      cellRenderer: (params: any) => 
+        typeof params.value === 'number' ? `$${params.value.toFixed(2)}` : '-',
+      minWidth: 100,
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      cellRenderer: (params: any) => params.value ? <StatusBadge status={params.value} /> : '-',
+      minWidth: 130,
+    },
+    {
+      headerName: 'Insurance',
+      field: 'insuranceVerified',
+      minWidth: 100,
+      cellRenderer: (params: any) => (
+        <div className={`text-sm ${params.value ? 'text-green-600' : 'text-red-600'}`}>
+          {params.value ? '✓ Verified' : '⚠ Pending'}
+        </div>
+      )
+    },
+    {
+      headerName: 'Paperwork',
+      field: 'paperworkComplete',
+      minWidth: 100,
+      cellRenderer: (params: any) => (
+        <div className={`text-sm ${params.value ? 'text-green-600' : 'text-yellow-600'}`}>
+          {params.value ? '✓ Complete' : '⚠ Incomplete'}
+        </div>
+      )
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      cellRenderer: (params: any) => <ActionButtons data={params.data} />,
+      sortable: false,
+      filter: false,
+      minWidth: 150,
+    },
+  ];
+
+  // Mock data for agenda view
+  const mockAgendaData: AgendaEventType[] = [
+    {
+      id: '1',
+      title: 'Initial Assessment - Depression',
+      startTime: new Date(2024, 2, 20, 9, 0).toISOString(),
+      endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      program: 'Adult Mental Health',
+      appointmentType: 'Initial Assessment',
+      category: 'New Patient',
+      person: 'Sarah Johnson',
+      copay: 40.00,
+      insuranceVerified: true,
+      paperworkComplete: false,
+      status: 'scheduled'
+    },
+    {
+      id: '2',
+      title: 'Medication Management',
+      startTime: new Date(2024, 2, 20, 10, 0).toISOString(),
+      endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      program: 'Adult Mental Health',
+      appointmentType: 'Medication Review',
+      category: 'Established',
+      person: 'Michael Chen',
+      copay: 25.00,
+      insuranceVerified: true,
+      paperworkComplete: true,
+      status: 'in-progress'
+    }
+  ];
+
   // Define the tasks to display based on blockId
   const displayTasks = useMemo(() => {
-    let filteredTasks = blockId === 'expedite-queue' ? mockUrgentTasks : tasks;
-    
-    if (showOnlyAdmitted) {
-      filteredTasks = filteredTasks.filter(task => task.isAdmitted);
-    }
-    
-    return filteredTasks;
-  }, [blockId, tasks, showOnlyAdmitted]);
+    return tasks.filter(task => {
+      if (showOnlyAdmitted) {
+        return task.isAdmitted;
+      }
+      return true;
+    });
+  }, [tasks, showOnlyAdmitted]);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
-    
-    const dx = e.clientX - initialX;
-    // Allow resizing between 30% and 90% of viewport width
-    const minWidth = Math.max(400, window.innerWidth * 0.3);
-    const maxWidth = window.innerWidth * 0.9;
-    const newWidth = Math.max(minWidth, Math.min(initialWidth - dx, maxWidth));
-    
-    setWidth(newWidth);
-  }, [isResizing, initialX, initialWidth]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      const newWidth = initialWidth + (e.clientX - initialX);
+      if (newWidth >= 400 && newWidth <= 800) {
+        setWidth(newWidth);
+      }
+    },
+    [isResizing, initialWidth, initialX]
+  );
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
-    document.body.style.cursor = 'default';
-    document.body.style.userSelect = 'auto';
   }, []);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     setIsResizing(true);
     setInitialX(e.clientX);
-    // Set initial width to current width or 70% of viewport width
-    setInitialWidth(width || e.currentTarget.parentElement?.getBoundingClientRect().width || window.innerWidth * 0.7);
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
+    setInitialWidth(width || 400);
   }, [width]);
 
   useEffect(() => {
     if (isResizing) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     }
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'default';
-      document.body.style.userSelect = 'auto';
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
@@ -349,13 +584,15 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     const titles: { [key: string]: string } = {
       'assigned-to-me': 'Assigned to Me',
       'needs-review': 'Review Forms',
+      'needs-review-medium': 'Review Forms',
       'expedite-queue': 'Urgent Tasks',
       'suggested-actions': 'All Reminders',
       'agenda': 'Agenda',
       'fyi-zone': 'Birthdays',
       'prescriptions': 'Review Prescriptions',
       'aging-tasks': 'Pending Too Long',
-      'transaction-reviews': 'Transaction Reviews'
+      'transaction-reviews': 'Transaction Reviews',
+      'treatment-reviews': 'Treatment Reviews'
     };
     return titles[id] || 'Tasks';
   };
@@ -425,13 +662,16 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       maxWidth: 35,
       checkboxSelection: true,
       headerCheckboxSelection: true,
-      pinned: 'left' as const
+      pinned: 'left' as const,
+      resizable: false,
+      menuTabs: [] as ColumnMenuTab[],
+      suppressMenu: true
     },
     {
       headerName: 'Subject',
       field: 'title',
       colId: 'title',
-      flex: 1.5,
+      minWidth: 200,
       cellRenderer: (params: any) => (
         <div 
           className="text-sm font-medium text-gray-900 truncate cursor-pointer hover:text-blue-600" 
@@ -446,7 +686,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       headerName: 'Message',
       field: 'message',
       colId: 'message',
-      flex: 2,
+      minWidth: 250,
       cellRenderer: (params: any) => {
         const messageText = params.data.description || params.data.message || 'No message';
         
@@ -463,7 +703,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     {
       headerName: 'Type',
       field: 'type',
-      flex: 1,
+      minWidth: 150,
       cellRenderer: (params: any) => {
         const typeIconMap: { [key: string]: React.ReactNode } = {
           'Admit/Discharge': <BedDouble className="h-3.5 w-3.5" />,
@@ -488,8 +728,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     {
       headerName: 'Priority',
       field: 'priority',
-      flex: 1,
-      // Only display allowed priorities, and map to label
+      minWidth: 120,
       cellRenderer: (params: any) => {
         // For URGENT TASKS (expedite-queue), always show High Priority
         if (blockId === 'expedite-queue') {
@@ -518,10 +757,10 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     {
       headerName: 'Due',
       field: 'due',
-      flex: 1,
+      minWidth: 120,
       cellRenderer: (params: any) => (
         <div className="flex items-center text-sm text-gray-600">
-          <Clock className="h-3.5 w-3.5 mr-1 text-gray-400" />
+          <Clock className="h-5 w-5 mr-2 text-gray-500" />
           {params.data.due}
         </div>
       )
@@ -529,7 +768,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     {
       headerName: 'Status',
       field: 'status',
-      flex: 1,
+      minWidth: 120,
       cellRenderer: (params: any) => (
         <Badge 
           variant="outline" 
@@ -542,12 +781,10 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     {
       headerName: 'Received from',
       field: 'assignedTo',
-      flex: 1,
-      // Use consistent mapping as in dialog
+      minWidth: 150,
       cellRenderer: (params: any) => (
         <div className="flex items-center text-sm text-gray-600">
-          <User className="h-3.5 w-3.5 mr-1 text-gray-400" />
-          {/* Use getReceivedFrom to match dialog logic */}
+          <User className="h-5 w-5 mr-2 text-gray-600" />
           {getReceivedFrom(params.data)}
         </div>
       )
@@ -555,14 +792,14 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     {
       headerName: 'Person',
       field: 'person',
-      flex: 1,
+      minWidth: 150,
       cellRenderer: (params: any) => (
         <div 
           className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
           onClick={() => handlePersonClick(params.data.person || 'John Doe')}
           title={`View patient chart for ${params.data.person || 'John Doe'}`}
         >
-          <User className="h-3.5 w-3.5 mr-1 text-blue-400" />
+          <User className="h-5 w-5 mr-2 text-gray-600" />
           {params.data.person || 'John Doe'}
         </div>
       )
@@ -571,7 +808,10 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       headerName: 'Actions',
       field: 'actions',
       colId: 'actions',
-      flex: 1,
+      minWidth: 120,
+      resizable: false,
+      menuTabs: [] as ColumnMenuTab[],
+      suppressMenu: true,
       cellRenderer: (params: any) => (
         <div className="flex gap-1 justify-end">
           <Button 
@@ -594,12 +834,42 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
   ];
 
   const renderContent = () => {
-    if (blockId === 'needs-review') {
+    if (blockId === 'needs-review' || blockId === 'treatment-reviews' || blockId === 'needs-review-medium') {
       return <ReviewFormsWidget />;
     }
-    
-    if (blockId === 'transaction-reviews') {
-      return <TransactionsReviewsWidget />;
+
+    if (blockId === 'prescriptions') {
+      return <ReviewPrescriptionsWidget />;
+    }
+
+    if (blockId === 'agenda') {
+      return (
+        <div className="h-full p-4">
+          <DataTable
+            rowData={mockAgendaData}
+            columnDefs={agendaColumnDefs}
+            gridOptions={{
+              rowHeight: 48,
+              headerHeight: 48,
+              suppressMenuHide: true,
+              paginationPageSize: 15,
+            }}
+            className="rounded-lg border border-gray-200"
+          />
+        </div>
+      );
+    }
+
+    if (blockId === 'treatment-plans' || blockId === 'transaction-reviews') {
+      return (
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
+          <div className="text-4xl text-gray-300 mb-4">🚧</div>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">Coming Soon!</h3>
+          <p className="text-gray-500">
+            {blockId === 'treatment-plans' ? 'Treatment Plans' : 'Treatment Reviews'} same as Review Forms.
+          </p>
+        </div>
+      );
     }
 
     return (
@@ -607,24 +877,36 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
         {displayTasks.length > 0 ? (
           <div className="w-full h-[calc(100vh-200px)]">
             {/* Desktop View */}
-            <div className="hidden sm:block h-full">
-              <DataTable
-                rowData={displayTasks}
-                columnDefs={columnDefs}
-                className="w-full h-full rounded-lg"
-                gridOptions={{
-                  suppressCellFocus: true,
-                  animateRows: true,
-                  pagination: true,
-                  paginationPageSize: 10,
-                  domLayout: 'autoHeight',
-                  rowHeight: 48,
-                  headerHeight: 40,
-                  suppressHorizontalScroll: true,
-                  rowSelection: 'multiple',
-                  onSelectionChanged: onSelectionChanged
-                }}
-              />
+            <div className="hidden sm:block h-full overflow-x-auto">
+              <div className="min-w-[1200px] h-full">
+                <DataTable
+                  rowData={displayTasks}
+                  columnDefs={columnDefs}
+                  className="w-full h-full rounded-lg"
+                  gridOptions={{
+                    suppressCellFocus: true,
+                    animateRows: true,
+                    pagination: true,
+                    paginationPageSize: 10,
+                    domLayout: 'autoHeight',
+                    rowHeight: 48,
+                    headerHeight: 40,
+                    rowSelection: 'multiple',
+                    onSelectionChanged: onSelectionChanged,
+                    defaultColDef: {
+                      sortable: true,
+                      filter: 'agTextColumnFilter',
+                      menuTabs: ['filterMenuTab'] as ColumnMenuTab[],
+                      filterParams: {
+                        buttons: ['reset', 'apply'],
+                        closeOnApply: true
+                      },
+                      resizable: true,
+                      flex: 1
+                    }
+                  }}
+                />
+              </div>
             </div>
 
             {/* Mobile View */}
@@ -657,14 +939,21 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     <div className="flex justify-between items-center px-4 py-2.5 border-b sticky top-0 bg-white z-10">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-medium text-gray-900">{blockTitle}</h2>
-        {blockId !== 'needs-review' && (
+        {blockId !== 'needs-review' && 
+         blockId !== 'needs-review-medium' && 
+         blockId !== 'prescriptions' && (
           <Badge variant="outline" className="text-xs font-normal text-gray-600 bg-gray-50">
             {displayTasks.length} tasks
           </Badge>
         )}
       </div>
       <div className="flex items-center gap-4">
-        {blockId !== 'needs-review' && blockId !== 'transaction-reviews' && (
+        {blockId !== 'needs-review' && 
+         blockId !== 'needs-review-medium' &&
+         blockId !== 'transaction-reviews' && 
+         blockId !== 'prescriptions' &&
+         blockId !== 'agenda' && 
+         blockId !== 'message' && (
           <div className="flex items-center gap-2">
             <Switch
               checked={showOnlyAdmitted}
@@ -688,7 +977,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
             onClick={handleCompleteSelected}
           >
             <CheckCircle className="w-4 h-4 mr-1" />
-            Complete Selected ({selectedRows.length})
+            Mark Complete ({selectedRows.length})
           </Button>
         )}
         <button
@@ -720,7 +1009,10 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
         
         <div className="pt-16 pb-4 px-4">
           {/* Add filter toggle for mobile */}
-          {blockId !== 'needs-review' && blockId !== 'transaction-reviews' && (
+          {blockId !== 'needs-review' && 
+           blockId !== 'transaction-reviews' && 
+           blockId !== 'agenda' && 
+           blockId !== 'message' && (
             <div className="flex items-center gap-2 mb-4 px-2">
               <Switch
                 checked={showOnlyAdmitted}
@@ -744,46 +1036,123 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
 
   // Desktop view (existing code)
   return (
-    <>
-      <div 
-        className={cn(
-          "bg-white overflow-y-auto transition-all duration-300",
-          isFullScreen ? "fixed inset-0 z-50" : "h-full relative"
-        )}
-        style={!isFullScreen ? { 
-          width: width || window.innerWidth * 0.7,
-          minWidth: `${Math.max(400, window.innerWidth * 0.3)}px`,
-          maxWidth: isFullScreen ? '100%' : '90vw'
-        } : undefined}
-      >
-        {!isFullScreen && (
-          <div
-            className="absolute left-0 top-0 bottom-0 w-6 cursor-ew-resize hover:bg-blue-200/20 transition-colors group z-20"
-            onMouseDown={startResizing}
-          >
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <GripVertical className="w-4 h-4 text-gray-400" />
-            </div>
-          </div>
-        )}
-
-        {renderHeader()}
-
-        <div className="p-2 sm:p-1">
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            {renderContent()}
+    <div 
+      className={cn(
+        "fixed top-0 right-0 h-screen bg-white border-l shadow-lg transition-all duration-300 ease-in-out z-50",
+        isFullScreen ? "w-full" : "relative"
+      )}
+      style={!isFullScreen ? { 
+        width: width || window.innerWidth * 0.7,
+        minWidth: `${Math.max(400, window.innerWidth * 0.3)}px`,
+        maxWidth: '90vw'
+      } : undefined}
+    >
+      {!isFullScreen && (
+        <div
+          className="absolute left-0 top-0 bottom-0 w-6 cursor-ew-resize hover:bg-blue-200/20 transition-colors group z-20"
+          onMouseDown={startResizing}
+        >
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <GripVertical className="w-4 h-4 text-gray-400" />
           </div>
         </div>
+      )}
+      
+      {renderHeader()}
+      
+      <div className="h-[calc(100vh-64px)] overflow-y-auto">
+        {blockId === 'needs-review' || blockId === 'treatment-reviews' || blockId === 'needs-review-medium' ? (
+          <ReviewFormsWidget />
+        ) : blockId === 'prescriptions' ? (
+          <ReviewPrescriptionsWidget />
+        ) : blockId === 'treatment-plans' || blockId === 'transaction-reviews' ? (
+          <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
+            <div className="text-4xl text-gray-300 mb-4">🚧</div>
+            <h3 className="text-xl font-medium text-gray-900 mb-2">Coming Soon!</h3>
+            <p className="text-gray-500">
+              {blockId === 'treatment-plans' ? 'Treatment Plans' : 'Treatment Reviews'} same as Review Forms.
+            </p>
+          </div>
+        ) : blockId === 'agenda' ? (
+          <div className="h-full p-4">
+            <DataTable
+              rowData={mockAgendaData}
+              columnDefs={agendaColumnDefs}
+              gridOptions={{
+                rowHeight: 48,
+                headerHeight: 48,
+                suppressMenuHide: true,
+                paginationPageSize: 15,
+              }}
+              className="rounded-lg border border-gray-200"
+            />
+          </div>
+        ) : (
+          <>
+            {displayTasks.length > 0 ? (
+              <div className="w-full h-[calc(100vh-200px)]">
+                {/* Desktop View */}
+                <div className="hidden sm:block h-full overflow-x-auto">
+                  <div className="min-w-[1200px] h-full">
+                    <DataTable
+                      rowData={displayTasks}
+                      columnDefs={columnDefs}
+                      className="w-full h-full rounded-lg"
+                      gridOptions={{
+                        suppressCellFocus: true,
+                        animateRows: true,
+                        pagination: true,
+                        paginationPageSize: 10,
+                        domLayout: 'autoHeight',
+                        rowHeight: 48,
+                        headerHeight: 40,
+                        rowSelection: 'multiple',
+                        onSelectionChanged: onSelectionChanged,
+                        defaultColDef: {
+                          sortable: true,
+                          filter: 'agTextColumnFilter',
+                          menuTabs: ['filterMenuTab'] as ColumnMenuTab[],
+                          filterParams: {
+                            buttons: ['reset', 'apply'],
+                            closeOnApply: true
+                          },
+                          resizable: true,
+                          flex: 1
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Mobile View */}
+                <div className="sm:hidden">
+                  {displayTasks.map((task) => (
+                    <TaskCard 
+                      key={task.id} 
+                      task={task}
+                      onReply={handleSendMessage}
+                      onPersonClick={handlePersonClick}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center h-48">
+                <Layers className="h-10 w-10 text-gray-300 mb-2" />
+                <p className="text-gray-500">No tasks found in this category.</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
       
       {/* Message Dialog */}
-      <NewTaskDialog 
-        isOpen={isMessageDialogOpen} 
+      <NewTaskDialog
+        open={isMessageDialogOpen}
         onClose={() => setIsMessageDialogOpen(false)}
-        initialPerson={selectedTask?.person}
         task={selectedTask}
       />
-    </>
+    </div>
   );
 };
 

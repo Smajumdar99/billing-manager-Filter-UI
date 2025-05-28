@@ -78,12 +78,12 @@ interface Task {
 }
 
 interface NewTaskDialogProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
   initialPerson?: string;
   onTaskAdded?: () => void;
   // The task being replied to or viewed, if any
-  task?: Task | null;
+  task?: any | null;
 }
 
 // Mock data - replace with actual data source
@@ -137,7 +137,7 @@ const todaysTasks = [
 ];
 
 export const NewTaskDialog: FC<NewTaskDialogProps> = ({ 
-  isOpen, 
+  open, 
   onClose,
   initialPerson,
   onTaskAdded,
@@ -270,7 +270,7 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
       setStartDateType('today');
       setDueDateType('today');
     }
-  }, [task, isOpen]);
+  }, [task, open]);
 
   const filteredRecipients = mockRecipients.filter(recipient => {
     if (searchQuery === '') return true; // Show all recipients when no search query
@@ -340,7 +340,7 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
         aria-describedby="new-task-dialog-desc"
         className="sm:max-w-[1000px] lg:max-w-[1200px] p-0 flex flex-col h-[800px] max-h-[90vh] overflow-auto bg-gradient-to-br from-orange-50 to-blue-100"
