@@ -1295,8 +1295,8 @@ const AllTasksSection: React.FC = () => {
                   Mark Complete ({selectedRows.length})
                 </Button>
               )}
-              <Menubar className="bg-white border rounded-lg px-2 py-1 shrink-0">
-                <MenubarMenu>
+            <Menubar className="bg-white border rounded-lg px-2 py-1 shrink-0">
+              <MenubarMenu>
                   <MenubarTrigger>
                     <div className="flex items-center gap-2">
                       <span>Filters</span>
@@ -1307,7 +1307,7 @@ const AllTasksSection: React.FC = () => {
                       )}
                     </div>
                   </MenubarTrigger>
-                  <MenubarContent>
+                <MenubarContent>
                     <MenubarItem 
                       onClick={() => setActiveFilter('all')}
                       className={cn(
@@ -1315,11 +1315,11 @@ const AllTasksSection: React.FC = () => {
                         activeFilter === 'all' && "bg-blue-50 text-blue-600"
                       )}
                     >
-                      All
+                    All
                       {activeFilter === 'all' && (
                         <CheckCircleIcon className="h-4 w-4 ml-2" />
                       )}
-                    </MenubarItem>
+                  </MenubarItem>
                     <MenubarItem 
                       onClick={() => setActiveFilter('High')}
                       className={cn(
@@ -1327,11 +1327,11 @@ const AllTasksSection: React.FC = () => {
                         activeFilter === 'High' && "bg-blue-50 text-blue-600"
                       )}
                     >
-                      High Priority
+                    High Priority
                       {activeFilter === 'High' && (
                         <CheckCircleIcon className="h-4 w-4 ml-2" />
                       )}
-                    </MenubarItem>
+                  </MenubarItem>
                     <MenubarItem 
                       onClick={() => setActiveFilter('Overdue')}
                       className={cn(
@@ -1339,11 +1339,11 @@ const AllTasksSection: React.FC = () => {
                         activeFilter === 'Overdue' && "bg-blue-50 text-blue-600"
                       )}
                     >
-                      Overdue
+                    Overdue
                       {activeFilter === 'Overdue' && (
                         <CheckCircleIcon className="h-4 w-4 ml-2" />
                       )}
-                    </MenubarItem>
+                  </MenubarItem>
                     <MenubarItem 
                       onClick={() => setActiveFilter('no_subject')}
                       className={cn(
@@ -1351,13 +1351,13 @@ const AllTasksSection: React.FC = () => {
                         activeFilter === 'no_subject' && "bg-blue-50 text-blue-600"
                       )}
                     >
-                      No Subject
+                    No Subject
                       {activeFilter === 'no_subject' && (
                         <CheckCircleIcon className="h-4 w-4 ml-2" />
                       )}
-                    </MenubarItem>
-                    <MenubarSeparator />
-                    <MenubarLabel>Status</MenubarLabel>
+                  </MenubarItem>
+                  <MenubarSeparator />
+                  <MenubarLabel>Status</MenubarLabel>
                     {['Pending', 'Completed', 'Overdue'].map(status => (
                       <MenubarItem 
                         key={status}
@@ -1367,15 +1367,15 @@ const AllTasksSection: React.FC = () => {
                           activeFilter === status && "bg-blue-50 text-blue-600"
                         )}
                       >
-                        {status}
+                      {status}
                         {activeFilter === status && (
                           <CheckCircleIcon className="h-4 w-4 ml-2" />
                         )}
-                      </MenubarItem>
-                    ))}
-                  </MenubarContent>
-                </MenubarMenu>
-              </Menubar>
+                    </MenubarItem>
+                  ))}
+                </MenubarContent>
+              </MenubarMenu>
+            </Menubar>
             </div>
           </div>
           
@@ -1384,12 +1384,12 @@ const AllTasksSection: React.FC = () => {
               {/* Desktop View */}
               <div className="hidden sm:block w-full overflow-x-auto">
                 <div className="min-w-[1200px] h-[calc(100vh-350px)]">
-                  <DataTable
-                    rowData={filteredTasks}
-                    columnDefs={columnDefs}
-                    className="w-full h-full rounded-lg"
+                <DataTable
+                  rowData={filteredTasks}
+                  columnDefs={columnDefs}
+                  className="w-full h-full rounded-lg"
                     gridOptions={gridOptions}
-                  />
+                />
                 </div>
               </div>
               

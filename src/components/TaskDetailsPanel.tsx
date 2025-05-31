@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button';
 import { cn } from '@/lib/utils';
 import { DataTable } from '@/components/organisms/DataTable';
 import { Switch } from '@/components/atoms/Switch';
+import { ColDef } from 'ag-grid-community';
 import {
   XCircle,
   Clock,
@@ -32,9 +33,15 @@ import {
   MoreHorizontal,
   ClockIcon,
   XCircleIcon,
+  Search,
+  FileWarning,
+  Trash2,
+  Plus,
+  Users,
 } from 'lucide-react';
 import { ReviewFormsWidget } from './widgets/ReviewFormsWidget/review-forms-widget';
-import { NewTaskDialog } from './molecules/NewTaskDialog/new-task-dialog';
+import { NewTaskDialog } from '@/components/molecules/NewTaskDialog/new-task-dialog';
+import { NewMessageDialog } from '@/components/molecules/NewMessageDialog/new-message-dialog';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { ReviewPrescriptionsWidget } from './widgets/ReviewPrescriptionsWidget/review-prescriptions-widget';
 import { format } from 'date-fns';
@@ -89,6 +96,19 @@ interface TaskDetailsPanelProps {
   blockId: string;
   tasks: Task[];
   onClose: () => void;
+}
+
+// Update message interface
+interface Message {
+  id: string;
+  message: string;
+  from: string;
+  to?: string;
+  person: string;
+  type: string;
+  date: string;
+  status: string;
+  assignedTo?: string;
 }
 
 const mockUrgentTasks: Task[] = [
@@ -377,7 +397,36 @@ const ActionButtons: React.FC<{ data: AgendaEventType }> = ({ data }) => {
   );
 };
 
-const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onClose }) => {
+// Add search input component
+const SearchInput: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}> = ({ value, onChange, placeholder }) => (
+  <div className="relative">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+    />
+  </div>
+);
+
+// Add type for selection event
+interface SelectionChangedEvent {
+  api: {
+    getSelectedNodes: () => Array<{
+      data: Message | Task;
+    }>;
+  };
+}
+
+const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onClose }): JSX.Element => {
+  console.log('TaskDetailsPanel rendered with blockId:', blockId); // Debug component mount
+
   const navigate = useNavigate();
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [width, setWidth] = useState<number | null>(null);
@@ -385,10 +434,16 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
   const [initialX, setInitialX] = useState(0);
   const [initialWidth, setInitialWidth] = useState(0);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const isMobile = useMediaQuery('(max-width: 640px)');
   const [showOnlyAdmitted, setShowOnlyAdmitted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeMessageTab, setActiveMessageTab] = useState<'inbox' | 'sent'>('inbox');
+  const [messageFilter, setMessageFilter] = useState<'all' | 'my'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'read' | 'unread'>('all');
+  const [selectedMessages, setSelectedMessages] = useState<Message[]>([]);
 
   // Agenda table definitions
   const agendaColumnDefs = [
@@ -511,23 +566,389 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     }
   ];
 
+  // Update mock data type annotations
+  const mockMessagesData: Message[] = [
+    {
+      id: 'm1',
+      message: 'New lab results available for review - CBC shows elevated white count',
+      from: 'Dr. Sarah Wilson',
+      person: 'John Doe',
+      type: 'Clinical',
+      date: '2024-04-19 09:15 AM',
+      status: 'Unread'
+    },
+    {
+      id: 'm2',
+      message: 'Patient requesting medication adjustment due to side effects',
+      from: 'Lisa Thompson',
+      person: 'Sarah Miller',
+      type: 'Medication',
+      date: '2024-04-19 10:30 AM',
+      status: 'Read'
+    },
+    {
+      id: 'm3',
+      message: 'Schedule follow-up for medication review next week',
+      from: 'Front Desk',
+      person: 'Michael Klein',
+      type: 'Appointment',
+      date: '2024-04-19 11:45 AM',
+      status: 'Unread'
+    },
+    {
+      id: 'm4',
+      message: 'Insurance verification needed for upcoming procedure',
+      from: 'Billing Department',
+      person: 'Emma Davis',
+      type: 'Insurance',
+      date: '2024-04-19 12:00 PM',
+      status: 'Unread'
+    },
+    {
+      id: 'm5',
+      message: 'Patient reported adverse reaction to new medication',
+      from: 'Nurse Johnson',
+      person: 'Robert Wilson',
+      type: 'Clinical',
+      date: '2024-04-19 12:30 PM',
+      status: 'Unread'
+    },
+    {
+      id: 'm6',
+      message: 'Family requesting care plan update discussion',
+      from: 'Social Services',
+      person: 'David Brown',
+      type: 'Care Plan',
+      date: '2024-04-19 1:15 PM',
+      status: 'Read'
+    },
+    {
+      id: 'm7',
+      message: 'Urgent: Blood pressure readings outside normal range',
+      from: 'Dr. Martinez',
+      person: 'Patricia Moore',
+      type: 'Clinical',
+      date: '2024-04-19 1:45 PM',
+      status: 'Unread'
+    },
+    {
+      id: 'm8',
+      message: 'Pharmacy requesting prescription clarification',
+      from: 'Pharmacy',
+      person: 'James Wilson',
+      type: 'Medication',
+      date: '2024-04-19 2:00 PM',
+      status: 'Read'
+    },
+    {
+      id: 'm9',
+      message: 'Physical therapy progress report available',
+      from: 'PT Department',
+      person: 'Linda White',
+      type: 'Clinical',
+      date: '2024-04-19 2:30 PM',
+      status: 'Unread'
+    },
+    {
+      id: 'm10',
+      message: 'Mental health assessment results ready for review',
+      from: 'Dr. Thompson',
+      person: 'George Brown',
+      type: 'Assessment',
+      date: '2024-04-19 3:00 PM',
+      status: 'Read'
+    },
+    {
+      id: 'm11',
+      message: 'Dietary consultation recommendations updated',
+      from: 'Nutrition Services',
+      person: 'Susan Clark',
+      type: 'Care Plan',
+      date: '2024-04-19 3:30 PM',
+      status: 'Unread'
+    },
+    {
+      id: 'm12',
+      message: 'Lab work authorization pending insurance approval',
+      from: 'Lab Services',
+      person: 'Thomas Anderson',
+      type: 'Insurance',
+      date: '2024-04-19 4:00 PM',
+      status: 'Unread'
+    }
+  ];
+
+  // Update mock data type annotations
+  const mockSentMessagesData: Message[] = [
+    {
+      id: 's1',
+      message: 'Treatment plan update for chronic condition management',
+      from: 'You',
+      to: 'Dr. Williams',
+      person: 'John Doe',
+      type: 'Care Plan',
+      date: '2024-04-19 08:30 AM',
+      status: 'Sent'
+    },
+    {
+      id: 's2',
+      message: 'Medication adjustment recommendation based on latest vitals',
+      from: 'You',
+      to: 'Dr. Martinez',
+      person: 'Sarah Miller',
+      type: 'Medication',
+      date: '2024-04-19 09:45 AM',
+      status: 'Sent'
+    },
+    {
+      id: 's3',
+      message: 'Patient discharge summary and follow-up plan',
+      from: 'You',
+      to: 'Care Team',
+      person: 'Robert Wilson',
+      type: 'Clinical',
+      date: '2024-04-19 11:00 AM',
+      status: 'Sent'
+    }
+  ];
+
+  // Update filteredMessages to include status filter
+  const filteredMessages = useMemo(() => {
+    let filtered = activeMessageTab === 'inbox' ? mockMessagesData : mockSentMessagesData;
+    
+    // Apply message filter
+    if (messageFilter === 'my') {
+      filtered = filtered.filter(message => 
+        message.from === 'You' || message.to === 'You' || message.assignedTo === 'You'
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(message => 
+        statusFilter === 'unread' 
+          ? message.status === 'Unread'
+          : message.status === 'Read'
+      );
+    }
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(message => 
+        message.message.toLowerCase().includes(query) ||
+        message.from.toLowerCase().includes(query) ||
+        message.person.toLowerCase().includes(query) ||
+        message.type.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [searchQuery, messageFilter, statusFilter, activeMessageTab]);
+
+  // Add bulk action handlers with void return type
+  const handleBulkMarkAsRead = (): void => {
+    console.log('Marking messages as read:', selectedMessages);
+    // Here you would make an API call to update the messages
+    setSelectedMessages([]); // Clear selection after action
+  };
+
+  const handleBulkMarkAsUnread = (): void => {
+    console.log('Marking messages as unread:', selectedMessages);
+    // Here you would make an API call to update the messages
+    setSelectedMessages([]); // Clear selection after action
+  };
+
+  const handleBulkMarkAsDone = (): void => {
+    console.log('Marking messages as done:', selectedMessages);
+    // Here you would make an API call to update the messages
+    setSelectedMessages([]); // Clear selection after action
+  };
+
+  // Add bulk delete handler
+  const handleBulkDelete = (): void => {
+    console.log('Deleting messages:', selectedMessages);
+    // Here you would make an API call to delete the messages
+    setSelectedMessages([]); // Clear selection after action
+  };
+
+  // Handle new message creation
+  const handleNewMessage = (): void => {
+    console.log('Opening new message dialog');
+    // This would open a dialog to create a new message
+    setIsMessageDialogOpen(true);
+    setSelectedTask(null); // Clear any selected task for new message
+  };
+
+  // Handle inbox groups
+  const handleInboxGroups = (): void => {
+    console.log('Opening inbox groups');
+    // This would open a dialog or navigate to inbox groups management
+  };
+
+  // Single onSelectionChanged handler for both messages and tasks
+  const onSelectionChanged = (event: SelectionChangedEvent): void => {
+    const selectedNodes = event.api.getSelectedNodes();
+    if (blockId === 'messages') {
+      setSelectedMessages(selectedNodes.map(node => node.data as Message));
+    } else {
+      setSelectedRows(selectedNodes.map(node => node.data as Task));
+    }
+  };
+
+  // Update message column definitions
+  const messageColumnDefs: ColDef[] = [
+    {
+      headerName: '',
+      field: 'checkbox',
+      width: 48,
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+      pinned: 'left',
+      suppressMenu: true,
+      resizable: false
+    },
+    {
+      headerName: 'Message',
+      field: 'message',
+      minWidth: 300,
+      flex: 2,
+      cellRenderer: (params: any) => (
+        <div 
+          className="text-sm text-gray-900 line-clamp-2 hover:line-clamp-none cursor-pointer py-2" 
+          title={params.value}
+          onClick={() => handleSendMessage(params.data)}
+        >
+          {params.value}
+        </div>
+      )
+    },
+    {
+      headerName: 'From',
+      field: 'from',
+      minWidth: 150,
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <User className="h-5 w-5 mr-2 text-gray-600" />
+          {params.value}
+        </div>
+      )
+    },
+    {
+      headerName: 'Person',
+      field: 'person',
+      minWidth: 150,
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div 
+          className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+          onClick={() => handlePersonClick(params.value)}
+          title={`View patient chart for ${params.value}`}
+        >
+          <User className="h-5 w-5 mr-2 text-gray-600" />
+          {params.value}
+        </div>
+      )
+    },
+    {
+      headerName: 'Type',
+      field: 'type',
+      minWidth: 120,
+      flex: 1,
+      cellRenderer: (params: any) => {
+        const typeIconMap: { [key: string]: React.ReactNode } = {
+          'Clinical': <FileCheck className="h-3.5 w-3.5" />,
+          'Medication': <FileText className="h-3.5 w-3.5" />,
+          'Appointment': <Calendar className="h-3.5 w-3.5" />
+        };
+
+        return (
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
+              {typeIconMap[params.value] || <Layers className="h-3.5 w-3.5" />}
+            </div>
+            <span className="text-sm text-gray-600">{params.value}</span>
+          </div>
+        );
+      }
+    },
+    {
+      headerName: 'Date',
+      field: 'date',
+      minWidth: 150,
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <Clock className="h-5 w-5 mr-2 text-gray-500" />
+          {params.value}
+        </div>
+      )
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      minWidth: 120,
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <Badge 
+          variant="outline" 
+          className={cn(
+            "text-sm h-6",
+            params.value === 'Unread' 
+              ? "bg-blue-50 text-blue-700 border-blue-200"
+              : "bg-gray-50 text-gray-700 border-gray-200"
+          )}
+        >
+          {params.value}
+        </Badge>
+      )
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      minWidth: 120,
+      flex: 1,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => (
+        <div className="flex justify-end gap-2">
+          <button 
+            className="text-gray-400 hover:text-amber-600 p-2 rounded-sm hover:bg-amber-50"
+            title="Mark as Client Grievance"
+            onClick={() => console.log('Mark as grievance:', params.data.id)}
+          >
+            <FileWarning className="h-6 w-6 text-amber-500 hover:text-amber-600" />
+          </button>
+          <button 
+            className="text-gray-400 hover:text-blue-600 p-2 rounded-sm hover:bg-blue-50"
+            title="Mark as read"
+            onClick={() => console.log('Mark as read:', params.data.id)}
+          >
+            <EyeIcon className="h-6 w-6 text-blue-500 hover:text-blue-600" />
+          </button>
+        </div>
+      )
+    }
+  ];
+
   // Define the tasks to display based on blockId
   const displayTasks = useMemo(() => {
     return tasks.filter(task => {
-      if (showOnlyAdmitted) {
+    if (showOnlyAdmitted) {
         return task.isAdmitted;
-      }
+    }
       return true;
     });
   }, [tasks, showOnlyAdmitted]);
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!isResizing) return;
-
+    if (!isResizing) return;
+    
       const newWidth = initialWidth + (e.clientX - initialX);
       if (newWidth >= 400 && newWidth <= 800) {
-        setWidth(newWidth);
+    setWidth(newWidth);
       }
     },
     [isResizing, initialWidth, initialX]
@@ -592,7 +1013,8 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       'prescriptions': 'Review Prescriptions',
       'aging-tasks': 'Pending Too Long',
       'transaction-reviews': 'Transaction Reviews',
-      'treatment-reviews': 'Treatment Reviews'
+      'treatment-reviews': 'Treatment Reviews',
+      'messages': 'Messages'
     };
     return titles[id] || 'Tasks';
   };
@@ -607,8 +1029,16 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
 
   // Handle send message click
   const handleSendMessage = (task: Task) => {
+    console.log('handleSendMessage called with blockId:', blockId, 'task:', task);
     setSelectedTask(task);
-    setIsMessageDialogOpen(true);
+    
+    if (blockId === 'messages') {
+      console.log('Opening NewMessageDialog for messages block');
+      setIsMessageDialogOpen(true);
+    } else {
+      console.log('Opening NewTaskDialog for non-messages block');
+      setIsTaskDialogOpen(true);
+    }
   };
   
   // Navigate to patient chart when clicking on a person
@@ -634,12 +1064,6 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     
     // Navigate to the patient chart with the correct path
     navigate(`/patient-chart/${patientId}`);
-  };
-
-  // Handle row selection
-  const onSelectionChanged = (event: any) => {
-    const selectedNodes = event.api.getSelectedNodes();
-    setSelectedRows(selectedNodes.map((node: any) => node.data));
   };
 
   // Handle complete selected tasks
@@ -796,11 +1220,11 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       cellRenderer: (params: any) => (
         <div 
           className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-          onClick={() => handlePersonClick(params.data.person || 'John Doe')}
-          title={`View patient chart for ${params.data.person || 'John Doe'}`}
+          onClick={() => handlePersonClick(params.value)}
+          title={`View patient chart for ${params.value}`}
         >
           <User className="h-5 w-5 mr-2 text-gray-600" />
-          {params.data.person || 'John Doe'}
+          {params.value}
         </div>
       )
     },
@@ -833,16 +1257,219 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     }
   ];
 
-  const renderContent = () => {
-    if (blockId === 'needs-review' || blockId === 'treatment-reviews' || blockId === 'needs-review-medium') {
-      return <ReviewFormsWidget />;
+  const renderContent = (): JSX.Element => {
+    console.log('renderContent called with blockId:', blockId);
+
+    if (blockId === 'messages') {
+      console.log('Attempting to render messages table');
+      return (
+        <div className="h-full p-4">
+          {/* Message Tabs */}
+          <div className="mb-4 border-b">
+            <div className="flex gap-4">
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium relative",
+                  activeMessageTab === 'inbox'
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 hover:text-gray-900"
+                )}
+                onClick={() => setActiveMessageTab('inbox')}
+              >
+                Inbox
+                {activeMessageTab === 'inbox' && mockMessagesData.length > 0 && (
+                  <span className="ml-2 bg-blue-100 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                    {mockMessagesData.length}
+                  </span>
+                )}
+              </button>
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium relative",
+                  activeMessageTab === 'sent'
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 hover:text-gray-900"
+                )}
+                onClick={() => setActiveMessageTab('sent')}
+              >
+                Sent
+                {activeMessageTab === 'sent' && mockSentMessagesData.length > 0 && (
+                  <span className="ml-2 bg-blue-100 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                    {mockSentMessagesData.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Search and Filter Row */}
+          <div className="mb-4 flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+            {/* Search Input */}
+            <div className="flex-1 min-w-0">
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search by message, person, or notes..."
+              />
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+              {/* Message Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Show:</span>
+                <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+                  <button
+                    className={cn(
+                      "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                      messageFilter === 'all'
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    )}
+                    onClick={() => setMessageFilter('all')}
+                  >
+                    All Messages
+                  </button>
+                  <button
+                    className={cn(
+                      "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                      messageFilter === 'my'
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    )}
+                    onClick={() => setMessageFilter('my')}
+                  >
+                    My Messages
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Status:</span>
+                <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+                  <button
+                    className={cn(
+                      "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                      statusFilter === 'all'
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    )}
+                    onClick={() => setStatusFilter('all')}
+                  >
+                    All
+                  </button>
+                  <button
+                    className={cn(
+                      "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                      statusFilter === 'unread'
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    )}
+                    onClick={() => setStatusFilter('unread')}
+                  >
+                    Unread
+                  </button>
+                  <button
+                    className={cn(
+                      "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                      statusFilter === 'read'
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    )}
+                    onClick={() => setStatusFilter('read')}
+                  >
+                    Read
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bulk Actions Toolbar */}
+          {selectedMessages.length > 0 && (
+            <div className="mb-4 flex items-center justify-between bg-blue-50 px-4 py-2 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-blue-700 font-medium">
+                  {selectedMessages.length} message{selectedMessages.length > 1 ? 's' : ''} selected
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                  onClick={handleBulkMarkAsRead}
+                >
+                  <EyeIcon className="w-4 h-4 mr-1.5" />
+                  Mark as Read
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-gray-600 hover:text-gray-700 hover:bg-blue-100"
+                  onClick={handleBulkMarkAsUnread}
+                >
+                  <EyeIcon className="w-4 h-4 mr-1.5" />
+                  Mark as Unread
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-green-600 hover:text-green-700 hover:bg-blue-100"
+                  onClick={handleBulkMarkAsDone}
+                >
+                  <CheckCircle className="w-4 h-4 mr-1.5" />
+                  Mark as Done
+                </Button>
+                <div className="w-px h-6 bg-blue-200 mx-2" /> {/* Separator */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={handleBulkDelete}
+                  title="Delete selected messages"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <DataTable
+            rowData={filteredMessages}
+            columnDefs={messageColumnDefs}
+            gridOptions={{
+              rowHeight: 48,
+              headerHeight: 48,
+              suppressMenuHide: true,
+              paginationPageSize: 15,
+              defaultColDef: {
+                sortable: true,
+                filter: true,
+                resizable: true
+              },
+              rowSelection: 'multiple',
+              onSelectionChanged: onSelectionChanged
+            }}
+            className="rounded-lg border border-gray-200"
+          />
+        </div>
+      );
     }
 
+    if (blockId === 'needs-review' || blockId === 'treatment-reviews' || blockId === 'needs-review-medium') {
+      console.log('Rendering Review Forms Widget');
+      return <ReviewFormsWidget />;
+    }
+    
     if (blockId === 'prescriptions') {
+      console.log('Rendering Prescriptions Widget');
       return <ReviewPrescriptionsWidget />;
     }
 
     if (blockId === 'agenda') {
+      console.log('Rendering Agenda');
       return (
         <div className="h-full p-4">
           <DataTable
@@ -861,6 +1488,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     }
 
     if (blockId === 'treatment-plans' || blockId === 'transaction-reviews') {
+      console.log('Rendering Coming Soon');
       return (
         <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
           <div className="text-4xl text-gray-300 mb-4">🚧</div>
@@ -872,6 +1500,8 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       );
     }
 
+    // Default return for tasks
+    console.log('Rendering default tasks view');
     return (
       <>
         {displayTasks.length > 0 ? (
@@ -879,19 +1509,19 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
             {/* Desktop View */}
             <div className="hidden sm:block h-full overflow-x-auto">
               <div className="min-w-[1200px] h-full">
-                <DataTable
-                  rowData={displayTasks}
-                  columnDefs={columnDefs}
-                  className="w-full h-full rounded-lg"
-                  gridOptions={{
-                    suppressCellFocus: true,
-                    animateRows: true,
-                    pagination: true,
-                    paginationPageSize: 10,
-                    domLayout: 'autoHeight',
-                    rowHeight: 48,
-                    headerHeight: 40,
-                    rowSelection: 'multiple',
+              <DataTable
+                rowData={displayTasks}
+                columnDefs={columnDefs}
+                className="w-full h-full rounded-lg"
+                gridOptions={{
+                  suppressCellFocus: true,
+                  animateRows: true,
+                  pagination: true,
+                  paginationPageSize: 10,
+                  domLayout: 'autoHeight',
+                  rowHeight: 48,
+                  headerHeight: 40,
+                  rowSelection: 'multiple',
                     onSelectionChanged: onSelectionChanged,
                     defaultColDef: {
                       sortable: true,
@@ -904,8 +1534,8 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
                       resizable: true,
                       flex: 1
                     }
-                  }}
-                />
+                }}
+              />
               </div>
             </div>
 
@@ -934,12 +1564,18 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
   // Get block title (existing function)
   const blockTitle = getBlockTitle(blockId);
 
-  // Update the header section to include the filter toggle
+  // Move renderHeader function definition before it's used
   const renderHeader = () => (
     <div className="flex justify-between items-center px-4 py-2.5 border-b sticky top-0 bg-white z-10">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-medium text-gray-900">{blockTitle}</h2>
-        {blockId !== 'needs-review' && 
+        {blockId === 'messages' && (
+          <Badge variant="outline" className="text-xs font-normal text-gray-600 bg-gray-50">
+            {filteredMessages.length} {activeMessageTab === 'inbox' ? 'messages' : 'sent'}
+          </Badge>
+        )}
+        {blockId !== 'messages' && 
+         blockId !== 'needs-review' && 
          blockId !== 'needs-review-medium' && 
          blockId !== 'prescriptions' && (
           <Badge variant="outline" className="text-xs font-normal text-gray-600 bg-gray-50">
@@ -948,12 +1584,33 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
         )}
       </div>
       <div className="flex items-center gap-4">
+        {/* Message Action Buttons - Only show for messages */}
+        {blockId === 'messages' && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleNewMessage}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Message
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleInboxGroups}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Inbox Groups
+            </Button>
+          </div>
+        )}
         {blockId !== 'needs-review' && 
          blockId !== 'needs-review-medium' &&
          blockId !== 'transaction-reviews' && 
          blockId !== 'prescriptions' &&
          blockId !== 'agenda' && 
-         blockId !== 'message' && (
+         blockId !== 'messages' && (
           <div className="flex items-center gap-2">
             <Switch
               checked={showOnlyAdmitted}
@@ -1002,7 +1659,11 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
     </div>
   );
 
+  // Main render
+  console.log('Before main render, blockId:', blockId); // Debug before return
+
   if (isMobile) {
+    console.log('Rendering mobile view');
     return (
       <div className="fixed inset-0 bg-white z-50 overflow-auto">
         <MobileHeader title={blockTitle} onBack={onClose} />
@@ -1012,7 +1673,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
           {blockId !== 'needs-review' && 
            blockId !== 'transaction-reviews' && 
            blockId !== 'agenda' && 
-           blockId !== 'message' && (
+           blockId !== 'messages' && (
             <div className="flex items-center gap-2 mb-4 px-2">
               <Switch
                 checked={showOnlyAdmitted}
@@ -1036,120 +1697,45 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
 
   // Desktop view (existing code)
   return (
-    <div 
-      className={cn(
+      <div 
+        className={cn(
         "fixed top-0 right-0 h-screen bg-white border-l shadow-lg transition-all duration-300 ease-in-out z-50",
         isFullScreen ? "w-full" : "relative"
-      )}
-      style={!isFullScreen ? { 
-        width: width || window.innerWidth * 0.7,
-        minWidth: `${Math.max(400, window.innerWidth * 0.3)}px`,
-        maxWidth: '90vw'
-      } : undefined}
-    >
-      {!isFullScreen && (
-        <div
-          className="absolute left-0 top-0 bottom-0 w-6 cursor-ew-resize hover:bg-blue-200/20 transition-colors group z-20"
-          onMouseDown={startResizing}
-        >
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <GripVertical className="w-4 h-4 text-gray-400" />
-          </div>
-        </div>
-      )}
-      
-      {renderHeader()}
-      
-      <div className="h-[calc(100vh-64px)] overflow-y-auto">
-        {blockId === 'needs-review' || blockId === 'treatment-reviews' || blockId === 'needs-review-medium' ? (
-          <ReviewFormsWidget />
-        ) : blockId === 'prescriptions' ? (
-          <ReviewPrescriptionsWidget />
-        ) : blockId === 'treatment-plans' || blockId === 'transaction-reviews' ? (
-          <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
-            <div className="text-4xl text-gray-300 mb-4">🚧</div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">Coming Soon!</h3>
-            <p className="text-gray-500">
-              {blockId === 'treatment-plans' ? 'Treatment Plans' : 'Treatment Reviews'} same as Review Forms.
-            </p>
-          </div>
-        ) : blockId === 'agenda' ? (
-          <div className="h-full p-4">
-            <DataTable
-              rowData={mockAgendaData}
-              columnDefs={agendaColumnDefs}
-              gridOptions={{
-                rowHeight: 48,
-                headerHeight: 48,
-                suppressMenuHide: true,
-                paginationPageSize: 15,
-              }}
-              className="rounded-lg border border-gray-200"
-            />
-          </div>
-        ) : (
-          <>
-            {displayTasks.length > 0 ? (
-              <div className="w-full h-[calc(100vh-200px)]">
-                {/* Desktop View */}
-                <div className="hidden sm:block h-full overflow-x-auto">
-                  <div className="min-w-[1200px] h-full">
-                    <DataTable
-                      rowData={displayTasks}
-                      columnDefs={columnDefs}
-                      className="w-full h-full rounded-lg"
-                      gridOptions={{
-                        suppressCellFocus: true,
-                        animateRows: true,
-                        pagination: true,
-                        paginationPageSize: 10,
-                        domLayout: 'autoHeight',
-                        rowHeight: 48,
-                        headerHeight: 40,
-                        rowSelection: 'multiple',
-                        onSelectionChanged: onSelectionChanged,
-                        defaultColDef: {
-                          sortable: true,
-                          filter: 'agTextColumnFilter',
-                          menuTabs: ['filterMenuTab'] as ColumnMenuTab[],
-                          filterParams: {
-                            buttons: ['reset', 'apply'],
-                            closeOnApply: true
-                          },
-                          resizable: true,
-                          flex: 1
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Mobile View */}
-                <div className="sm:hidden">
-                  {displayTasks.map((task) => (
-                    <TaskCard 
-                      key={task.id} 
-                      task={task}
-                      onReply={handleSendMessage}
-                      onPersonClick={handlePersonClick}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center text-center h-48">
-                <Layers className="h-10 w-10 text-gray-300 mb-2" />
-                <p className="text-gray-500">No tasks found in this category.</p>
-              </div>
-            )}
-          </>
         )}
+        style={!isFullScreen ? { 
+          width: width || window.innerWidth * 0.7,
+          minWidth: `${Math.max(400, window.innerWidth * 0.3)}px`,
+        maxWidth: '90vw'
+        } : undefined}
+      >
+        {!isFullScreen && (
+          <div
+            className="absolute left-0 top-0 bottom-0 w-6 cursor-ew-resize hover:bg-blue-200/20 transition-colors group z-20"
+            onMouseDown={startResizing}
+          >
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <GripVertical className="w-4 h-4 text-gray-400" />
+            </div>
+          </div>
+        )}
+
+        {renderHeader()}
+
+      <div className="h-[calc(100vh-64px)] overflow-y-auto">
+            {renderContent()}
       </div>
       
       {/* Message Dialog */}
-      <NewTaskDialog
+      <NewMessageDialog
         open={isMessageDialogOpen}
         onClose={() => setIsMessageDialogOpen(false)}
+        task={selectedTask}
+      />
+      
+      {/* Task Dialog */}
+      <NewTaskDialog
+        open={isTaskDialogOpen}
+        onClose={() => setIsTaskDialogOpen(false)}
         task={selectedTask}
       />
     </div>

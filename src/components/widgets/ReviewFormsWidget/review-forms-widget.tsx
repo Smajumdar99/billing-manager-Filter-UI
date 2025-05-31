@@ -434,9 +434,9 @@ export const ReviewFormsWidget: FC<ReviewFormsWidgetProps> = ({ className }) => 
   // Calculate counts for each status
   const calculateMetrics = () => {
     return forms.reduce((acc, form) => {
-      acc[form.status] = (acc[form.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    acc[form.status] = (acc[form.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
   };
 
   const statusCounts = calculateMetrics();
@@ -877,11 +877,11 @@ export const ReviewFormsWidget: FC<ReviewFormsWidgetProps> = ({ className }) => 
   // Return existing desktop view
   return (
     <>
-      <div className="h-screen flex flex-col">
-        {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left Panel */}
-          <div className="w-1/4 border-r bg-white flex flex-col">
+    <div className="h-screen flex flex-col">
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Panel */}
+        <div className="w-1/4 border-r bg-white flex flex-col">
             {/* Metrics Bar */}
             <div className="px-2 py-1.5 border-b bg-white">
               <div className="flex flex-wrap gap-1">
@@ -936,463 +936,463 @@ export const ReviewFormsWidget: FC<ReviewFormsWidgetProps> = ({ className }) => 
               </div>
             </div>
 
-            {/* Search and Filters Header */}
+          {/* Search and Filters Header */}
             <div className="px-2 py-1.5 border-b bg-white">
-              {/* Search Row */}
+            {/* Search Row */}
               <div className="flex items-center gap-1.5">
-                <div className="relative flex-1">
+              <div className="relative flex-1">
                   <MagnifyingGlassIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                  <Input
-                    placeholder="Search by form or person name"
+                <Input
+                  placeholder="Search by form or person name"
                     className="pl-7 w-full bg-gray-50/50 h-8 text-sm"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <Popover open={showFilters} onOpenChange={setShowFilters}>
-                  <PopoverTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className={cn(
-                        "gap-1.5 shrink-0 px-2 h-8 text-gray-600 border-gray-200 hover:bg-gray-50",
-                        showFilters && "bg-gray-100"
-                      )}
-                    >
-                      <FunnelIcon className="w-3.5 h-3.5" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-4" align="end">
-                    <div className="space-y-4">
-                      {/* Person Name Filter */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Person Name</label>
-                        <Input
-                          placeholder="Filter by person name"
-                          value={filters.personName}
-                          onChange={(e) => setFilters({ ...filters, personName: e.target.value })}
-                          className="w-full"
-                        />
-                      </div>
-
-                      {/* Date Filter */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Date Range</label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !filters.dateRange.from && !filters.dateRange.to && "text-gray-500"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {filters.dateRange.from && filters.dateRange.to ? (
-                                `${format(filters.dateRange.from, "MMM dd, yyyy")} - ${format(filters.dateRange.to, "MMM dd, yyyy")}`
-                              ) : (
-                                "Select date range"
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <div className="flex flex-col sm:flex-row">
-                              <div className="border-b sm:border-b-0 sm:border-r border-gray-200">
-                                <Calendar
-                                  mode="single"
-                                  selected={filters.dateRange.from}
-                                  onSelect={(date) => 
-                                    setFilters({ 
-                                      ...filters, 
-                                      dateRange: { 
-                                        ...filters.dateRange, 
-                                        from: date 
-                                      } 
-                                    })
-                                  }
-                                  initialFocus
-                                  className="rounded-l-md"
-                                  classNames={{
-                                    months: "flex flex-col space-y-4",
-                                    month: "space-y-3",
-                                    caption: "flex justify-center pt-1 relative items-center px-8",
-                                    caption_label: "text-sm font-medium",
-                                    nav: "flex items-center",
-                                    nav_button: cn(
-                                      "h-7 w-7 bg-transparent p-0 hover:bg-gray-50 rounded-md",
-                                      "absolute top-1 flex items-center justify-center text-gray-500"
-                                    ),
-                                    nav_button_previous: "left-1",
-                                    nav_button_next: "right-1",
-                                    table: "w-full border-collapse",
-                                    head_row: "flex w-full",
-                                    head_cell: "text-gray-500 w-9 font-normal text-[0.8rem] text-center",
-                                    row: "flex w-full mt-1",
-                                    cell: cn(
-                                      "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
-                                      "h-9 w-9 hover:bg-gray-100 rounded-md transition-colors",
-                                      "[&:has([aria-selected])]:bg-gray-100"
-                                    ),
-                                    day: cn(
-                                      "h-9 w-9 p-0 font-normal",
-                                      "flex items-center justify-center rounded-md transition-colors",
-                                      "hover:bg-primary hover:text-primary-foreground",
-                                      "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                    ),
-                                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-                                    day_today: "bg-accent text-accent-foreground",
-                                    day_outside: "text-gray-400",
-                                    day_disabled: "text-gray-400",
-                                    day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-                                    day_hidden: "invisible",
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <Calendar
-                                  mode="single"
-                                  selected={filters.dateRange.to}
-                                  onSelect={(date) => 
-                                    setFilters({ 
-                                      ...filters, 
-                                      dateRange: { 
-                                        ...filters.dateRange, 
-                                        to: date 
-                                      } 
-                                    })
-                                  }
-                                  initialFocus
-                                  className="rounded-r-md"
-                                  classNames={{
-                                    months: "flex flex-col space-y-4",
-                                    month: "space-y-3",
-                                    caption: "flex justify-center pt-1 relative items-center px-8",
-                                    caption_label: "text-sm font-medium",
-                                    nav: "flex items-center",
-                                    nav_button: cn(
-                                      "h-7 w-7 bg-transparent p-0 hover:bg-gray-50 rounded-md",
-                                      "absolute top-1 flex items-center justify-center text-gray-500"
-                                    ),
-                                    nav_button_previous: "left-1",
-                                    nav_button_next: "right-1",
-                                    table: "w-full border-collapse",
-                                    head_row: "flex w-full",
-                                    head_cell: "text-gray-500 w-9 font-normal text-[0.8rem] text-center",
-                                    row: "flex w-full mt-1",
-                                    cell: cn(
-                                      "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
-                                      "h-9 w-9 hover:bg-gray-100 rounded-md transition-colors",
-                                      "[&:has([aria-selected])]:bg-gray-100"
-                                    ),
-                                    day: cn(
-                                      "h-9 w-9 p-0 font-normal",
-                                      "flex items-center justify-center rounded-md transition-colors",
-                                      "hover:bg-primary hover:text-primary-foreground",
-                                      "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                    ),
-                                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-                                    day_today: "bg-accent text-accent-foreground",
-                                    day_outside: "text-gray-400",
-                                    day_disabled: "text-gray-400",
-                                    day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-                                    day_hidden: "invisible",
-                                  }}
-                                />
-                              </div>
-                            </div>
-                            <div className="p-3 border-t border-gray-100">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-xs"
-                                  onClick={() => 
-                                    setFilters({ 
-                                      ...filters, 
-                                      dateRange: { 
-                                        from: undefined, 
-                                        to: undefined 
-                                      } 
-                                    })
-                                  }
-                                >
-                                  Clear
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="text-xs"
-                                  onClick={() => {
-                                    const button = document.querySelector('[data-state="open"]');
-                                    if (button) {
-                                      (button as HTMLButtonElement).click();
-                                    }
-                                  }}
-                                >
-                                  Apply
-                                </Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      {/* Sort By Filter */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Sort by</label>
-                        <Select value={filters.sortBy} onValueChange={(value) => setFilters({ ...filters, sortBy: value })}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select sort order" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {sortOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Service Program Filter */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Service Program</label>
-                        <Select value={filters.serviceProgram} onValueChange={(value) => setFilters({ ...filters, serviceProgram: value })}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select program" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {serviceProgramOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Service Provider Filter */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Service Provider</label>
-                        <Select value={filters.serviceProvider} onValueChange={(value) => setFilters({ ...filters, serviceProvider: value })}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select provider" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {serviceProviderOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Reset Button */}
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => setFilters({
-                          dateRange: {
-                            from: undefined,
-                            to: undefined
-                          },
-                          sortBy: 'newest',
-                          serviceProgram: 'all',
-                          serviceProvider: 'all',
-                          personName: ''
-                        })}
-                      >
-                        Reset Filters
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-            </div>
-
-            {/* Forms List */}
-            <div className="overflow-auto">
-              <div className="p-3 space-y-2">
-                {filteredForms.map((form) => (
-                  <Card
-                    key={form.id}
+              <Popover open={showFilters} onOpenChange={setShowFilters}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     className={cn(
-                      "p-2.5 cursor-pointer transition-colors shadow-sm hover:shadow",
-                      selectedForm?.id === form.id ? "bg-blue-50 border-blue-200 border-2" : "hover:bg-gray-50"
+                        "gap-1.5 shrink-0 px-2 h-8 text-gray-600 border-gray-200 hover:bg-gray-50",
+                      showFilters && "bg-gray-100"
                     )}
-                    onClick={() => setSelectedForm(form)}
                   >
-                    {/* Header - Form Type and Status */}
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-medium text-gray-900 line-clamp-1 flex-1">{form.formType}</h4>
-                      <Badge className={cn("shrink-0 opacity-90 text-[10px] px-1.5 py-0.5", getStatusColor(form.status))}>
-                        {form.status.charAt(0).toUpperCase() + form.status.slice(1)}
-                      </Badge>
+                    <FunnelIcon className="w-3.5 h-3.5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="end">
+                  <div className="space-y-4">
+                    {/* Person Name Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Person Name</label>
+                      <Input
+                        placeholder="Filter by person name"
+                        value={filters.personName}
+                        onChange={(e) => setFilters({ ...filters, personName: e.target.value })}
+                        className="w-full"
+                      />
                     </div>
 
-                    {/* Patient Info - Two Column Layout */}
-                    <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-0.5">
-                      <div className="col-span-2">
-                        <p className="text-[11px] text-gray-600/80">
-                          <span className="text-gray-600/80">Patient:</span> {form.patientId} - {form.patientName}
-                        </p>
-                      </div>
-                      <p className="text-[11px] text-gray-600/80">
-                        <span className="text-gray-600/80">Encounter:</span> {form.encounterId}
-                      </p>
-                      <p className="text-[11px] text-gray-600/80">
-                        <span className="text-gray-600/80">Service:</span> {form.dateOfService}
-                      </p>
+                    {/* Date Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Date Range</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !filters.dateRange.from && !filters.dateRange.to && "text-gray-500"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {filters.dateRange.from && filters.dateRange.to ? (
+                              `${format(filters.dateRange.from, "MMM dd, yyyy")} - ${format(filters.dateRange.to, "MMM dd, yyyy")}`
+                            ) : (
+                              "Select date range"
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <div className="flex flex-col sm:flex-row">
+                            <div className="border-b sm:border-b-0 sm:border-r border-gray-200">
+                              <Calendar
+                                mode="single"
+                                selected={filters.dateRange.from}
+                                onSelect={(date) => 
+                                  setFilters({ 
+                                    ...filters, 
+                                    dateRange: { 
+                                      ...filters.dateRange, 
+                                      from: date 
+                                    } 
+                                  })
+                                }
+                                initialFocus
+                                className="rounded-l-md"
+                                classNames={{
+                                  months: "flex flex-col space-y-4",
+                                  month: "space-y-3",
+                                  caption: "flex justify-center pt-1 relative items-center px-8",
+                                  caption_label: "text-sm font-medium",
+                                  nav: "flex items-center",
+                                  nav_button: cn(
+                                    "h-7 w-7 bg-transparent p-0 hover:bg-gray-50 rounded-md",
+                                    "absolute top-1 flex items-center justify-center text-gray-500"
+                                  ),
+                                  nav_button_previous: "left-1",
+                                  nav_button_next: "right-1",
+                                  table: "w-full border-collapse",
+                                  head_row: "flex w-full",
+                                  head_cell: "text-gray-500 w-9 font-normal text-[0.8rem] text-center",
+                                  row: "flex w-full mt-1",
+                                  cell: cn(
+                                    "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
+                                    "h-9 w-9 hover:bg-gray-100 rounded-md transition-colors",
+                                    "[&:has([aria-selected])]:bg-gray-100"
+                                  ),
+                                  day: cn(
+                                    "h-9 w-9 p-0 font-normal",
+                                    "flex items-center justify-center rounded-md transition-colors",
+                                    "hover:bg-primary hover:text-primary-foreground",
+                                    "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                  ),
+                                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                                  day_today: "bg-accent text-accent-foreground",
+                                  day_outside: "text-gray-400",
+                                  day_disabled: "text-gray-400",
+                                  day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                                  day_hidden: "invisible",
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Calendar
+                                mode="single"
+                                selected={filters.dateRange.to}
+                                onSelect={(date) => 
+                                  setFilters({ 
+                                    ...filters, 
+                                    dateRange: { 
+                                      ...filters.dateRange, 
+                                      to: date 
+                                    } 
+                                  })
+                                }
+                                initialFocus
+                                className="rounded-r-md"
+                                classNames={{
+                                  months: "flex flex-col space-y-4",
+                                  month: "space-y-3",
+                                  caption: "flex justify-center pt-1 relative items-center px-8",
+                                  caption_label: "text-sm font-medium",
+                                  nav: "flex items-center",
+                                  nav_button: cn(
+                                    "h-7 w-7 bg-transparent p-0 hover:bg-gray-50 rounded-md",
+                                    "absolute top-1 flex items-center justify-center text-gray-500"
+                                  ),
+                                  nav_button_previous: "left-1",
+                                  nav_button_next: "right-1",
+                                  table: "w-full border-collapse",
+                                  head_row: "flex w-full",
+                                  head_cell: "text-gray-500 w-9 font-normal text-[0.8rem] text-center",
+                                  row: "flex w-full mt-1",
+                                  cell: cn(
+                                    "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
+                                    "h-9 w-9 hover:bg-gray-100 rounded-md transition-colors",
+                                    "[&:has([aria-selected])]:bg-gray-100"
+                                  ),
+                                  day: cn(
+                                    "h-9 w-9 p-0 font-normal",
+                                    "flex items-center justify-center rounded-md transition-colors",
+                                    "hover:bg-primary hover:text-primary-foreground",
+                                    "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                  ),
+                                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                                  day_today: "bg-accent text-accent-foreground",
+                                  day_outside: "text-gray-400",
+                                  day_disabled: "text-gray-400",
+                                  day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                                  day_hidden: "invisible",
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="p-3 border-t border-gray-100">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => 
+                                  setFilters({ 
+                                    ...filters, 
+                                    dateRange: { 
+                                      from: undefined, 
+                                      to: undefined 
+                                    } 
+                                  })
+                                }
+                              >
+                                Clear
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => {
+                                  const button = document.querySelector('[data-state="open"]');
+                                  if (button) {
+                                    (button as HTMLButtonElement).click();
+                                  }
+                                }}
+                              >
+                                Apply
+                              </Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
-                    {/* Footer - Metadata */}
-                    <div className="flex items-center mt-1.5 pt-1.5 border-t border-gray-100">
-                      <div className="flex items-center gap-2 text-[11px] text-gray-500/80">
-                        <div className="flex items-center gap-1">
-                          <CalendarIcon className="w-3 h-3 text-gray-400/80" />
-                          {form.submittedDate}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <UserIcon className="w-3 h-3 text-gray-400/80" />
-                          {form.assignedTo}
-                        </div>
-                      </div>
+                    {/* Sort By Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Sort by</label>
+                      <Select value={filters.sortBy} onValueChange={(value) => setFilters({ ...filters, sortBy: value })}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select sort order" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sortOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </Card>
-                ))}
-              </div>
+
+                    {/* Service Program Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Service Program</label>
+                      <Select value={filters.serviceProgram} onValueChange={(value) => setFilters({ ...filters, serviceProgram: value })}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select program" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {serviceProgramOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Service Provider Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Service Provider</label>
+                      <Select value={filters.serviceProvider} onValueChange={(value) => setFilters({ ...filters, serviceProvider: value })}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {serviceProviderOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Reset Button */}
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setFilters({
+                        dateRange: {
+                          from: undefined,
+                          to: undefined
+                        },
+                        sortBy: 'newest',
+                        serviceProgram: 'all',
+                        serviceProvider: 'all',
+                        personName: ''
+                      })}
+                    >
+                      Reset Filters
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          {/* Right Panel - Form Preview */}
-          <div className="flex-1 bg-gray-50">
-            {selectedForm ? (
-              <div className="h-full flex flex-col">
-                <div className="p-4 border-b bg-white flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <h4 className="font-medium">{selectedForm.formType}</h4>
-                    {numPages && (
-                      <span className="text-sm text-gray-500">
-                        Page {pageNumber} of {numPages}
-                      </span>
-                    )}
+          {/* Forms List */}
+          <div className="overflow-auto">
+            <div className="p-3 space-y-2">
+              {filteredForms.map((form) => (
+                <Card
+                  key={form.id}
+                  className={cn(
+                    "p-2.5 cursor-pointer transition-colors shadow-sm hover:shadow",
+                      selectedForm?.id === form.id ? "bg-blue-50 border-blue-200 border-2" : "hover:bg-gray-50"
+                  )}
+                  onClick={() => setSelectedForm(form)}
+                >
+                  {/* Header - Form Type and Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="text-xs font-medium text-gray-900 line-clamp-1 flex-1">{form.formType}</h4>
+                    <Badge className={cn("shrink-0 opacity-90 text-[10px] px-1.5 py-0.5", getStatusColor(form.status))}>
+                      {form.status.charAt(0).toUpperCase() + form.status.slice(1)}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => changePage(-1)}
-                      disabled={pageNumber <= 1}
-                      className="h-8 w-8 p-0"
-                    >
-                      <ChevronLeftIcon className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => changePage(1)}
-                      disabled={pageNumber >= (numPages || 1)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <ChevronRightIcon className="w-4 h-4" />
-                    </Button>
-                    <div className="w-px h-6 bg-gray-200 mx-2" />
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <ArrowPathIcon className="w-4 h-4" />
-                      Defer
-                    </Button>
+
+                  {/* Patient Info - Two Column Layout */}
+                  <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-0.5">
+                    <div className="col-span-2">
+                      <p className="text-[11px] text-gray-600/80">
+                        <span className="text-gray-600/80">Patient:</span> {form.patientId} - {form.patientName}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-gray-600/80">
+                      <span className="text-gray-600/80">Encounter:</span> {form.encounterId}
+                    </p>
+                    <p className="text-[11px] text-gray-600/80">
+                      <span className="text-gray-600/80">Service:</span> {form.dateOfService}
+                    </p>
+                  </div>
+
+                  {/* Footer - Metadata */}
+                    <div className="flex items-center mt-1.5 pt-1.5 border-t border-gray-100">
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500/80">
+                      <div className="flex items-center gap-1">
+                        <CalendarIcon className="w-3 h-3 text-gray-400/80" />
+                        {form.submittedDate}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <UserIcon className="w-3 h-3 text-gray-400/80" />
+                        {form.assignedTo}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel - Form Preview */}
+        <div className="flex-1 bg-gray-50">
+          {selectedForm ? (
+            <div className="h-full flex flex-col">
+              <div className="p-4 border-b bg-white flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <h4 className="font-medium">{selectedForm.formType}</h4>
+                  {numPages && (
+                    <span className="text-sm text-gray-500">
+                      Page {pageNumber} of {numPages}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => changePage(-1)}
+                    disabled={pageNumber <= 1}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeftIcon className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => changePage(1)}
+                    disabled={pageNumber >= (numPages || 1)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRightIcon className="w-4 h-4" />
+                  </Button>
+                  <div className="w-px h-6 bg-gray-200 mx-2" />
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ArrowPathIcon className="w-4 h-4" />
+                    Defer
+                  </Button>
                     <Button 
                       variant="outline" 
                       size="sm" 
                       className="gap-2"
                       onClick={() => setShowAssignDialog(true)}
                     >
-                      <DocumentArrowRightIcon className="w-4 h-4" />
+                    <DocumentArrowRightIcon className="w-4 h-4" />
                       Assign
-                    </Button>
+                  </Button>
                     <Button 
                       variant="outline" 
                       size="sm" 
                       className="gap-2 text-red-600"
                       onClick={() => setShowRejectDialog(true)}
                     >
-                      <XMarkIcon className="w-4 h-4" />
-                      Reject
-                    </Button>
+                    <XMarkIcon className="w-4 h-4" />
+                    Reject
+                  </Button>
                     <Button 
                       size="sm" 
                       className="gap-2 bg-green-600 hover:bg-green-700 text-white"
                       onClick={handleApprove}
                     >
-                      <DocumentCheckIcon className="w-4 h-4" />
+                    <DocumentCheckIcon className="w-4 h-4" />
                       Approve
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-auto p-4">
-                  <div className="bg-white rounded-lg p-6 shadow-sm h-full flex flex-col items-center">
-                    <Document
-                      file="https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf"
-                      onLoadSuccess={onDocumentLoadSuccess}
-                      className="flex flex-col items-center"
-                      loading={
-                        <div className="flex items-center justify-center h-full">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                        </div>
-                      }
-                      error={
-                        <div className="flex items-center justify-center h-full text-red-500">
-                          Failed to load PDF. Please try again.
-                        </div>
-                      }
-                    >
-                      <Page 
-                        pageNumber={pageNumber} 
-                        className="max-w-full"
-                        renderTextLayer={true}
-                        renderAnnotationLayer={true}
-                        scale={1.2}
-                      />
-                    </Document>
-                  </div>
+                  </Button>
                 </div>
               </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-primary/[0.02] via-primary/[0.05] to-secondary">
-                <div className="w-full max-w-md text-center space-y-6">
-                  {/* Decorative elements */}
+              <div className="flex-1 overflow-auto p-4">
+                <div className="bg-white rounded-lg p-6 shadow-sm h-full flex flex-col items-center">
+                  <Document
+                    file="https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf"
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    className="flex flex-col items-center"
+                    loading={
+                      <div className="flex items-center justify-center h-full">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                      </div>
+                    }
+                    error={
+                      <div className="flex items-center justify-center h-full text-red-500">
+                        Failed to load PDF. Please try again.
+                      </div>
+                    }
+                  >
+                    <Page 
+                      pageNumber={pageNumber} 
+                      className="max-w-full"
+                      renderTextLayer={true}
+                      renderAnnotationLayer={true}
+                      scale={1.2}
+                    />
+                  </Document>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-primary/[0.02] via-primary/[0.05] to-secondary">
+              <div className="w-full max-w-md text-center space-y-6">
+                {/* Decorative elements */}
+                <div className="relative">
+                  <div className="absolute -top-6 -left-6 w-24 h-24 bg-primary/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+                  <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary/10 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+                  <div className="absolute -bottom-4 left-8 w-24 h-24 bg-primary/15 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+                  
                   <div className="relative">
-                    <div className="absolute -top-6 -left-6 w-24 h-24 bg-primary/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-                    <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary/10 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-                    <div className="absolute -bottom-4 left-8 w-24 h-24 bg-primary/15 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-                    
-                    <div className="relative">
-                      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-primary/5">
-                        <DocumentTextIcon className="w-16 h-16 mx-auto mb-6 text-primary" />
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">No Form Selected</h3>
-                        <p className="text-gray-600 mb-6">Select a form from the list to review its contents and take action.</p>
-                        <div className="flex items-center justify-center gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <CheckCircleIcon className="w-5 h-5 text-primary" />
-                            <span>Review</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <DocumentCheckIcon className="w-5 h-5 text-primary/80" />
-                            <span>Sign</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <ArrowPathIcon className="w-5 h-5 text-primary/60" />
-                            <span>Process</span>
-                          </div>
+                    <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-primary/5">
+                      <DocumentTextIcon className="w-16 h-16 mx-auto mb-6 text-primary" />
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">No Form Selected</h3>
+                      <p className="text-gray-600 mb-6">Select a form from the list to review its contents and take action.</p>
+                      <div className="flex items-center justify-center gap-4 text-sm">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <CheckCircleIcon className="w-5 h-5 text-primary" />
+                          <span>Review</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <DocumentCheckIcon className="w-5 h-5 text-primary/80" />
+                          <span>Sign</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <ArrowPathIcon className="w-5 h-5 text-primary/60" />
+                          <span>Process</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+      </div>
 
         {/* Assign Dialog */}
         <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
@@ -1435,7 +1435,7 @@ export const ReviewFormsWidget: FC<ReviewFormsWidgetProps> = ({ className }) => 
                           >
                             <div className="font-medium text-sm">{provider.name}</div>
                             <div className="text-xs text-gray-500">{provider.specialty}</div>
-                          </div>
+    </div>
                         ))}
                       </div>
                     </div>

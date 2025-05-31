@@ -969,7 +969,12 @@ const TaskHub: React.FC = () => {
                     </Menubar>
                     <Button 
                       variant="default"
-                      onClick={() => setShowNewTaskDialog(true)}
+                      onClick={() => {
+                        console.log('New Task button clicked');
+                        console.log('Current showNewTaskDialog state:', showNewTaskDialog);
+                        setShowNewTaskDialog(true);
+                        console.log('showNewTaskDialog set to true');
+                      }}
                     >
                       New Task
                     </Button>
@@ -1345,8 +1350,11 @@ const TaskHub: React.FC = () => {
       
       {/* Add New Task Dialog */}
       <NewTaskDialog 
-        isOpen={showNewTaskDialog}
-        onClose={() => setShowNewTaskDialog(false)}
+        open={showNewTaskDialog}
+        onClose={() => {
+          console.log('NewTaskDialog onClose called');
+          setShowNewTaskDialog(false);
+        }}
         onTaskAdded={() => setShowCreatedByMeGuide(true)}
       />
 

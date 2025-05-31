@@ -143,6 +143,8 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
   onTaskAdded,
   task // optional, used for reply/view mode
 }) => {
+  console.log('NewTaskDialog render - open prop:', open);
+  console.log('NewTaskDialog render - task prop:', task);
   const [selectedRecipients, setSelectedRecipients] = useState<Recipient[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -338,6 +340,8 @@ export const NewTaskDialog: FC<NewTaskDialogProps> = ({
     onClose();
     console.log('Task sent and dialog closed');
   };
+
+  console.log('About to render Dialog with open:', open);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
