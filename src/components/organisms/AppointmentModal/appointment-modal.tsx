@@ -6,7 +6,8 @@ import {
   InformationCircleIcon,
   PhoneIcon,
   PrinterIcon,
-  CalendarIcon
+  CalendarIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline'
 import { Input } from '../../atoms/Input'
 import { Label } from '../../atoms/Label'
@@ -50,6 +51,8 @@ interface Appointment {
   isRepeating?: boolean;
   repeatFrequency?: string;
   repeatInterval?: string;
+  repeatUntil?: string;
+  location?: string;
   isTelehealth?: boolean;
   printAppointmentSlip?: boolean;
 }
@@ -98,10 +101,11 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
   const [status, setStatus] = useState('Scheduled');
   const [room, setRoom] = useState('');
   const [comments, setComments] = useState('');
-  const [type, setType] = useState<'Individual' | 'Group' | 'Crisis'>('Individual');
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatFrequency, setRepeatFrequency] = useState('every');
   const [repeatInterval, setRepeatInterval] = useState('day');
+  const [repeatUntil, setRepeatUntil] = useState('');
+  const [location, setLocation] = useState('');
   const [isTelehealth, setIsTelehealth] = useState(false);
   const [printAppointmentSlip, setPrintAppointmentSlip] = useState(false);
   const [showOnlyMine, setShowOnlyMine] = useState(false);
@@ -130,7 +134,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
       patient,
       startTime: appointmentStartTime,
       endTime: appointmentEndTime,
-      type,
+      type: 'Individual',
       room,
       date: appointmentDate,
       isAllDay,
@@ -144,6 +148,8 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
       isRepeating,
       repeatFrequency: isRepeating ? repeatFrequency : undefined,
       repeatInterval: isRepeating ? repeatInterval : undefined,
+      repeatUntil: isRepeating ? repeatUntil : undefined,
+      location,
       isTelehealth,
       printAppointmentSlip
     });
@@ -274,29 +280,27 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="type" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type:</Label>
-                      <Select value={type} onValueChange={(value) => setType(value as 'Individual' | 'Group' | 'Crisis')}>
-                        <SelectTrigger id="type" className="h-8 text-sm">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Individual">Individual</SelectItem>
-                          <SelectItem value="Group">Group</SelectItem>
-                          <SelectItem value="Crisis">Crisis</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
+                  <div className="grid grid-cols-1 gap-2">
                     <div className="space-y-1">
                       <Label htmlFor="room" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Room:</Label>
-                      <Input
-                        id="room"
-                        value={room}
-                        onChange={(e) => setRoom(e.target.value)}
-                        className="h-8 text-sm"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="room"
+                          value={room}
+                          onChange={(e) => setRoom(e.target.value)}
+                          className="h-8 text-sm flex-1"
+                        />
+                        <button
+                          type="button"
+                          className="text-blue-600 hover:text-blue-800 text-xs font-medium underline whitespace-nowrap"
+                          onClick={() => {
+                            // Handle allocate room functionality
+                            console.log('Allocate Room clicked');
+                          }}
+                        >
+                          Allocate Room
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -310,22 +314,19 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {/* Date and All Day Event Row */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="col-span-2 space-y-1">
                         <Label htmlFor="appointmentDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                           Date:
                         </Label>
-                        <div className="relative">
-                          <Input
-                            id="appointmentDate"
-                            type="date"
-                            value={appointmentDate}
-                            onChange={(e) => setAppointmentDate(e.target.value)}
-                            className="h-8 text-sm pr-8"
-                            required
-                          />
-                          <CalendarIcon className="absolute right-2 top-2 w-4 h-4 text-gray-400 pointer-events-none" />
-                        </div>
+                        <Input
+                          id="appointmentDate"
+                          type="date"
+                          value={appointmentDate}
+                          onChange={(e) => setAppointmentDate(e.target.value)}
+                          className="h-8 text-sm"
+                          required
+                        />
                       </div>
                       <div className="flex items-center pt-6">
                         <Checkbox
@@ -342,8 +343,8 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
 
                     {/* Time and Duration Row */}
                     {!isAllDay && (
-                      <div className="grid grid-cols-12 gap-3 items-start">
-                        <div className="col-span-4 space-y-1">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1">
                           <Label htmlFor="startTime" className="text-xs text-gray-500">Start Time</Label>
                           <Input
                             id="startTime"
@@ -354,7 +355,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                             required
                           />
                         </div>
-                        <div className="col-span-4 space-y-1">
+                        <div className="space-y-1">
                           <Label htmlFor="endTime" className="text-xs text-gray-500">End Time</Label>
                           <Input
                             id="endTime"
@@ -365,7 +366,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                             required
                           />
                         </div>
-                        <div className="col-span-4 space-y-1">
+                        <div className="space-y-1">
                           <Label htmlFor="duration" className="text-xs text-gray-500">Duration</Label>
                           <div className="flex items-center gap-1">
                             <Input
@@ -374,7 +375,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                               value={duration}
                               onChange={(e) => setDuration(e.target.value)}
                               min="0"
-                              className="h-8 text-sm"
+                              className="h-8 text-sm flex-1"
                             />
                             <span className="text-xs text-gray-500 whitespace-nowrap">min</span>
                           </div>
@@ -397,33 +398,52 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                       </div>
 
                       {isRepeating && (
-                        <div className="ml-5 grid grid-cols-12 gap-2 items-center">
-                          <span className="text-xs text-gray-600 col-span-2">Repeat</span>
-                          <div className="col-span-5">
-                            <Select value={repeatFrequency} onValueChange={setRepeatFrequency}>
-                              <SelectTrigger className="h-8 text-sm">
-                                <SelectValue placeholder="Select frequency" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="every">every</SelectItem>
-                                <SelectItem value="every other">every other</SelectItem>
-                                <SelectItem value="every third">every third</SelectItem>
-                                <SelectItem value="every fourth">every fourth</SelectItem>
-                              </SelectContent>
-                            </Select>
+                        <div className="ml-5 space-y-2">
+                          <div className="grid grid-cols-12 gap-2 items-center">
+                            <span className="text-xs text-gray-600 col-span-2">Repeat</span>
+                            <div className="col-span-5">
+                              <Select value={repeatFrequency} onValueChange={setRepeatFrequency}>
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue placeholder="Select frequency" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="every">every</SelectItem>
+                                  <SelectItem value="every other">every other</SelectItem>
+                                  <SelectItem value="every third">every third</SelectItem>
+                                  <SelectItem value="every fourth">every fourth</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="col-span-5">
+                              <Select value={repeatInterval} onValueChange={setRepeatInterval}>
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue placeholder="Select interval" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="day">day</SelectItem>
+                                  <SelectItem value="week">week</SelectItem>
+                                  <SelectItem value="month">month</SelectItem>
+                                  <SelectItem value="year">year</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                          <div className="col-span-5">
-                            <Select value={repeatInterval} onValueChange={setRepeatInterval}>
-                              <SelectTrigger className="h-8 text-sm">
-                                <SelectValue placeholder="Select interval" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="day">day</SelectItem>
-                                <SelectItem value="week">week</SelectItem>
-                                <SelectItem value="month">month</SelectItem>
-                                <SelectItem value="year">year</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          
+                          <div className="grid grid-cols-12 gap-2 items-center">
+                            <span className="text-xs text-gray-600 col-span-2">Until</span>
+                            <div className="col-span-6">
+                              <div className="relative">
+                                <Input
+                                  id="repeatUntil"
+                                  type="date"
+                                  value={repeatUntil}
+                                  onChange={(e) => setRepeatUntil(e.target.value)}
+                                  className="h-8 text-sm pr-8"
+                                  placeholder="Select end date"
+                                />
+                                <CalendarIcon className="absolute right-2 top-2 w-4 h-4 text-gray-400 pointer-events-none" />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -453,7 +473,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="supervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:*</Label>
+                    <Label htmlFor="supervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:<span className="text-red-500">*</span></Label>
                     <Select value={supervisingProvider} onValueChange={setSupervisingProvider}>
                       <SelectTrigger id="supervisingProvider" className="h-8 text-sm">
                         <SelectValue placeholder="-- Unassigned --" />
@@ -467,7 +487,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="program" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program:*</Label>
+                    <Label htmlFor="program" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program:<span className="text-red-500">*</span></Label>
                     <Select value={program} onValueChange={setProgram}>
                       <SelectTrigger id="program" className="h-8 text-sm">
                         <SelectValue placeholder="Select Program" />
@@ -482,7 +502,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="billingProgram" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Billing Program:*</Label>
+                    <Label htmlFor="billingProgram" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Billing Program:<span className="text-red-500">*</span></Label>
                     <Select value={billingProgram} onValueChange={setBillingProgram}>
                       <SelectTrigger id="billingProgram" className="h-8 text-sm">
                         <SelectValue placeholder="Select Billing Program" />
@@ -491,6 +511,22 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                         <SelectItem value="APOLLO1234">APOLLO1234</SelectItem>
                         <SelectItem value="BILLING123">BILLING123</SelectItem>
                         <SelectItem value="INSURANCE456">INSURANCE456</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="location" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:<span className="text-red-500">*</span></Label>
+                    <Select value={location} onValueChange={setLocation}>
+                      <SelectTrigger id="location" className="h-8 text-sm">
+                        <SelectValue placeholder="Select Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="facility1">1 New Facilityss</SelectItem>
+                        <SelectItem value="apollo">APOLLO Hospitals</SelectItem>
+                        <SelectItem value="main-clinic">Main Clinic</SelectItem>
+                        <SelectItem value="east-wing">East Wing</SelectItem>
+                        <SelectItem value="west-wing">West Wing</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

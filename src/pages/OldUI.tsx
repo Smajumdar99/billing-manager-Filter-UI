@@ -656,18 +656,6 @@ const OldUI: FC = () => {
     // Add debug logs
     console.log('renderContent called, activeTab:', activeTab);
     
-    // Show Schedule tab content
-    if (activeTab === 'Schedule') {
-      console.log('Rendering Schedule content');
-      return (
-        <div className="flex flex-col items-center justify-center h-full">
-          <CalendarDaysIcon className="w-16 h-16 text-[#1C75BC] mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Hi!</h2>
-          <p className="text-lg text-gray-600">Welcome to the Schedule tab</p>
-        </div>
-      );
-    }
-    
     // Show Patient Forms content
     if (selectedMenu === 'Patient Forms') {
       console.log('Rendering Patient Forms content');
@@ -780,11 +768,8 @@ const OldUI: FC = () => {
           } else if (itemName === 'Settings') {
             navigate('/settings');
           } else if (itemName === 'Schedule') {
-            // Prevent navigation to /schedule route
-            // Just update the activeTab state to show the Schedule content
-            console.log('Schedule tab clicked');
-            // Stay on the current page
-            return false; // This signals to MainNavigationBar not to navigate
+            // Navigate to my-calendar page instead of showing local content
+            navigate('/my-calendar');
           } else if (itemName === 'Clients') {
             // Reset to default state when returning to Clients tab
             setActiveTab('Clients');

@@ -44,6 +44,22 @@ const MyCalendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [view, setView] = useState<'day' | 'week' | 'month' | 'agenda'>('day');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Provider selection state
+  const [selectedProviders, setSelectedProviders] = useState<string[]>(['sarah_wilson']); // Default to first provider
+  
+  // Available providers data (this should match the sidebar data)
+  const availableProviders = [
+    { id: 'sarah_wilson', value: 'sarah_wilson', label: 'Sarah Wilson, LCSW', status: 'active' as const, clientCount: 23 },
+    { id: 'michael_chen', value: 'michael_chen', label: 'Michael Chen, LPC', status: 'active' as const, clientCount: 18 },
+    { id: 'emily_rodriguez', value: 'emily_rodriguez', label: 'Emily Rodriguez, LMFT', status: 'active' as const, clientCount: 15 },
+    { id: 'maria_garcia', value: 'maria_garcia', label: 'Maria Garcia, LMHC', status: 'active' as const, clientCount: 31 },
+    { id: 'david_kim', value: 'david_kim', label: 'David Kim, PhD', status: 'active' as const, clientCount: 12 },
+    { id: 'robert_johnson', value: 'robert_johnson', label: 'Robert Johnson, LADC', status: 'active' as const, clientCount: 27 },
+    { id: 'jennifer_davis', value: 'jennifer_davis', label: 'Jennifer Davis, LCSW-S', status: 'active' as const, clientCount: 19 },
+    { id: 'thomas_martinez', value: 'thomas_martinez', label: 'Thomas Martinez, LPC-S', status: 'active' as const, clientCount: 22 }
+  ];
 
   // Handle creating a new appointment or meeting
   const handleCreateAppointment = () => {
@@ -225,6 +241,8 @@ const MyCalendar: React.FC = () => {
           onDateChange={setSelectedDate}
           onCurrentMonthChange={setCurrentDate}
           onCreateAppointment={handleCreateAppointment}
+          selectedProviders={selectedProviders}
+          onProviderSelectionChange={setSelectedProviders}
         />
         
         {/* Middle Column - Main Calendar View */}
@@ -235,12 +253,17 @@ const MyCalendar: React.FC = () => {
           onDateChange={setSelectedDate}
           onSettingsClick={handleSettingsClick}
           events={sampleEvents}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedProviders={selectedProviders}
+          availableProviders={availableProviders}
         />
         
-        {/* Right Column - Event Details */}
-        <CalendarDetails 
+        {/* Right Column - Event Details - Hidden for now */}
+        {/* <CalendarDetails 
           onCreateMeeting={handleCreateAppointment}
-        />
+          searchQuery={searchQuery}
+        /> */}
       </div>
     </div>
   )

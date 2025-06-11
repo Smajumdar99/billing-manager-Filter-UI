@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "drcloud-9749f"
-  }
+  },
+  "targets": {
+    "drcloud-9749f": {
+      "hosting": {
+        "drcloud-ui-library": [
+          "drcloud-ui-library"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

@@ -229,5 +229,60 @@
 }
 
 .resize-none::resizer {
-  display: none !important;
+  display: none;
+}
+
+/* Calendar Sidebar Animated Gradient Background */
+@keyframes gradient-xy {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  25% {
+    transform: scale(1.02) rotate(90deg);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1) rotate(180deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1.02) rotate(270deg);
+    opacity: 0.8;
+  }
+}
+
+@keyframes gradient-xy-2 {
+  0%, 100% {
+    transform: scale(1) rotate(45deg);
+    opacity: 0.7;
+  }
+  25% {
+    transform: scale(1.02) rotate(135deg);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1) rotate(225deg);
+    opacity: 0.7;
+  }
+  75% {
+    transform: scale(1.02) rotate(315deg);
+    opacity: 0.9;
+  }
+}
+
+.animate-gradient-xy {
+  animation: gradient-xy 16s ease-in-out infinite;
+}
+
+.animate-gradient-xy-2 {
+  animation: gradient-xy-2 20s ease-in-out infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 4s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 8s;
 } 
