@@ -7,6 +7,9 @@
       "hosting": {
         "drcloud-ui-library": [
           "drcloud-ui-library"
+        ],
+        "drcloud-9749f": [
+          "drcloud-9749f"
         ]
       }
     }
