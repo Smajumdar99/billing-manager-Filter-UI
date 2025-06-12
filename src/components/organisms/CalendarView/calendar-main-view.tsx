@@ -1035,16 +1035,6 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 <span>Number of days</span>
                 <ChevronRightIcon className="w-4 h-4" />
               </DropdownMenuItem>
-              
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuItem 
-                className="flex justify-between items-center"
-                onClick={onSettingsClick}
-              >
-                <span>View Settings</span>
-                <ChevronRightIcon className="w-4 h-4" />
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
@@ -1401,7 +1391,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 {/* Provider Calendar Content */}
                 <div className="min-h-[600px] bg-white">
                   {view === 'agenda' ? (
-                    <div className="p-4">
+                    <div className="h-full p-4">
                       <DataTable
                         rowData={agendaData}
                         columnDefs={agendaColumnDefs}
