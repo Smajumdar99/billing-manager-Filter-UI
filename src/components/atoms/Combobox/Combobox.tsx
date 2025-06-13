@@ -2,6 +2,29 @@ import * as React from "react";
 import { CheckIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 
+// Checkbox component for better visual control
+const Checkbox: React.FC<{ checked: boolean; onChange: () => void; className?: string }> = ({ 
+  checked, 
+  onChange, 
+  className 
+}) => (
+  <div 
+    className={cn(
+      "w-5 h-5 border-2 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200",
+      checked 
+        ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
+        : "border-gray-300 hover:border-blue-400 bg-white hover:bg-blue-50",
+      className
+    )}
+    onClick={(e) => {
+      e.stopPropagation();
+      onChange();
+    }}
+  >
+    {checked && <CheckIcon className="w-3.5 h-3.5" />}
+  </div>
+);
+
 export interface ComboboxOption {
   value: string;
   label: string;
@@ -84,33 +107,32 @@ export const Combobox: React.FC<ComboboxProps> = ({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="flex flex-wrap gap-1">
-          {value.length === 0
-            ? <span className="text-muted-foreground">{placeholder}</span>
-            : options.filter((opt) => value.includes(opt.value)).map((opt) => (
-                <span key={opt.value} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-gray-700">
-                  {opt.label}
-                  {multiple && (
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      className="text-primary hover:text-primary"
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleSelect(opt.value);
-                      }}
-                    >
-                      <CheckIcon className="h-3 w-3" />
-                    </button>
-                  )}
-                </span>
-              ))}
+        <span className="flex items-center gap-2">
+          {value.length === 0 ? (
+            <span className="text-muted-foreground">{placeholder}</span>
+          ) : multiple && value.length > 1 ? (
+            // Show count for multiple selections
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-xs font-medium text-blue-700">
+                {value.length} selected
+              </span>
+              <span className="text-xs text-gray-500 truncate max-w-[120px]">
+                {options.find(opt => value.includes(opt.value))?.label}
+                {value.length > 1 && `, +${value.length - 1} more`}
+              </span>
+            </div>
+          ) : (
+            // Show single selection or first item
+            <span className="text-sm text-gray-900 truncate">
+              {options.find(opt => value.includes(opt.value))?.label}
+            </span>
+          )}
         </span>
         <ChevronDownIcon className="h-4 w-4 ml-2 opacity-50" />
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-96 overflow-auto">
-          <div className="p-2 bg-white">
+        <div className="absolute z-50 mt-1 w-full min-w-[320px] rounded-md border bg-white shadow-lg max-h-96 overflow-auto">
+          <div className="p-3 bg-white">
             {/* Filter toggle for staff/groups */}
             <div className="flex flex-col gap-1">
               {/* Filter Tabs (conditionally render) */}
@@ -144,40 +166,106 @@ export const Combobox: React.FC<ComboboxProps> = ({
               )}
               <input
                 ref={inputRef}
-                className="w-full rounded border px-2 py-1 text-sm mb-2 bg-white"
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm mb-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Search..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => e.stopPropagation()}
               />
               {filtered.length === 0 ? (
-                <div className="p-2 text-sm text-gray-500">No options found.</div>
+                <div className="p-4 text-center text-sm text-gray-500">
+                  No options found.
+                  {search && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      Try adjusting your search terms
+                    </div>
+                  )}
+                </div>
               ) : (
-                <ul className="max-h-80 overflow-auto bg-white" role="listbox">
+                <>
+                  {/* Select All / Clear All controls for multiple selection */}
+                  {multiple && filtered.length > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                      <span className="text-sm font-medium text-gray-700">
+                        {value.length} of {filtered.length} selected
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                          onClick={() => {
+                            const allFilteredValues = filtered.map(opt => opt.value);
+                            const newSelection = [...new Set([...value, ...allFilteredValues])];
+                            onChange(newSelection);
+                          }}
+                        >
+                          Select All
+                        </button>
+                        <span className="text-gray-300 text-sm">|</span>
+                        <button
+                          type="button"
+                          className="text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                          onClick={() => {
+                            const filteredValues = filtered.map(opt => opt.value);
+                            const newSelection = value.filter(v => !filteredValues.includes(v));
+                            onChange(newSelection);
+                          }}
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <ul className="max-h-80 overflow-auto bg-white" role="listbox">
                   {filtered.map((opt) => (
                     <li
                       key={opt.value}
                       className={cn(
-                        "flex items-center justify-between px-2 py-1.5 cursor-pointer rounded hover:bg-primary/10",
-                        value.includes(opt.value) ? "bg-primary/10" : ""
+                        "flex items-center gap-3 px-4 py-3 cursor-pointer rounded-md mx-1 mb-1 transition-colors",
+                        value.includes(opt.value) 
+                          ? "bg-blue-50 border border-blue-200" 
+                          : "hover:bg-gray-50 border border-transparent"
                       )}
                       onClick={() => handleSelect(opt.value)}
                       role="option"
                       aria-selected={value.includes(opt.value)}
                     >
-                      {/* Compact: name and role on one line */}
-                      <span className="text-black font-medium text-sm">
-                        {opt.label}
+                      {/* Checkbox for better visual control */}
+                      {multiple && (
+                        <Checkbox
+                          checked={value.includes(opt.value)}
+                          onChange={() => handleSelect(opt.value)}
+                          className="flex-shrink-0"
+                        />
+                      )}
+                      
+                      {/* Option content */}
+                      <div className="flex-1 min-w-0">
+                        <span className={cn(
+                          "font-medium text-sm block truncate",
+                          value.includes(opt.value) ? "text-blue-900" : "text-gray-900"
+                        )}>
+                          {opt.label}
+                        </span>
                         {opt.description && (
-                          <span className="text-gray-700 text-xs font-normal ml-2">· {opt.description}</span>
+                          <span className={cn(
+                            "text-xs block truncate mt-0.5",
+                            value.includes(opt.value) ? "text-blue-700" : "text-gray-500"
+                          )}>
+                            {opt.description}
+                          </span>
                         )}
-                      </span>
-                      {multiple && value.includes(opt.value) && (
-                        <CheckIcon className="h-4 w-4 text-primary ml-2" />
+                      </div>
+                      
+                      {/* Check icon for single select */}
+                      {!multiple && value.includes(opt.value) && (
+                        <CheckIcon className="h-4 w-4 text-blue-600 flex-shrink-0" />
                       )}
                     </li>
                   ))}
                 </ul>
+                </>
               )}
             </div>
           </div>
