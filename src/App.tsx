@@ -18,6 +18,7 @@ import Inbox from './pages/Inbox'
 import Schedule from './pages/Schedule'
 import MyCalendar from './pages/MyCalendar'
 import TaskHub from './pages/TaskHub'
+import StaffDashboard from './pages/StaffDashboard'
 import { TaskProvider } from '@/context/TaskContext'
 
 // Protected Route Component
@@ -101,6 +102,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <TaskHub />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/staff-dashboard" 
+        element={
+          <ProtectedRoute>
+            <StaffDashboard />
           </ProtectedRoute>
         } 
       />
