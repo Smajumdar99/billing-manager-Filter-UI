@@ -82,6 +82,7 @@ interface AgendaEventType {
   startTime: string;
   endTime: string;
   isAllDay?: boolean;
+  facility: string;
   program: Program;
   appointmentType: AppointmentType;
   category: Category;
@@ -445,20 +446,26 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
   const [statusFilter, setStatusFilter] = useState<'all' | 'read' | 'unread'>('all');
   const [selectedMessages, setSelectedMessages] = useState<Message[]>([]);
 
-  // Agenda table definitions
+  // Updated agenda table definitions to match screenshot structure
   const agendaColumnDefs = [
     {
-      headerName: 'Appointment Date',
+      headerName: 'Appointment Dt.',
       field: 'startTime',
       cellRenderer: (params: any) => formatDate(params.value, 'MMM dd, yyyy'),
       minWidth: 130,
     },
     {
-      headerName: 'Time',
+      headerName: 'Start-End Time',
       field: 'startTime',
       cellRenderer: (params: any) => 
         formatTimeRange(params.data.startTime, params.data.endTime, params.data.isAllDay),
       minWidth: 150,
+    },
+    {
+      headerName: 'Facility',
+      field: 'facility',
+      minWidth: 120,
+      cellRenderer: (params: any) => params.value || '-',
     },
     {
       headerName: 'Program',
@@ -467,7 +474,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       cellRenderer: (params: any) => params.value || '-',
     },
     {
-      headerName: 'Type',
+      headerName: 'Appt. Type',
       field: 'appointmentType',
       minWidth: 120,
       cellRenderer: (params: any) => params.value || '-',
@@ -492,7 +499,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       ),
     },
     {
-      headerName: 'Copay',
+      headerName: 'CoPay',
       field: 'copay',
       cellRenderer: (params: any) => 
         typeof params.value === 'number' ? `$${params.value.toFixed(2)}` : '-',
@@ -503,26 +510,6 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       field: 'status',
       cellRenderer: (params: any) => params.value ? <StatusBadge status={params.value} /> : '-',
       minWidth: 130,
-    },
-    {
-      headerName: 'Insurance',
-      field: 'insuranceVerified',
-      minWidth: 100,
-      cellRenderer: (params: any) => (
-        <div className={`text-sm ${params.value ? 'text-green-600' : 'text-red-600'}`}>
-          {params.value ? '✓ Verified' : '⚠ Pending'}
-        </div>
-      )
-    },
-    {
-      headerName: 'Paperwork',
-      field: 'paperworkComplete',
-      minWidth: 100,
-      cellRenderer: (params: any) => (
-        <div className={`text-sm ${params.value ? 'text-green-600' : 'text-yellow-600'}`}>
-          {params.value ? '✓ Complete' : '⚠ Incomplete'}
-        </div>
-      )
     },
     {
       headerName: 'Actions',
@@ -541,6 +528,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       title: 'Initial Assessment - Depression',
       startTime: new Date(2024, 2, 20, 9, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      facility: 'Main Campus',
       program: 'Adult Mental Health',
       appointmentType: 'Initial Assessment',
       category: 'New Patient',
@@ -555,6 +543,7 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({ blockId, tasks, onC
       title: 'Medication Management',
       startTime: new Date(2024, 2, 20, 10, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      facility: 'West Wing',
       program: 'Adult Mental Health',
       appointmentType: 'Medication Review',
       category: 'Established',

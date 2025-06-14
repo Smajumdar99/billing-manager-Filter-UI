@@ -113,6 +113,7 @@ interface AgendaEventType {
   startTime: string;
   endTime: string;
   isAllDay?: boolean;
+  facility: string;
   program: Program;
   appointmentType: AppointmentType;
   category: Category;
@@ -513,6 +514,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'Initial Assessment - Depression',
       startTime: new Date(2024, 2, 20, 9, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      facility: 'Main Campus',
       program: 'Adult Mental Health',
       appointmentType: 'Initial Assessment',
       category: 'New Patient',
@@ -527,6 +529,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'Medication Management',
       startTime: new Date(2024, 2, 20, 10, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      facility: 'Main Campus',
       program: 'Adult Mental Health',
       appointmentType: 'Medication Review',
       category: 'Established',
@@ -541,6 +544,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'Substance Use Assessment',
       startTime: new Date(2024, 2, 20, 11, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 12, 30).toISOString(),
+      facility: 'North Center',
       program: 'Substance Use',
       appointmentType: 'Initial Assessment',
       category: 'Urgent',
@@ -555,6 +559,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'Group Therapy - Anxiety Management',
       startTime: new Date(2024, 2, 20, 14, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 15, 30).toISOString(),
+      facility: 'West Wing',
       program: 'Adult Mental Health',
       appointmentType: 'Group Therapy',
       category: 'Routine',
@@ -569,6 +574,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'Crisis Intervention',
       startTime: new Date(2024, 2, 20, 9, 30).toISOString(),
       endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      facility: 'Emergency Unit',
       program: 'Crisis Services',
       appointmentType: 'Crisis Intervention',
       category: 'Urgent',
@@ -583,6 +589,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'Telehealth - Depression Follow-up',
       startTime: new Date(2024, 2, 20, 13, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 14, 0).toISOString(),
+      facility: 'Virtual Care',
       program: 'Adult Mental Health',
       appointmentType: 'Telehealth',
       category: 'Established',
@@ -597,6 +604,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'MAT Program Intake',
       startTime: new Date(2024, 2, 20, 15, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 16, 30).toISOString(),
+      facility: 'South Center',
       program: 'MAT Program',
       appointmentType: 'Initial Assessment',
       category: 'New Patient',
@@ -611,6 +619,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'Walk-in Assessment',
       startTime: new Date(2024, 2, 20, 10, 45).toISOString(),
       endTime: new Date(2024, 2, 20, 11, 45).toISOString(),
+      facility: 'Walk-in Clinic',
       program: 'Crisis Services',
       appointmentType: 'Crisis Intervention',
       category: 'Walk-in',
@@ -625,6 +634,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'Dual Diagnosis Follow-up',
       startTime: new Date(2024, 2, 20, 13, 30).toISOString(),
       endTime: new Date(2024, 2, 20, 14, 30).toISOString(),
+      facility: 'Main Campus',
       program: 'Dual Diagnosis',
       appointmentType: 'Follow-up',
       category: 'Established',
@@ -639,6 +649,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       title: 'IOP Group Session',
       startTime: new Date(2024, 2, 20, 9, 0).toISOString(),
       endTime: new Date(2024, 2, 20, 12, 0).toISOString(),
+      facility: 'IOP Center',
       program: 'IOP',
       appointmentType: 'Group Therapy',
       category: 'Routine',
@@ -650,20 +661,26 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     }
   ];
 
-  // Update agendaColumnDefs to include insurance and paperwork status
+  // Updated agendaColumnDefs to match screenshot structure
   const agendaColumnDefs = [
     {
-      headerName: 'Appointment Date',
+      headerName: 'Appointment Dt.',
       field: 'startTime',
       cellRenderer: (params: any) => formatDate(params.value, 'MMM dd, yyyy'),
       minWidth: 130,
     },
     {
-      headerName: 'Time',
+      headerName: 'Start-End Time',
       field: 'startTime',
       cellRenderer: (params: any) => 
         formatTimeRange(params.data.startTime, params.data.endTime, params.data.isAllDay),
       minWidth: 150,
+    },
+    {
+      headerName: 'Facility',
+      field: 'facility',
+      minWidth: 120,
+      cellRenderer: (params: any) => params.value || '-',
     },
     {
       headerName: 'Program',
@@ -672,7 +689,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       cellRenderer: (params: any) => params.value || '-',
     },
     {
-      headerName: 'Type',
+      headerName: 'Appt. Type',
       field: 'appointmentType',
       minWidth: 120,
       cellRenderer: (params: any) => params.value || '-',
@@ -697,7 +714,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       ),
     },
     {
-      headerName: 'Copay',
+      headerName: 'CoPay',
       field: 'copay',
       cellRenderer: (params: any) => 
         typeof params.value === 'number' ? `$${params.value.toFixed(2)}` : '-',
@@ -708,26 +725,6 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       field: 'status',
       cellRenderer: (params: any) => params.value ? <StatusBadge status={params.value} /> : '-',
       minWidth: 130,
-    },
-    {
-      headerName: 'Insurance',
-      field: 'insuranceVerified',
-      minWidth: 100,
-      cellRenderer: (params: any) => (
-        <div className={`text-sm ${params.value ? 'text-green-600' : 'text-red-600'}`}>
-          {params.value ? '✓ Verified' : '⚠ Pending'}
-        </div>
-      )
-    },
-    {
-      headerName: 'Paperwork',
-      field: 'paperworkComplete',
-      minWidth: 100,
-      cellRenderer: (params: any) => (
-        <div className={`text-sm ${params.value ? 'text-green-600' : 'text-yellow-600'}`}>
-          {params.value ? '✓ Complete' : '⚠ Incomplete'}
-        </div>
-      )
     },
     {
       headerName: 'Actions',
