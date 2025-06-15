@@ -8,6 +8,12 @@ import {
   FolderIcon, DocumentDuplicateIcon, PresentationChartBarIcon,
   ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
+import { 
+  TooltipProvider, 
+  TooltipRoot, 
+  TooltipTrigger, 
+  TooltipContent 
+} from '@/components/atoms/Tooltip/tooltip';
 
 /**
  * SidebarItem Component Props
@@ -82,7 +88,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
     }
   };
   
-  return (
+  const linkContent = (
     <a 
       href="#" 
       onClick={(e) => {
@@ -94,7 +100,6 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
           ? 'text-[#1C75BC] bg-[#1C75BC]/5 font-semibold' 
           : 'text-gray-700 hover:bg-gray-50/50'
         }`}
-      title={collapsed ? label : ''}
     >
       {isActive && (
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#1C75BC]" />
@@ -115,6 +120,27 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
       )}
     </a>
   );
+
+  // Show tooltip only when sidebar is collapsed
+  if (collapsed) {
+    return (
+      <TooltipRoot>
+        <TooltipTrigger asChild>
+          {linkContent}
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          <p className="font-medium">{label}</p>
+          {badge && (
+            <p className="text-xs text-neutral-300 mt-1">
+              {badge} notification{badge !== '1' ? 's' : ''}
+            </p>
+          )}
+        </TooltipContent>
+      </TooltipRoot>
+    );
+  }
+
+  return linkContent;
 };
 
 /**
@@ -237,54 +263,62 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className={`${collapsed ? 'w-16' : widthClass} bg-white border-r flex flex-col h-full`}>
-      {/* Fixed Header with search and collapse button */}
-      <div className="shrink-0 border-b bg-white sticky top-0 z-10">
-        <div className="flex items-center p-2">
-          {!collapsed && (
-            <div className="flex-1 px-2">
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="search"
-                  placeholder="Search menu"
-                  className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#1C75BC] focus:border-[#1C75BC]"
-                  onChange={handleSearchChange}
-                />
+    <TooltipProvider>
+      <div className={`${collapsed ? 'w-16' : widthClass} bg-white border-r flex flex-col h-full`}>
+        {/* Fixed Header with search and collapse button */}
+        <div className="shrink-0 border-b bg-white sticky top-0 z-10">
+          <div className="flex items-center p-2">
+            {!collapsed && (
+              <div className="flex-1 px-2">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="search"
+                    placeholder="Search menu"
+                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#1C75BC] focus:border-[#1C75BC]"
+                    onChange={handleSearchChange}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-          <button 
-            onClick={toggleCollapse}
-            className="p-2 hover:bg-gray-100 rounded-md ml-2"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <ChevronRightIcon className="h-5 w-5 text-gray-500" />
-            ) : (
-              <ChevronLeftIcon className="h-5 w-5 text-gray-500" />
             )}
-          </button>
+            <TooltipRoot>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={toggleCollapse}
+                  className="p-2 hover:bg-gray-100 rounded-md ml-2"
+                >
+                  {collapsed ? (
+                    <ChevronRightIcon className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <ChevronLeftIcon className="h-5 w-5 text-gray-500" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>{collapsed ? "Expand sidebar" : "Collapse sidebar"}</p>
+              </TooltipContent>
+            </TooltipRoot>
+          </div>
         </div>
-      </div>
 
-      {/* Scrollable Navigation */}
-      <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300">
-        <div className="space-y-0.5 py-2">
-          {items.map((item) => (
-            <SidebarItem 
-              key={item.label}
-              icon={item.icon}
-              label={item.label}
-              badge={item.badge}
-              isActive={activeItem === item.label}
-              onClick={() => onMenuSelect?.(item.label)}
-              collapsed={collapsed}
-            />
-          ))}
-        </div>
-      </nav>
-    </div>
+        {/* Scrollable Navigation */}
+        <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300">
+          <div className="space-y-0.5 py-2">
+            {items.map((item) => (
+              <SidebarItem 
+                key={item.label}
+                icon={item.icon}
+                label={item.label}
+                badge={item.badge}
+                isActive={activeItem === item.label}
+                onClick={() => onMenuSelect?.(item.label)}
+                collapsed={collapsed}
+              />
+            ))}
+          </div>
+        </nav>
+      </div>
+    </TooltipProvider>
   );
 };
 

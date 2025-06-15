@@ -19,6 +19,7 @@ import Schedule from './pages/Schedule'
 import MyCalendar from './pages/MyCalendar'
 import TaskHub from './pages/TaskHub'
 import StaffDashboard from './pages/StaffDashboard'
+import ClientsPage from './pages/ClientsPage'
 import { TaskProvider } from '@/context/TaskContext'
 
 // Protected Route Component
@@ -110,6 +111,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <StaffDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/clients" 
+        element={
+          <ProtectedRoute>
+            <ClientsPage />
           </ProtectedRoute>
         } 
       />

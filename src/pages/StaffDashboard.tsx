@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/atoms/Select/select';
+import { TableSkeleton } from '@/components/atoms/TableSkeleton';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import {
@@ -1221,6 +1222,7 @@ const StaffDashboard: React.FC = () => {
   const [showIncompleteDetails, setShowIncompleteDetails] = useState(true);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const isMobile = useMediaQuery('(max-width: 640px)');
 
   // Column customization state
@@ -1408,6 +1410,18 @@ const StaffDashboard: React.FC = () => {
       console.log('Data refreshed');
     }, 2000);
   };
+
+  // Simulate initial data loading
+  React.useEffect(() => {
+    const loadData = () => {
+      setTimeout(() => {
+        setIsLoading(false);
+        console.log('Initial data loaded');
+      }, 1500);
+    };
+    
+    loadData();
+  }, []);
 
   // AG Grid configuration
   const gridOptions: GridOptions = {
@@ -1991,24 +2005,45 @@ const StaffDashboard: React.FC = () => {
                   Only show incomplete
                 </label>
               </div>
+              
+              {/* Separator */}
+              <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
+              
+              {/* Column Customizer */}
+              <div className="flex-shrink-0">
+                <ColumnCustomizer
+                  columns={columnConfigs}
+                  onColumnsChange={setColumnConfigs}
+                  className="text-xs"
+                />
+              </div>
             </div>
             
-            {/* Results Summary with Column Customizer */}
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-gray-600">
-                Showing {filteredClients.length} {filteredClients.length === 1 ? 'client' : 'clients'}
-                {selectedClinician.length > 0 && ` for ${selectedClinician.join(', ')}`}
-                {searchQuery && ` matching "${searchQuery}"`}
-              </p>
-              <ColumnCustomizer
-                columns={columnConfigs}
-                onColumnsChange={setColumnConfigs}
-                className="text-xs"
-              />
-            </div>
+
 
             {/* Client Table/Cards */}
-            {filteredClients.length > 0 ? (
+            {isLoading || isRefreshing ? (
+              // Show skeleton during loading or refresh
+              <div>
+                {/* Desktop Skeleton */}
+                <div className="hidden lg:block">
+                  <TableSkeleton 
+                    variant="desktop" 
+                    rows={8}
+                    className="w-full"
+                  />
+                </div>
+                
+                {/* Mobile Skeleton */}
+                <div className="lg:hidden">
+                  <TableSkeleton 
+                    variant="mobile" 
+                    rows={6}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            ) : filteredClients.length > 0 ? (
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 {/* Desktop View - AG Grid */}
                 <div className="hidden lg:block w-full overflow-x-auto">

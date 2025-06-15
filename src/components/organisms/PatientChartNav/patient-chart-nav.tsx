@@ -116,7 +116,7 @@ export const PatientChartNav: FC<PatientChartNavProps> = ({
               onClick={() => onSectionSelect?.(null)}
               className="text-xs font-semibold text-primary pl-2 hover:text-primary/80"
             >
-              Overview
+              Overview...
             </button>
           )}
           <div className="flex items-center gap-0.5 ml-auto">

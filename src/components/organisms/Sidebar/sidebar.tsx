@@ -147,6 +147,7 @@ export const Sidebar: FC<SidebarProps> = ({
                   className={cn(
                     "flex w-full items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
                     "hover:bg-primary/10 dark:hover:bg-primary/20",
+                    "justify-center",
                     isActive && "bg-primary/10 dark:bg-primary/20 text-primary",
                     !isActive && "text-foreground"
                   )}
@@ -193,6 +194,7 @@ export const Sidebar: FC<SidebarProps> = ({
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                 "hover:bg-primary/10 dark:hover:bg-primary/20",
+                "justify-center",
                 isActive && "bg-primary/10 dark:bg-primary/20 text-primary",
                 !isActive && "text-foreground"
               )}
@@ -207,6 +209,7 @@ export const Sidebar: FC<SidebarProps> = ({
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
               "hover:bg-primary/10 dark:hover:bg-primary/20",
+              collapsed ? "justify-center" : "",
               isActive && "bg-primary/10 dark:bg-primary/20 text-primary",
               !isActive && "text-foreground"
             )}
@@ -247,7 +250,7 @@ export const Sidebar: FC<SidebarProps> = ({
           "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border transition-all duration-300 ease-in-out",
           "md:relative md:flex",
           "shadow-[5px_0_30px_-15px_rgba(0,0,0,0.2)] dark:shadow-[5px_0_30px_-15px_rgba(0,0,0,0.4)]",
-          collapsed ? "w-[70px]" : "w-[240px]",
+          collapsed ? "w-[60px]" : "w-[240px]",
           "transform md:transform-none",
           !mobileOpen && "-translate-x-full md:translate-x-0"
         )}

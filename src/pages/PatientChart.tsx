@@ -25,6 +25,7 @@ import { AppointmentsWidget } from '@/components/widgets/AppointmentsWidget/appo
 import { PatientPerformanceCard } from '@/components/molecules/PatientPerformanceCard/patient-performance-card';
 import { DisclosuresWidget } from '@/components/widgets/DisclosuresWidget/disclosures-widget';
 import { PrescriptionsWidget } from '@/components/widgets/PrescriptionsWidget/prescriptions-widget';
+import { EncountersTable } from '@/components/organisms/EncountersTable';
 import { ImplantableDevicesWidget } from '@/components/widgets/ImplantableDevicesWidget/implantable-devices-widget';
 import type { Patient } from '@/types/patient';
 import { mockPatients, type MockPatient } from '@/data/mockPatients';
@@ -1324,6 +1325,8 @@ const PatientChart: FC = () => {
             <div className="relative w-full h-[calc(300vh)] p-4 overflow-y-auto">
               {selectedSection === 'Demographics' ? (
                 <Demographics patientId={patientId} />
+              ) : selectedSection === 'Encounters' ? (
+                <EncountersTable patientId={patientId} className="h-full" />
               ) : (
                 <>
                   {availableWidgets.length === 0 ? (
