@@ -264,7 +264,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <TooltipProvider>
-      <div className={`${collapsed ? 'w-16' : widthClass} bg-white border-r flex flex-col h-full`}>
+      <div className={`${collapsed ? 'w-16' : widthClass} bg-white border-r flex flex-col h-screen`}>
         {/* Fixed Header with search and collapse button */}
         <div className="shrink-0 border-b bg-white sticky top-0 z-10">
           <div className="flex items-center p-2">
@@ -302,7 +302,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Scrollable Navigation */}
-        <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300">
+        <nav className="flex-1 overflow-y-auto">
           <div className="space-y-0.5 py-2">
             {items.map((item) => (
               <SidebarItem 

@@ -361,7 +361,7 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
   };
 
   const headerContent = (
-    <div className="relative flex items-center h-14 bg-blue-50/10 px-4 min-w-[900px] pt-0 rounded-lg border border-blue-300 shadow-lg overflow-hidden">
+    <div className="relative flex items-center h-14 bg-blue-50/10 px-3 lg:px-4 w-full pt-0 rounded-lg border border-blue-300 shadow-lg overflow-hidden">
       <FlickeringGrid
         className="absolute inset-0 -z-10"
         squareSize={6}
@@ -371,16 +371,16 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
         flickerChance={9}
       />
       {/* Enhanced Left Section */}
-      <div className="flex items-start gap-3 min-w-[320px] py-2">
+      <div className="flex items-start gap-2 lg:gap-3 min-w-[200px] lg:min-w-[320px] py-2">
         {/* Avatar with status indicator */}
         <div className="relative">
           <Avatar
             src={patient.avatar}
             alt={patient.name}
-            className="w-10 h-10 ring-2 ring-white shadow-sm"
+            className="w-8 h-8 lg:w-10 lg:h-10 ring-2 ring-white shadow-sm"
             fallback={patient.name.charAt(0)}
           />
-          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-400 ring-2 ring-white" />
+          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 lg:w-3.5 lg:h-3.5 rounded-full bg-green-400 ring-2 ring-white" />
         </div>
 
         {/* Patient Info */}
@@ -388,19 +388,19 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
           {/* Name and Pronouns */}
           <div className="flex items-center gap-2 mb-0.5">
             <div className="flex items-center gap-1">
-              <span className="text-gray-900 font-semibold text-sm">
+              <span className="text-gray-900 font-semibold text-xs lg:text-sm">
                 {patient.name.split(' ')[0]}
               </span>
-              <span className="text-gray-500 text-xs font-medium">
+              <span className="text-gray-500 text-[10px] lg:text-xs font-medium">
                 {patient.name.split(' ')[1]}
               </span>
               {nickname && nickname !== patient.name.split(' ')[0] && (
-                <span className="text-blue-600 text-xs font-medium ml-1">
+                <span className="text-blue-600 text-[10px] lg:text-xs font-medium ml-1">
                   "{nickname}"
                 </span>
               )}
             </div>
-            <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-medium">
+            <span className="px-1 lg:px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[9px] lg:text-[10px] font-medium">
               {patient.gender === 'Male' ? 'Him' : 'Her'}
             </span>
           </div>

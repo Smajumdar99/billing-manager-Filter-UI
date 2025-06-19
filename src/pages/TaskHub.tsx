@@ -927,28 +927,31 @@ const TaskHub: React.FC = () => {
                       <MenubarMenu>
                         <MenubarTrigger className="text-xs px-2 py-1 text-gray-600">Filter</MenubarTrigger>
                         <MenubarContent align="end" className="min-w-[12rem]">
-                          <MenubarLabel>Filter by:</MenubarLabel>
+                          {/* Count-based filters grouped under 'Items Count' */}
+                          <MenubarLabel>Items Count</MenubarLabel>
                           <MenubarCheckboxItem
                             checked={filterCriteria.includes('count-low')}
                             onCheckedChange={() => handleFilterChange('count-low')}
-                          >Low (0-5)</MenubarCheckboxItem>
+                          >0-5</MenubarCheckboxItem>
                           <MenubarCheckboxItem
                             checked={filterCriteria.includes('count-medium')}
                             onCheckedChange={() => handleFilterChange('count-medium')}
-                          >Medium (6-10)</MenubarCheckboxItem>
+                          >6-10</MenubarCheckboxItem>
                           <MenubarCheckboxItem
                             checked={filterCriteria.includes('count-high')}
                             onCheckedChange={() => handleFilterChange('count-high')}
-                          >High (11+)</MenubarCheckboxItem>
+                          >11+</MenubarCheckboxItem>
                           <MenubarSeparator />
+                          {/* Label type filters grouped for clarity */}
+                          <MenubarLabel>Label Type</MenubarLabel>
                           <MenubarCheckboxItem
                             checked={filterCriteria.includes('custom-only')}
                             onCheckedChange={() => handleFilterChange('custom-only')}
-                          >Custom only</MenubarCheckboxItem>
+                          >Show only my custom labels</MenubarCheckboxItem>
                           <MenubarCheckboxItem
                             checked={filterCriteria.includes('default-only')}
                             onCheckedChange={() => handleFilterChange('default-only')}
-                          >Default only</MenubarCheckboxItem>
+                          >Show only system default labels</MenubarCheckboxItem>
                         </MenubarContent>
                       </MenubarMenu>
                       {/* Sort Menubar */}

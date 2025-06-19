@@ -58,6 +58,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
   const [search, setSearch] = React.useState("");
   const [filter, setFilter] = React.useState<'all' | 'staff' | 'group'>('all');
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Filtered options based on filter and search
   const filtered = React.useMemo(() => {
@@ -95,8 +96,25 @@ export const Combobox: React.FC<ComboboxProps> = ({
     }
   }, [open]);
 
+  // Handle click outside to close dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
+
   return (
-    <div className={cn("relative", className)}>
+    <div ref={containerRef} className={cn("relative", className)}>
       <button
         type="button"
         className={cn(
@@ -107,22 +125,16 @@ export const Combobox: React.FC<ComboboxProps> = ({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="flex items-center gap-2">
+        <span className="flex items-center">
           {value.length === 0 ? (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-gray-500">{placeholder}</span>
           ) : multiple && value.length > 1 ? (
-            // Show count for multiple selections
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-xs font-medium text-blue-700">
-                {value.length} selected
-              </span>
-              <span className="text-xs text-gray-500 truncate max-w-[120px]">
-                {options.find(opt => value.includes(opt.value))?.label}
-                {value.length > 1 && `, +${value.length - 1} more`}
-              </span>
-            </div>
+            // Simple count display for multiple selections
+            <span className="text-sm text-gray-900">
+              {value.length} selected
+            </span>
           ) : (
-            // Show single selection or first item
+            // Show single selection
             <span className="text-sm text-gray-900 truncate">
               {options.find(opt => value.includes(opt.value))?.label}
             </span>

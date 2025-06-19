@@ -31,6 +31,8 @@ const OldUI: FC = () => {
   const [selectedMenu, setSelectedMenu] = useState('Patient Forms')
   // Patient-related state moved to PatientFormsManager component
   const [selectedPatient, setSelectedPatient] = useState<{ id: string } | null>(null)
+  // Store full patient data for PatientSnapshot
+  const [patientData, setPatientData] = useState<any | null>(null)
   const [activeTab, setActiveTab] = useState('Clients')
   const [encounterStats, setEncounterStats] = useState<EncounterStats | null>(null)
   const navigate = useNavigate();
@@ -44,10 +46,37 @@ const OldUI: FC = () => {
         console.log('Loaded patient from session:', patient);
         // Set the selected patient to use the patient data from ClientsList
         setSelectedPatient({ id: patient.name + ` (${patient.id})` });
+        // Store full patient data for PatientSnapshot
+        setPatientData({
+          id: patient.id,
+          name: patient.name,
+          gender: patient.gender,
+          age: patient.age,
+          bloodGroup: patient.bloodGroup,
+          insuranceProvider: patient.insurance,
+          admittedTo: patient.levelOfCare,
+          language: 'English',
+          mobile: patient.mobilePhone || patient.homePhone,
+          programAuditor: 'Dr. Johnson',
+          auditorTimestamp: '2 hours ago',
+          primaryCareProvider: 'Dr. Brown',
+          nickname: patient.name.split(' ')[0]
+        });
       } catch (error) {
         console.error('Error loading patient from session:', error);
       }
     }
+  }, []);
+
+  // Clear patient data when navigating away from client details
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear patient data on page refresh/reload
+      // sessionStorage.removeItem('selectedPatient');
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   // Generate breadcrumb items based on current context
@@ -171,6 +200,9 @@ const OldUI: FC = () => {
         hospitalName="Mayank Hospitals"
         userAvatarUrl="https://ui-avatars.com/api/?name=Darlene+Robertson"
         onSearch={(searchTerm) => console.log('Search:', searchTerm)}
+        patient={patientData}
+        onNewEncounter={handleNewEncounter}
+        onViewChart={() => console.log('View chart for patient:', patientData?.name)}
       />
 
       {/* Main Navigation */}

@@ -20,7 +20,9 @@ import {
   ClipboardDocumentListIcon,
   AdjustmentsHorizontalIcon,
   UserGroupIcon as UsersIcon,
-  XCircleIcon
+  XCircleIcon,
+  ArrowLeftOnRectangleIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ColumnMenuTab, GridOptions } from 'ag-grid-community';
@@ -56,6 +58,8 @@ import {
 } from '@/components/atoms/Tooltip/tooltip';
 import ColumnCustomizer, { ColumnConfig } from '@/components/molecules/ColumnCustomizer';
 import { Combobox, ComboboxOption } from '@/components/atoms/Combobox/Combobox';
+import { FormStatusIcon } from '@/components/atoms/FormStatusIcon';
+import { FormStatusLegend } from '@/components/molecules/FormStatusLegend';
 
 /**
  * StaffDashboard Page Component
@@ -75,6 +79,7 @@ import { Combobox, ComboboxOption } from '@/components/atoms/Combobox/Combobox';
 interface Client {
   id: string;
   provider: string;
+  providerType?: 'Primary' | 'Care Team';
   program: string;
   lastName: string;
   firstName: string;
@@ -108,7 +113,8 @@ interface Client {
 const mockClients: Client[] = [
   {
     id: '001',
-    provider: 'Sarah Wilson, LCSW',
+    provider: 'Sarah Wilson',
+    providerType: 'Primary',
     program: 'Intensive Outpatient Program (IOP)',
     lastName: 'Johnson',
     firstName: 'Sarah',
@@ -138,7 +144,8 @@ const mockClients: Client[] = [
   },
   {
     id: '002',
-    provider: 'Michael Chen, LPC',
+    provider: 'Michael Chen',
+    providerType: 'Care Team',
     program: 'Partial Hospitalization Program (PHP)',
     lastName: 'Rodriguez',
     firstName: 'Miguel',
@@ -168,7 +175,8 @@ const mockClients: Client[] = [
   },
   {
     id: '003',
-    provider: 'Emma Davis, LMFT',
+    provider: 'Emma Davis',
+    providerType: 'Primary',
     program: 'Residential Treatment Program',
     lastName: 'Thompson',
     firstName: 'Ashley',
@@ -188,7 +196,8 @@ const mockClients: Client[] = [
   },
   {
     id: '004',
-    provider: 'James Wilson, LCADC',
+    provider: 'James Wilson',
+    providerType: 'Care Team',
     program: 'Substance Abuse Treatment',
     lastName: 'Martinez',
     firstName: 'Carlos',
@@ -210,7 +219,8 @@ const mockClients: Client[] = [
   },
   {
     id: '005',
-    provider: 'Lisa Brown, PNP',
+    provider: 'Lisa Brown',
+    providerType: 'Primary',
     program: 'Medication Management',
     lastName: 'Williams',
     firstName: 'Jennifer',
@@ -230,7 +240,8 @@ const mockClients: Client[] = [
   },
   {
     id: '006',
-    provider: 'Maria Garcia, LCSW',
+    provider: 'Maria Garcia',
+    providerType: 'Care Team',
     program: 'Individual Therapy',
     lastName: 'Anderson',
     firstName: 'David',
@@ -1038,11 +1049,54 @@ const getStatusBadgeStyles = (status: string) => {
     case 'Active':
       return "bg-green-50 text-green-700 border-green-200";
     case 'Discharged':
+    case 'Inactive':
       return "bg-gray-50 text-gray-700 border-gray-200";
-    case 'On Hold':
-      return "bg-yellow-50 text-yellow-700 border-yellow-200";
     default:
       return "bg-blue-50 text-blue-700 border-blue-200";
+  }
+};
+
+// Helper function to display status - shows "Inactive" for discharged clients
+const getDisplayStatus = (status: string) => {
+  return status === 'Discharged' ? 'Inactive' : status;
+};
+
+// Helper function to clean provider names by removing credentials/roles
+const cleanProviderName = (providerName: string) => {
+  // Remove common credentials and roles (LCSW, LPC, LMFT, MD, PsyD, etc.)
+  return providerName
+    .replace(/,?\s*(LCSW|LPC|LMFT|LCADC|MD|PsyD|PNP|BCBA|Dr\.|PhD|MSW|MA|MS)\b/gi, '')
+    .trim()
+    .replace(/,\s*$/, ''); // Remove trailing comma if any
+};
+
+// Helper function to determine form status based on treatment plan data
+const getFormStatus = (planValue: string, admittedDate: string): 'complete' | 'incomplete' | 'not-created-due-soon' | 'completed-after-due' | 'incomplete-overdue' | 'not-created-overdue' => {
+  const now = new Date();
+  const admitted = new Date(admittedDate);
+  const daysSinceAdmission = Math.floor((now.getTime() - admitted.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (planValue === 'Not yet') {
+    // Form not created
+    if (daysSinceAdmission >= 14) {
+      return 'not-created-overdue';
+    } else if (daysSinceAdmission >= 10) {
+      return 'not-created-due-soon';
+    } else {
+      return 'not-created-due-soon';
+    }
+  } else {
+    // Form has a date - check if it's complete or incomplete
+    const planDate = new Date(planValue);
+    const dueDate = new Date(admitted.getTime() + (14 * 24 * 60 * 60 * 1000)); // 14 days after admission
+    
+    // For this demo, we'll assume forms with dates are complete
+    // In real implementation, you'd check actual completion status
+    if (planDate > dueDate) {
+      return 'completed-after-due';
+    } else {
+      return 'complete';
+    }
   }
 };
 
@@ -1061,8 +1115,8 @@ const getRiskBadgeStyles = (risk: string) => {
 
 // Category tabs for filtering
 const CATEGORIES = [
-  { id: 'admitted', label: 'Admitted', icon: <CheckCircleIcon /> },
-  { id: 'discharged', label: 'Discharged', icon: <ChartBarIcon /> }
+  { id: 'admitted', label: 'Admitted', icon: <ArrowLeftOnRectangleIcon className="w-4 h-4" /> },
+  { id: 'discharged', label: 'Discharged', icon: <ArrowRightOnRectangleIcon className="w-4 h-4" /> }
 ];
 
 // Mobile Client Card Component
@@ -1080,7 +1134,7 @@ const ClientCard: React.FC<{ client: Client; onSelect: (client: Client) => void 
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className={cn('text-xs h-6', getStatusBadgeStyles(client.clientStatus))}>
-            {client.clientStatus}
+            {getDisplayStatus(client.clientStatus)}
           </Badge>
         </div>
       </div>
@@ -1090,7 +1144,7 @@ const ClientCard: React.FC<{ client: Client; onSelect: (client: Client) => void 
         <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
           {client.program}
         </span>
-        <p className="text-xs text-gray-600 mt-1">Provider: {client.provider}</p>
+        <p className="text-xs text-gray-600 mt-1">Provider: {cleanProviderName(client.provider)}</p>
       </div>
       
       {/* Key Information Grid */}
@@ -1127,10 +1181,11 @@ const ClientCard: React.FC<{ client: Client; onSelect: (client: Client) => void 
         <div className="space-y-1">
           {/* 14-Day Treatment Plan */}
           <div className="flex items-center gap-1 text-xs">
-            {client.treatmentPlan14Day === 'Not yet' ? 
-              <ExclamationTriangleIcon className="w-3 h-3 text-amber-600" /> : 
-              <CheckCircleIcon className="w-3 h-3 text-green-600" />
-            }
+            <FormStatusIcon 
+              status={getFormStatus(client.treatmentPlan14Day, client.admittedDate)}
+              size="sm"
+              className="flex-shrink-0"
+            />
             <div className="flex-1">
               <span>14-Day: {client.treatmentPlan14Day}</span>
               {client.treatmentPlan14DayEncounter && (
@@ -1159,10 +1214,11 @@ const ClientCard: React.FC<{ client: Client; onSelect: (client: Client) => void 
           
           {/* MDTP - Multidisciplinary Treatment Plan */}
           <div className="flex items-center gap-1 text-xs">
-            {client.mdtp === 'Not yet' ? 
-              <ExclamationTriangleIcon className="w-3 h-3 text-amber-600" /> : 
-              <CheckCircleIcon className="w-3 h-3 text-green-600" />
-            }
+            <FormStatusIcon 
+              status={getFormStatus(client.mdtp, client.admittedDate)}
+              size="sm"
+              className="flex-shrink-0"
+            />
             <div className="flex-1">
               <span>MDTP: {client.mdtp}</span>
               {client.mdtpEncounter && (
@@ -1219,6 +1275,7 @@ const StaffDashboard: React.FC = () => {
   const [selectedFacility, setSelectedFacility] = useState<string[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string[]>([]);
   const [selectedDueDateBy, setSelectedDueDateBy] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>(['Active']); // Default to Active only
   const [showIncompleteDetails, setShowIncompleteDetails] = useState(true);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -1247,8 +1304,8 @@ const StaffDashboard: React.FC = () => {
     { id: 'dischargedDate', label: 'Discharge Date', visible: true, category: 'dates' },
     { id: 'erVisitsInfo', label: 'ER Visits Information', visible: false, category: 'additional' },
     { id: 'admitLocation', label: 'Admit Location', visible: false, category: 'additional' },
-    { id: 'treatmentPlans', label: '14-Day Treatment Plan', visible: true, category: 'forms' },
-    { id: 'mdtpPlan', label: 'Multidisciplinary Treatment Plan (MDTP)', visible: true, category: 'forms' },
+    { id: 'treatmentPlan14Day', label: '14-Day Treatment Plan', visible: true, category: 'forms' },
+    { id: 'mdtpPlan', label: 'MDTP', visible: true, category: 'forms' },
     { id: 'location', label: 'Location', visible: true, category: 'basic' },
     { id: 'actions', label: 'Actions', visible: true, category: 'basic', required: true }
   ]);
@@ -1258,7 +1315,7 @@ const StaffDashboard: React.FC = () => {
     const clinicians = [...new Set(mockClients.map(client => client.provider))];
     return clinicians.sort().map(clinician => ({
       value: clinician,
-      label: clinician,
+      label: cleanProviderName(clinician),
       type: 'staff' as const
     }));
   }, []);
@@ -1291,6 +1348,14 @@ const StaffDashboard: React.FC = () => {
     ];
   }, []);
 
+  // Status options for dropdown
+  const statusOptions = useMemo((): ComboboxOption[] => {
+    return [
+      { value: 'Active', label: 'Active' },
+      { value: 'Discharged', label: 'Inactive' }
+    ];
+  }, []);
+
   // Smart filtering logic
   const filteredClients = useMemo(() => {
     return mockClients.filter(client => {
@@ -1310,6 +1375,9 @@ const StaffDashboard: React.FC = () => {
       
       // Location filtering
       const matchesLocation = selectedLocation.length === 0 || selectedLocation.includes(client.location);
+      
+      // Status filtering
+      const matchesStatus = selectedStatus.length === 0 || selectedStatus.includes(client.clientStatus);
       
       // Due Date filtering
       const matchesDueDate = (() => {
@@ -1347,6 +1415,9 @@ const StaffDashboard: React.FC = () => {
       // Category filtering
       let matchesCategory = true;
       switch (activeCategory) {
+        case 'all':
+          matchesCategory = true;
+          break;
         case 'admitted':
           matchesCategory = client.clientStatus === 'Active';
           break;
@@ -1381,9 +1452,9 @@ const StaffDashboard: React.FC = () => {
         }
       }
       
-      return matchesSearch && matchesClinician && matchesFacility && matchesLocation && matchesDueDate && matchesIncompleteFilter && matchesCategory && matchesFilter;
+      return matchesSearch && matchesClinician && matchesFacility && matchesLocation && matchesStatus && matchesDueDate && matchesIncompleteFilter && matchesCategory && matchesFilter;
     });
-  }, [searchQuery, selectedClinician, selectedFacility, selectedLocation, selectedDueDateBy, showIncompleteDetails, activeCategory, activeFilter]);
+      }, [searchQuery, selectedClinician, selectedFacility, selectedLocation, selectedStatus, selectedDueDateBy, showIncompleteDetails, activeCategory, activeFilter]);
 
   // Calculate metrics
   const metrics = useMemo(() => {
@@ -1473,7 +1544,7 @@ const StaffDashboard: React.FC = () => {
       minWidth: 200,
       cellRenderer: (params: any) => (
         <div className="py-2">
-          <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+          <span className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded">
             {params.data.program}
           </span>
         </div>
@@ -1482,10 +1553,20 @@ const StaffDashboard: React.FC = () => {
     {
       headerName: 'Provider',
       field: 'provider',
-      minWidth: 160,
+      minWidth: 180,
       cellRenderer: (params: any) => (
         <div className="py-2">
-          <div className="text-sm text-gray-700 font-medium">{params.data.provider}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-gray-700 font-medium flex-1">{cleanProviderName(params.data.provider)}</div>
+            <div className={cn(
+              "flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold text-white",
+              (params.data.providerType === 'Primary') 
+                ? "bg-blue-600" 
+                : "bg-green-600"
+            )}>
+              {(params.data.providerType === 'Primary') ? 'P' : 'T'}
+            </div>
+          </div>
         </div>
       )
     },
@@ -1496,7 +1577,7 @@ const StaffDashboard: React.FC = () => {
       cellRenderer: (params: any) => (
         <div className="py-2">
           <Badge variant="outline" className={cn('text-xs h-5 w-fit', getStatusBadgeStyles(params.data.clientStatus))}>
-            {params.data.clientStatus}
+            {getDisplayStatus(params.data.clientStatus)}
           </Badge>
         </div>
       )
@@ -1536,47 +1617,27 @@ const StaffDashboard: React.FC = () => {
       )
     },
     {
-      headerName: 'Next Appointment',
-      field: 'nextAppointment',
-      minWidth: 140,
+      headerName: '14-Day Treatment Plan',
+      field: 'treatmentPlan14Day',
+      minWidth: 180,
       cellRenderer: (params: any) => {
-        const isToday = params.data.nextAppointment.includes('Today');
         return (
-          <div className={cn(
-            'text-sm py-2 flex items-center gap-1',
-            isToday ? 'text-orange-600 font-medium' : 'text-gray-700'
-          )}>
-            {isToday && <ClockIcon className="w-4 h-4" />}
-            {params.data.nextAppointment || 'None scheduled'}
-          </div>
-        );
-      }
-    },
-    {
-      headerName: 'Treatment Plans',
-      field: 'plans',
-      minWidth: 240,
-      cellRenderer: (params: any) => {
-        const plan14Incomplete = params.data.treatmentPlan14Day === 'Not yet';
-        const mdtpIncomplete = params.data.mdtp === 'Not yet';
-        
-        return (
-          <div className="py-2 space-y-1">
-            {/* 14-Day Treatment Plan */}
-            <div className={cn(
-              'text-xs flex items-center gap-1',
-              plan14Incomplete ? 'text-amber-600' : 'text-green-600'
-            )}>
-              {plan14Incomplete ? <ExclamationTriangleIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
+          <div className="py-2">
+            <div className="text-xs flex items-center gap-2">
+              <FormStatusIcon 
+                status={getFormStatus(params.data.treatmentPlan14Day, params.data.admittedDate)}
+                size="md"
+                className="flex-shrink-0"
+              />
               <div className="flex flex-col flex-1">
-                <span>14-Day: {params.data.treatmentPlan14Day}</span>
+                <span className="text-gray-700">{params.data.treatmentPlan14Day}</span>
                 {params.data.treatmentPlan14DayEncounter && (
                   <span className="text-blue-600 font-mono text-[10px]">
                     {params.data.treatmentPlan14DayEncounter}
                   </span>
                 )}
               </div>
-              {!plan14Incomplete && (
+              {params.data.treatmentPlan14Day !== 'Not yet' && (
                 <TooltipRoot>
                   <TooltipTrigger asChild>
                     <button
@@ -1595,22 +1656,32 @@ const StaffDashboard: React.FC = () => {
                 </TooltipRoot>
               )}
             </div>
-            
-            {/* MDTP - Multidisciplinary Treatment Plan */}
-            <div className={cn(
-              'text-xs flex items-center gap-1',
-              mdtpIncomplete ? 'text-amber-600' : 'text-green-600'
-            )}>
-              {mdtpIncomplete ? <ExclamationTriangleIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
+          </div>
+        );
+      }
+    },
+    {
+      headerName: 'MDTP',
+      field: 'mdtp',
+      minWidth: 180,
+      cellRenderer: (params: any) => {
+        return (
+          <div className="py-2">
+            <div className="text-xs flex items-center gap-2">
+              <FormStatusIcon 
+                status={getFormStatus(params.data.mdtp, params.data.admittedDate)}
+                size="md"
+                className="flex-shrink-0"
+              />
               <div className="flex flex-col flex-1">
-                <span>MDTP: {params.data.mdtp}</span>
+                <span className="text-gray-700">{params.data.mdtp}</span>
                 {params.data.mdtpEncounter && (
                   <span className="text-blue-600 font-mono text-[10px]">
                     {params.data.mdtpEncounter}
                   </span>
                 )}
               </div>
-              {!mdtpIncomplete && (
+              {params.data.mdtp !== 'Not yet' && (
                 <TooltipRoot>
                   <TooltipTrigger asChild>
                     <button
@@ -1643,6 +1714,23 @@ const StaffDashboard: React.FC = () => {
           <div className="text-xs text-gray-500">{params.data.location}</div>
         </div>
       )
+    },
+    {
+      headerName: 'Next Appointment',
+      field: 'nextAppointment',
+      minWidth: 140,
+      cellRenderer: (params: any) => {
+        const isToday = params.data.nextAppointment.includes('Today');
+        return (
+          <div className={cn(
+            'text-sm py-2 flex items-center gap-1',
+            isToday ? 'text-orange-600 font-medium' : 'text-gray-700'
+          )}>
+            {isToday && <ClockIcon className="w-4 h-4" />}
+            {params.data.nextAppointment || 'None scheduled'}
+          </div>
+        );
+      }
     },
     {
       headerName: 'Last Name',
@@ -1821,7 +1909,8 @@ const StaffDashboard: React.FC = () => {
       'dischargedDate': 'dischargedDate',
       'erVisitsInfo': 'erVisitsInfo',
       'admitLocation': 'admitLocation',
-      'plans': 'treatmentPlans',
+      'treatmentPlan14Day': 'treatmentPlan14Day',
+      'mdtp': 'mdtpPlan',
       'location': 'location',
       'actions': 'actions'
     };
@@ -1868,29 +1957,108 @@ const StaffDashboard: React.FC = () => {
               
               {/* Center - Compact Metrics Badges */}
               <div className="flex flex-wrap items-center gap-2 lg:gap-3">
-                <div className="flex items-center gap-1.5 bg-blue-50 rounded-full px-2.5 py-1 border border-blue-200">
-                  <UserGroupIcon className="w-3.5 h-3.5 text-blue-600" />
-                  <span className="text-sm font-semibold text-blue-700">{metrics.total}</span>
-                  <span className="text-xs text-blue-600">Total</span>
-                </div>
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        setActiveCategory('all');
+                        setActiveFilter('all');
+                        setSearchQuery('');
+                        setSelectedClinician([]);
+                        setSelectedFacility([]);
+                        setSelectedLocation([]);
+                        setSelectedStatus(['Active']); // Reset to default Active
+                        setSelectedDueDateBy([]);
+                        setShowIncompleteDetails(false);
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full px-2.5 py-1 border transition-all duration-200 hover:shadow-md",
+                        activeCategory === 'all' && activeFilter === 'all' 
+                          ? "bg-blue-100 border-blue-300 ring-2 ring-blue-200" 
+                          : "bg-blue-50 border-blue-200 hover:bg-blue-100"
+                      )}
+                    >
+                      <UserGroupIcon className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="text-sm font-semibold text-blue-700">{metrics.total}</span>
+                      <span className="text-xs text-blue-600">Total</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>All clients in your caseload (Primary + Care Team)</p>
+                  </TooltipContent>
+                </TooltipRoot>
                 
-                <div className="flex items-center gap-1.5 bg-green-50 rounded-full px-2.5 py-1 border border-green-200">
-                  <CheckCircleIcon className="w-3.5 h-3.5 text-green-600" />
-                  <span className="text-sm font-semibold text-green-700">{metrics.admitted}</span>
-                  <span className="text-xs text-green-600">Active Since 2024</span>
-                </div>
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        setActiveCategory('admitted');
+                        setActiveFilter('all');
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full px-2.5 py-1 border transition-all duration-200 hover:shadow-md",
+                        activeCategory === 'admitted' 
+                          ? "bg-green-100 border-green-300 ring-2 ring-green-200" 
+                          : "bg-green-50 border-green-200 hover:bg-green-100"
+                      )}
+                    >
+                      <CheckCircleIcon className="w-3.5 h-3.5 text-green-600" />
+                      <span className="text-sm font-semibold text-green-700">{metrics.admitted}</span>
+                      <span className="text-xs text-green-600">Active Since 2024</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Currently active clients receiving treatment</p>
+                  </TooltipContent>
+                </TooltipRoot>
                 
-                <div className="flex items-center gap-1.5 bg-gray-50 rounded-full px-2.5 py-1 border border-gray-200">
-                  <UserIcon className="w-3.5 h-3.5 text-gray-600" />
-                  <span className="text-sm font-semibold text-gray-700">{metrics.discharged}</span>
-                  <span className="text-xs text-gray-600">Discharged This Month</span>
-                </div>
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        setActiveCategory('discharged');
+                        setActiveFilter('all');
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full px-2.5 py-1 border transition-all duration-200 hover:shadow-md",
+                        activeCategory === 'discharged' 
+                          ? "bg-gray-100 border-gray-300 ring-2 ring-gray-200" 
+                          : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                      )}
+                    >
+                      <UserIcon className="w-3.5 h-3.5 text-gray-600" />
+                      <span className="text-sm font-semibold text-gray-700">{metrics.discharged}</span>
+                      <span className="text-xs text-gray-600">Discharged This Month</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Clients who completed or left treatment this month</p>
+                  </TooltipContent>
+                </TooltipRoot>
                 
-                <div className="flex items-center gap-1.5 bg-red-50 rounded-full px-2.5 py-1 border border-red-200">
-                  <ExclamationTriangleIcon className="w-3.5 h-3.5 text-red-600" />
-                  <span className="text-sm font-semibold text-red-700">{metrics.highRisk}</span>
-                  <span className="text-xs text-red-600">High Risk</span>
-                </div>
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        setActiveCategory('all');
+                        setActiveFilter('urgent');
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full px-2.5 py-1 border transition-all duration-200 hover:shadow-md",
+                        activeFilter === 'urgent' 
+                          ? "bg-red-100 border-red-300 ring-2 ring-red-200" 
+                          : "bg-red-50 border-red-200 hover:bg-red-100"
+                      )}
+                    >
+                      <ExclamationTriangleIcon className="w-3.5 h-3.5 text-red-600" />
+                      <span className="text-sm font-semibold text-red-700">{metrics.highRisk}</span>
+                      <span className="text-xs text-red-600">High Risk</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>High-risk clients requiring immediate attention</p>
+                  </TooltipContent>
+                </TooltipRoot>
               </div>
               
               {/* Right Side - Compact Action Buttons */}
@@ -1919,103 +2087,114 @@ const StaffDashboard: React.FC = () => {
 
           {/* Unified Content Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            {/* Search and Filter Controls */}
-            <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
-              {/* Search Bar */}
-              <div className="relative w-full lg:w-80">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search clients by name, PID, program, or provider..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              {/* Separator */}
-              <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
-              
-              {/* Category Tabs */}
-              <div className="flex-shrink-0">
-                <Tabs
-                  tabs={CATEGORIES}
-                  activeTab={activeCategory}
-                  onTabChange={setActiveCategory}
-                  className="w-fit"
-                />
-              </div>
-              
-              {/* Separator */}
-              <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
-              
-              {/* Filter Dropdowns */}
-              <div className="flex flex-wrap items-center gap-3">
-                <Combobox
-                  options={clinicianOptions}
-                  value={selectedClinician}
-                  onChange={setSelectedClinician}
-                  placeholder="All Clinicians"
-                  className="w-[180px]"
-                  multiple={true}
-                  hideFilters={true}
-                />
-
-                <Combobox
-                  options={facilityOptions}
-                  value={selectedFacility}
-                  onChange={setSelectedFacility}
-                  placeholder="All Facilities"
-                  className="w-[160px]"
-                  multiple={true}
-                  hideFilters={true}
-                />
-
-                <Combobox
-                  options={locationOptions}
-                  value={selectedLocation}
-                  onChange={setSelectedLocation}
-                  placeholder="All Locations"
-                  className="w-[140px]"
-                  multiple={true}
-                  hideFilters={true}
-                />
-
-                <Combobox
-                  options={dueDateOptions}
-                  value={selectedDueDateBy}
-                  onChange={setSelectedDueDateBy}
-                  placeholder="All Due Dates"
-                  className="w-[150px]"
-                  multiple={true}
-                  hideFilters={true}
-                />
-              </div>
-              
-              {/* Separator */}
-              <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
-              
-              {/* Incomplete Details Switch */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                  <Switch
-                    checked={showIncompleteDetails}
-                    onCheckedChange={setShowIncompleteDetails}
+            {/* Search and Filter Controls - Horizontal Layout */}
+            <div className="space-y-3 mb-6">
+              {/* Row 1: Search Bar */}
+              <div className="w-full">
+                <div className="relative max-w-2xl">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search clients by name, PID, program, or provider..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-10 w-full"
                   />
-                  Only show incomplete
-                </label>
+                </div>
               </div>
-              
-              {/* Separator */}
-              <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
-              
-              {/* Column Customizer */}
-              <div className="flex-shrink-0">
-                <ColumnCustomizer
-                  columns={columnConfigs}
-                  onColumnsChange={setColumnConfigs}
-                  className="text-xs"
-                />
+
+              {/* Row 2: Tabs + Filters + Controls - All Horizontal */}
+              <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+                {/* Admitted and Discharged Tab Bar */}
+                <div className="flex-shrink-0">
+                  <Tabs
+                    tabs={CATEGORIES}
+                    activeTab={activeCategory}
+                    onTabChange={setActiveCategory}
+                    className="w-full sm:w-fit"
+                  />
+                </div>
+
+                {/* Separator - Desktop Only */}
+                <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
+
+                {/* Filters - Horizontal Row */}
+                <div className="flex flex-col sm:flex-row sm:flex-wrap xl:flex-nowrap items-stretch sm:items-center gap-3 flex-1">
+                  <Combobox
+                    options={clinicianOptions}
+                    value={selectedClinician}
+                    onChange={setSelectedClinician}
+                    placeholder="All Clinicians"
+                    className="w-full sm:w-[180px] lg:w-[160px]"
+                    multiple={true}
+                    hideFilters={true}
+                  />
+
+                  <Combobox
+                    options={facilityOptions}
+                    value={selectedFacility}
+                    onChange={setSelectedFacility}
+                    placeholder="All Programs"
+                    className="w-full sm:w-[160px] lg:w-[140px]"
+                    multiple={true}
+                    hideFilters={true}
+                  />
+
+                  <Combobox
+                    options={locationOptions}
+                    value={selectedLocation}
+                    onChange={setSelectedLocation}
+                    placeholder="All Locations"
+                    className="w-full sm:w-[140px] lg:w-[130px]"
+                    multiple={true}
+                    hideFilters={true}
+                  />
+
+                  <Combobox
+                    options={statusOptions}
+                    value={selectedStatus}
+                    onChange={setSelectedStatus}
+                    placeholder="Client Status"
+                    className="w-full sm:w-[140px] lg:w-[130px]"
+                    multiple={true}
+                    hideFilters={true}
+                  />
+
+                  <Combobox
+                    options={dueDateOptions}
+                    value={selectedDueDateBy}
+                    onChange={setSelectedDueDateBy}
+                    placeholder="All Due Dates"
+                    className="w-full sm:w-[150px] lg:w-[140px]"
+                    multiple={true}
+                    hideFilters={true}
+                  />
+                </div>
+
+                {/* Separator - Desktop Only */}
+                <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
+
+                {/* Controls - Switch + Legend + Columns */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-shrink-0">
+                  {/* Only Show Incomplete Switch */}
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer whitespace-nowrap">
+                    <Switch
+                      checked={showIncompleteDetails}
+                      onCheckedChange={setShowIncompleteDetails}
+                    />
+                    Only show incomplete
+                  </label>
+
+                  {/* Form Status Legend */}
+                  <FormStatusLegend className="text-xs" />
+
+                  {/* Columns Customizer */}
+                  <ColumnCustomizer
+                    columns={columnConfigs}
+                    onColumnsChange={setColumnConfigs}
+                    className="text-xs"
+                  />
+                </div>
               </div>
             </div>
             
