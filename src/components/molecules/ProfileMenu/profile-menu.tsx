@@ -26,6 +26,7 @@ interface ProfileMenuProps {
     role: string
     avatar?: string
   }
+  variant?: 'default' | 'topNav' // Add variant prop to control menu options
 }
 
 const getRoleLabel = (roleValue: string): string => {
@@ -43,7 +44,7 @@ const getRoleLabel = (roleValue: string): string => {
   return roles[roleValue as keyof typeof roles] || roleValue;
 };
 
-export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
+export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo, variant = 'default' }) => {
   const navigate = useNavigate()
   const [showRoles, setShowRoles] = useState(false)
   const [showFonts, setShowFonts] = useState(false)
@@ -56,6 +57,17 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
     } catch (error) {
       console.error('Failed to sign out:', error)
     }
+  }
+
+  // Helper function to get user initials
+  const getUserInitials = (name: string): string => {
+    if (!name || name === 'Guest User') return 'GU'
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   const roles = [
@@ -77,7 +89,7 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
     { label: 'Manrope', value: 'manrope' }
   ]
 
-  const menuItems = [
+  const allMenuItems = [
     {
       icon: <DocumentTextIcon className="w-5 h-5 text-orange-400" />,
       label: 'Account',
@@ -135,7 +147,15 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
       icon: <ArrowPathIcon className="w-5 h-5 text-orange-400" />,
       label: 'Old UI',
       description: 'Switch back to the previous version',
-      onClick: () => navigate('/old-ui')
+      onClick: () => navigate('/task-hub'),
+      showOnVariant: ['default'] // Only show on default variant
+    },
+    {
+      icon: <ArrowPathIcon className="w-5 h-5 text-orange-400" />,
+      label: 'Option 2(UI)',
+      description: 'Switch to dashboard interface',
+      onClick: () => navigate('/dashboard'),
+      showOnVariant: ['topNav'] // Only show on topNav variant
     },
     {
       icon: <ArrowRightOnRectangleIcon className="w-5 h-5 text-orange-400" />,
@@ -143,6 +163,11 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
       onClick: handleSignOut
     }
   ]
+
+  // Filter menu items based on variant
+  const menuItems = allMenuItems.filter(item => 
+    !item.showOnVariant || item.showOnVariant.includes(variant)
+  )
 
   return (
     <DropdownMenu.Root modal={false}>
@@ -163,17 +188,10 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo }) => {
           {/* User Info Section */}
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              {userInfo?.avatar ? (
-                <img
-                  src={userInfo.avatar}
-                  alt={userInfo.name}
-                  className="h-10 w-10 rounded-full ring-1 ring-gray-200"
-                />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <UserCircleIcon className="h-6 w-6 text-primary" />
-                </div>
-              )}
+              {/* User Initials Avatar */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white font-semibold text-sm shadow-sm">
+                {getUserInitials(userInfo?.name || 'Guest User')}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-gray-900">
                   {userInfo?.name || 'Guest User'}

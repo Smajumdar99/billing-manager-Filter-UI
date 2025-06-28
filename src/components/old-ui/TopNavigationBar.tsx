@@ -5,6 +5,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Avatar from '@/components/atoms/Avatar/avatar';
 import { PatientSnapshot } from '@/components/molecules/PatientSnapshot/patient-snapshot';
+import { ProfileMenu } from '@/components/molecules/ProfileMenu/profile-menu';
 
 /**
  * TopNavigationBar Component
@@ -41,6 +42,11 @@ interface TopNavigationBarProps {
   };
   onNewEncounter?: () => void;
   onViewChart?: () => void;
+  userInfo?: {
+    name: string;
+    role: string;
+    avatar?: string;
+  };
 }
 
 const TopNavigationBar: React.FC<TopNavigationBarProps> = ({
@@ -50,6 +56,7 @@ const TopNavigationBar: React.FC<TopNavigationBarProps> = ({
   patient,
   onNewEncounter,
   onViewChart,
+  userInfo,
 }) => {
   const navigate = useNavigate();
   
@@ -60,7 +67,30 @@ const TopNavigationBar: React.FC<TopNavigationBarProps> = ({
   };
 
   const handleLogoClick = () => {
-    navigate('/dashboard');
+    navigate('/old-ui-dashboard');
+  };
+
+  // Helper function to format role names
+  const formatRole = (role: string): string => {
+    const roleMap: Record<string, string> = {
+      billing_specialist: 'Billing Specialist',
+      billing_manager: 'Billing Manager',
+      clinician: 'Clinician',
+      front_desk: 'Front Desk',
+      clinic_admin: 'Clinic Admin',
+      cfo: 'CFO',
+      practice_manager: 'Practice Manager',
+      ccbhc: 'CCBHC',
+      supervisor: 'Supervisor'
+    };
+    return roleMap[role] || role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Default userInfo if not provided
+  const defaultUserInfo = userInfo || {
+    name: "Sarah Johnson",
+    role: "front_desk",
+    avatar: "/avatar.png"
   };
 
   return (
@@ -109,14 +139,47 @@ const TopNavigationBar: React.FC<TopNavigationBarProps> = ({
           <EnvelopeIcon className="h-5 w-5 lg:h-6 lg:w-6 text-slate-600 hover:text-slate-800 transition-colors" />
         </button>
         
-        {/* User Info */}
-        <div className="flex items-center gap-2 lg:gap-3">
-          <span className="text-xs lg:text-sm text-slate-700 font-medium hidden md:block">{hospitalName}</span>
-          <Avatar 
-            src={userAvatarUrl} 
-            alt={hospitalName}
-            size="sm"
-            className="ring-slate-200"
+        {/* Modern User Profile Section */}
+        <div className="flex items-center gap-3 lg:gap-4">
+          {/* Modern Profile Info Card */}
+          <ProfileMenu
+            variant="topNav"
+            userInfo={defaultUserInfo}
+            trigger={
+              <button className="flex items-center gap-2 lg:gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all group">
+                {/* User Info Text */}
+                <div className="hidden sm:flex flex-col items-end text-right min-w-0">
+                  <div className="text-sm font-semibold text-slate-800 truncate max-w-[120px] lg:max-w-[160px]">
+                    {defaultUserInfo.name}
+                  </div>
+                  <div className="text-xs text-slate-500 truncate max-w-[120px] lg:max-w-[160px]">
+                    {formatRole(defaultUserInfo.role)}
+                  </div>
+                </div>
+                
+                {/* Profile Avatar with Status Indicator */}
+                <div className="relative">
+                  <Avatar 
+                    src={userAvatarUrl} 
+                    alt={defaultUserInfo.name || hospitalName}
+                    size="md"
+                    className="ring-2 ring-white shadow-sm group-hover:ring-primary/20 transition-all cursor-pointer"
+                  />
+                  {/* Online Status Indicator */}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                </div>
+                
+                {/* Chevron Down Icon */}
+                <svg 
+                  className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors hidden lg:block" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            }
           />
         </div>
       </div>

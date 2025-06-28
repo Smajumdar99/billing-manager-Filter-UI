@@ -149,6 +149,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
 const defaultSidebarItems = [
   { icon: <ChartPieIcon />, label: "Client Summary Chart" },
   { icon: <DocumentTextIcon />, label: "Past Encounters" },
+  { icon: <ArrowTrendingUpIcon />, label: "Timeline" },
   { icon: <EnvelopeOpenIcon />, label: "Message Patient" },
   { icon: <ChartBarIcon />, label: "ROI Dashboard", badge: "1" },
   { icon: <PencilSquareIcon />, label: "Prescribe" },

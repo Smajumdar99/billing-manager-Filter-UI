@@ -95,7 +95,7 @@ export const HomePage: FC = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard')
+      navigate('/task-hub')
     }
   }, [user, navigate])
 
@@ -107,7 +107,7 @@ export const HomePage: FC = () => {
       await signIn(data.email, data.password)
       setIsTransitioning(true)
       await new Promise(resolve => setTimeout(resolve, 1000))
-      navigate('/dashboard')
+      navigate('/task-hub')
     } catch (error: any) {
       setError(error.message)
       setIsAuthenticating(false)

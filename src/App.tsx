@@ -2,6 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { HomePage } from '@/pages/home'
 import { SignupPage } from '@/pages/signup'
 import { DashboardPage } from '@/pages/dashboard'
+import OldUIDashboard from '@/pages/OldUIDashboard'
+import BillingPage from '@/pages/BillingPage'
+import PracticePage from '@/pages/PracticePage'
+import ReportsPage from '@/pages/ReportsPage'
+import AdministrationPage from '@/pages/AdministrationPage'
+import WaitListPage from '@/pages/WaitListPage'
+import ADLPage from '@/pages/ADLPage'
 import { ComingSoonPage } from '@/pages/NotFound'
 import { AuthProvider } from '@/context/AuthContext'
 import { useAuth } from '@/context/AuthContext'
@@ -119,6 +126,62 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <ClientsPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/old-ui-dashboard" 
+        element={
+          <ProtectedRoute>
+            <OldUIDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/billing" 
+        element={
+          <ProtectedRoute>
+            <BillingPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/practice" 
+        element={
+          <ProtectedRoute>
+            <PracticePage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/reports" 
+        element={
+          <ProtectedRoute>
+            <ReportsPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/administration" 
+        element={
+          <ProtectedRoute>
+            <AdministrationPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/wait-list" 
+        element={
+          <ProtectedRoute>
+            <WaitListPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/adl" 
+        element={
+          <ProtectedRoute>
+            <ADLPage />
           </ProtectedRoute>
         } 
       />

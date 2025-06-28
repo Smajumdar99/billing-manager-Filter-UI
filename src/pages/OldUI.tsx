@@ -18,6 +18,7 @@ import { Breadcrumb, BreadcrumbItem } from '@/components/atoms/Breadcrumb'
 import { Button } from '@/components/atoms/Button'
 import { CompactMetrics } from '@/components/molecules/CompactMetrics'
 import PatientFormsManager from '../components/organisms/PatientFormsManager'
+import TimelinePage from './TimelinePage'
 
 // Types for encounter statistics
 interface EncounterStats {
@@ -168,6 +169,12 @@ const OldUI: FC = () => {
       );
     }
     
+    // Show Timeline content
+    if (selectedMenu === 'Timeline') {
+      console.log('Rendering Timeline content');
+      return <TimelinePage />;
+    }
+    
     // Show Patient Forms content
     if (selectedMenu === 'Patient Forms') {
       console.log('Rendering Patient Forms content');
@@ -180,7 +187,7 @@ const OldUI: FC = () => {
     }
     
     // Default fallback for other menu items
-    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters') {
+    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline') {
       return (
         <div className="h-full flex flex-col items-center justify-center text-center p-6">
           <DocumentTextIcon className="w-12 h-12 text-gray-400 mb-4" />
@@ -297,7 +304,13 @@ const OldUI: FC = () => {
           )}
           
           {/* Content Area */}
-          <div className={selectedMenu === 'Past Encounters' ? 'h-[calc(100%-4rem)]' : 'p-6'}>
+          <div className={
+            selectedMenu === 'Past Encounters' 
+              ? 'h-[calc(100%-4rem)]' 
+              : selectedMenu === 'Timeline'
+                ? 'h-[calc(100%-4rem)] overflow-hidden'
+                : 'p-6'
+          }>
             {renderContent()}
           </div>
         </div>

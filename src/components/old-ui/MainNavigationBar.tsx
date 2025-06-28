@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   HomeIcon, ClipboardDocumentIcon, ClockIcon, CalendarDaysIcon, 
   UsersIcon, BeakerIcon, BanknotesIcon, ChartBarIcon, 
-  Cog8ToothIcon, InboxIcon, WrenchScrewdriverIcon, UserGroupIcon
+  Cog8ToothIcon, InboxIcon, UserGroupIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -22,7 +22,7 @@ interface MainNavigationBarProps {
 
 // Navigation item configuration with routes
 const navItems = [
-  { name: 'Dashboard', icon: <HomeIcon className="h-5 w-5" />, route: '/dashboard' },
+  { name: 'Dashboard', icon: <HomeIcon className="h-5 w-5" />, route: '/old-ui-dashboard' },
   { name: 'ADL', icon: <ClipboardDocumentIcon className="h-5 w-5" />, route: '/adl' },
   { name: 'Wait List', icon: <ClockIcon className="h-5 w-5" />, route: '/wait-list' },
   //{ name: 'Schedule', icon: <CalendarDaysIcon className="h-5 w-5" />, route: '/schedule' },
@@ -32,9 +32,8 @@ const navItems = [
   { name: 'Practice', icon: <BeakerIcon className="h-5 w-5" />, route: '/practice' },
   { name: 'Billing', icon: <BanknotesIcon className="h-5 w-5" />, route: '/billing' },
   { name: 'Reports', icon: <ChartBarIcon className="h-5 w-5" />, route: '/reports' },
-  { name: 'Administration', icon: <Cog8ToothIcon className="h-5 w-5" />, route: '/administration' },
   { name: 'Inbox', icon: <InboxIcon className="h-5 w-5" />, route: '/task-hub' },
-  { name: 'Settings', icon: <WrenchScrewdriverIcon className="h-5 w-5" />, route: '/settings' },
+  { name: 'Administration', icon: <Cog8ToothIcon className="h-5 w-5" />, route: '/administration' },
 ];
 
 const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
