@@ -402,13 +402,7 @@ const TaskHub: React.FC = () => {
       textColor: 'text-indigo-700',
       criticality: 'high'
     },
-    {
-      id: 'assigned-to-me',
-      count: getTasksForBlock('assigned-to-me').length,
-      label: 'Assigned to Me',
-      textColor: 'text-teal-700',
-      criticality: 'medium'
-    },
+    // Removed 'assigned-to-me' from default blocks; will add conditionally below
     {
       id: 'aging-tasks',
       count: getTasksForBlock('aging-tasks').length,
@@ -440,6 +434,25 @@ const TaskHub: React.FC = () => {
     }
   ];
   
+  // All task blocks (original + custom)
+  // Only include 'Assigned to Me' block if the filter is active
+  const assignedToMeBlock: TaskBlock = {
+    id: 'assigned-to-me',
+    count: getTasksForBlock('assigned-to-me').length,
+    label: 'Assigned to Me',
+    textColor: 'text-teal-700',
+    criticality: 'medium',
+  };
+  
+  const allTaskBlocks = useMemo(() => {
+    let blocks = [...taskBlocks, ...customBlocks];
+    // If 'assigned-to-me' filter is active, only show that block (and custom if needed)
+    if (filterCriteria.includes('assigned-to-me')) {
+      blocks = [assignedToMeBlock];
+    }
+    return blocks;
+  }, [taskBlocks, customBlocks, filterCriteria, assignedToMeBlock]);
+  
   // State for adding custom blocks
   const [showAddBlockModal, setShowAddBlockModal] = useState<boolean>(false);
   const [newBlockConfig, setNewBlockConfig] = useState({
@@ -458,7 +471,6 @@ const TaskHub: React.FC = () => {
   
   // All task blocks (original + custom)
   const [customBlocks, setCustomBlocks] = useState<TaskBlock[]>([]);
-  const allTaskBlocks = useMemo(() => [...taskBlocks, ...customBlocks], [taskBlocks, customBlocks]);
   
   // Filter and sort handlers
   const handleFilterChange = (criteria: string) => {
@@ -488,6 +500,11 @@ const TaskHub: React.FC = () => {
         // Filter by custom/default
         if (filterCriteria.includes('custom-only') && !block.isCustom) return false;
         if (filterCriteria.includes('default-only') && block.isCustom) return false;
+        
+        // Filter by 'Assigned to Me' block only
+        if (filterCriteria.includes('assigned-to-me') && block.id !== 'assigned-to-me') return false;
+        // Only show the block if it has tasks assigned to the current user
+        if (filterCriteria.includes('assigned-to-me') && block.count === 0) return false;
         
         return true;
       });
@@ -952,6 +969,11 @@ const TaskHub: React.FC = () => {
                             checked={filterCriteria.includes('default-only')}
                             onCheckedChange={() => handleFilterChange('default-only')}
                           >Show only system default labels</MenubarCheckboxItem>
+                          {/* Assigned to Me filter option */}
+                          <MenubarCheckboxItem
+                            checked={filterCriteria.includes('assigned-to-me')}
+                            onCheckedChange={() => handleFilterChange('assigned-to-me')}
+                          >Show only 'Assigned to Me'</MenubarCheckboxItem>
                         </MenubarContent>
                       </MenubarMenu>
                       {/* Sort Menubar */}
