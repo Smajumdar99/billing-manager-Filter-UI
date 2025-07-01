@@ -434,6 +434,11 @@ const TaskHub: React.FC = () => {
     }
   ];
   
+  // State for adding custom blocks
+  const [showAddBlockModal, setShowAddBlockModal] = useState<boolean>(false);
+  // --- FIX: customBlocks must be declared before allTaskBlocks useMemo to avoid ReferenceError ---
+  const [customBlocks, setCustomBlocks] = useState<TaskBlock[]>([]);
+  
   // All task blocks (original + custom)
   // Only include 'Assigned to Me' block if the filter is active
   const assignedToMeBlock: TaskBlock = {
@@ -452,25 +457,6 @@ const TaskHub: React.FC = () => {
     }
     return blocks;
   }, [taskBlocks, customBlocks, filterCriteria, assignedToMeBlock]);
-  
-  // State for adding custom blocks
-  const [showAddBlockModal, setShowAddBlockModal] = useState<boolean>(false);
-  const [newBlockConfig, setNewBlockConfig] = useState({
-    label: '',
-    description: '',
-    criticality: 'medium' as 'critical' | 'high' | 'medium' | 'low',
-    color: 'blue',
-    filters: {
-      priority: [] as string[],
-      program: [] as string[],
-      type: [] as string[],
-      dueDate: [] as string[],
-      status: [] as string[]
-    }
-  });
-  
-  // All task blocks (original + custom)
-  const [customBlocks, setCustomBlocks] = useState<TaskBlock[]>([]);
   
   // Filter and sort handlers
   const handleFilterChange = (criteria: string) => {
