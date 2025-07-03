@@ -28,6 +28,7 @@ import TaskHub from './pages/TaskHub'
 import StaffDashboard from './pages/StaffDashboard'
 import ClientsPage from './pages/ClientsPage'
 import { TaskProvider } from '@/context/TaskContext'
+import NewAppointmentPage from './pages/NewAppointmentPage'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -185,6 +186,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route path="/new-appointment" element={<NewAppointmentPage />} />
       <Route path="*" element={<ComingSoonPage />} />
     </Routes>
   )

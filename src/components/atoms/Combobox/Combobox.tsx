@@ -42,6 +42,7 @@ interface ComboboxProps {
   renderOption?: (option: ComboboxOption) => React.ReactNode;
   // NEW: Optionally hide filter tabs (All/Staff/Groups)
   hideFilters?: boolean;
+  keepOpenOnSelect?: boolean; // NEW: keep dropdown open after select
 }
 
 export const Combobox: React.FC<ComboboxProps> = ({
@@ -53,6 +54,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
   multiple = true,
   renderOption,
   hideFilters = false,
+  keepOpenOnSelect = false, // NEW: default false
 }) => {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -84,6 +86,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
       } else {
         onChange([...value, val]);
       }
+      if (!keepOpenOnSelect) setOpen(false); // Only close if not keeping open
     } else {
       onChange([val]);
       setOpen(false);

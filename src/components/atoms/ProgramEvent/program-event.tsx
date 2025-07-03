@@ -34,34 +34,35 @@ export interface ProgramEventProps {
  * Get program category colors
  */
 const getProgramColors = (category: string) => {
+  // Use lighter, more muted Tailwind color classes for a softer look
   const colors = {
     'mental-health': {
-      bg: 'bg-gradient-to-r from-purple-100 to-indigo-100',
-      border: 'border-purple-300',
-      text: 'text-purple-900',
-      progress: 'bg-purple-500',
-      shadow: 'shadow-purple-100'
+      bg: 'bg-purple-50', // lighter background
+      border: 'border-purple-100', // lighter border
+      text: 'text-purple-800', // slightly muted text
+      progress: 'bg-purple-700', // lighter progress bar
+      shadow: 'shadow-purple-50' // subtle shadow
     },
     'detox': {
-      bg: 'bg-gradient-to-r from-orange-100 to-red-100',
-      border: 'border-orange-300',
-      text: 'text-orange-900',
-      progress: 'bg-orange-500',
-      shadow: 'shadow-orange-100'
+      bg: 'bg-orange-50',
+      border: 'border-orange-100',
+      text: 'text-orange-800',
+      progress: 'bg-orange-700',
+      shadow: 'shadow-orange-50'
     },
     'therapy': {
-      bg: 'bg-gradient-to-r from-blue-100 to-cyan-100',
-      border: 'border-blue-300',
-      text: 'text-blue-900',
-      progress: 'bg-blue-500',
-      shadow: 'shadow-blue-100'
+      bg: 'bg-blue-50',
+      border: 'border-blue-100',
+      text: 'text-blue-800',
+      progress: 'bg-blue-700',
+      shadow: 'shadow-blue-50'
     },
     'rehabilitation': {
-      bg: 'bg-gradient-to-r from-green-100 to-emerald-100',
-      border: 'border-green-300',
-      text: 'text-green-900',
-      progress: 'bg-green-500',
-      shadow: 'shadow-green-100'
+      bg: 'bg-green-50',
+      border: 'border-green-100',
+      text: 'text-green-800',
+      progress: 'bg-green-700',
+      shadow: 'shadow-green-50'
     }
   };
   
@@ -112,14 +113,6 @@ export const ProgramEvent: React.FC<ProgramEventProps> = ({
           ${colors.bg} ${colors.border} ${colors.shadow}
         `}
       >
-        {/* Progress Bar Background */}
-        <div className="absolute inset-1 bg-white/50 rounded-md overflow-hidden">
-          {/* Progress Fill */}
-          <div 
-            className={`h-full transition-all duration-500 ${colors.progress} opacity-60`}
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
         {/* Program Title at Top */}
         <div className="absolute top-0 left-0 w-full px-3 pt-2 flex items-center min-w-0">
           <div className="flex items-center space-x-2 min-w-0 w-full">
@@ -142,6 +135,14 @@ export const ProgramEvent: React.FC<ProgramEventProps> = ({
               <ExclamationTriangleIcon className="h-4 w-4 text-yellow-600 flex-shrink-0" />
             )}
           </div>
+        </div>
+        {/* Progress Bar (reduced height, sits below title) */}
+        <div className="absolute left-3 right-3 top-8 h-2 bg-white rounded-md overflow-hidden shadow-md"> {/* Solid white background for progress bar */}
+          {/* Progress Fill (thin strip) */}
+          <div 
+            className={`h-full transition-all duration-500 ${colors.progress} opacity-60`}
+            style={{ width: `${progressPercentage}%` }}
+          />
         </div>
         {/* Program Info at Bottom */}
         <div className="absolute bottom-0 left-0 w-full px-3 pb-2 flex items-end justify-between min-w-0">

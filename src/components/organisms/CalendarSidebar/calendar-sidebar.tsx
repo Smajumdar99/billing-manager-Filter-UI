@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon, 
@@ -322,19 +323,10 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     { id: '4', name: 'Maria Garcia' }
   ];
 
+  const navigate = useNavigate();
+
   const handleOpenModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
-
-  const handleSaveAppointment = (appointment: any) => {
-    console.log('New appointment:', appointment);
-    // Here you would typically save the appointment to your backend
-    onCreateAppointment();
-    setIsModalOpen(false);
+    navigate('/new-appointment');
   };
 
   // Toggle sidebar collapse
@@ -383,18 +375,6 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
             </button>
           )}
         </div>
-        
-        {/* Appointment Modal */}
-        <AppointmentModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          onSave={handleSaveAppointment}
-          providers={sampleProviders}
-          patients={samplePatients}
-          selectedDate={selectedDate}
-          startTime="09:00"
-          endTime="10:00"
-        />
         
         {/* Mini Calendar - Only show when not collapsed */}
         {!isCollapsed && (
