@@ -3,16 +3,17 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../atoms/Card';
 import { Label } from '../../atoms/Label';
 import { Input } from '../../atoms/Input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../atoms/Select/select';
-import { Checkbox } from '../../atoms/Checkbox';
 import { Textarea } from '../../atoms/Textarea';
 import { Button } from '../../atoms/Button';
 import { Switch } from '../../atoms/Switch/switch';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '../../atoms/Dialog/dialog';
+
 import { Combobox, ComboboxOption } from '../../atoms/Combobox/Combobox';
 import { DataTable } from '../../organisms/DataTable';
 import { ColDef } from 'ag-grid-community';
-import { UserGroupIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import AddPatientsModal from './AddPatientsModal';
+import RoomAllocationModal from './RoomAllocationModal';
+import AddressSelectionModal from './AddressSelectionModal';
 
 // GroupAppointmentForm: Modular form for Group tab in AppointmentModal
 const GroupAppointmentForm: React.FC = () => {
@@ -20,6 +21,42 @@ const GroupAppointmentForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [addPatients, setAddPatients] = useState(false);
   const [addPatientsModalOpen, setAddPatientsModalOpen] = useState(false);
+  // State for Room Allocation Modal
+  const [showRoomAllocationModal, setShowRoomAllocationModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<any>(null);
+  
+  // State for Address Selection Modal
+  const [showAddressSelectionModal, setShowAddressSelectionModal] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  
+  // State for conditional UI controls
+  const [isAllDayEvent, setIsAllDayEvent] = useState(false)
+  const [hasRepeats, setHasRepeats] = useState(false)
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  
+  // Calculate duration in minutes based on start and end time
+  const calculateDuration = useCallback((start: string, end: string): number => {
+    if (!start || !end) return 0;
+    
+    const [startHour, startMin] = start.split(':').map(Number);
+    const [endHour, endMin] = end.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    // Handle case where end time is next day (e.g., start: 23:00, end: 01:00)
+    if (endMinutes < startMinutes) {
+      return (24 * 60 - startMinutes) + endMinutes;
+    }
+    
+    return endMinutes - startMinutes;
+  }, []);
+  
+  // Computed duration value
+  const duration = useMemo(() => {
+    return calculateDuration(startTime, endTime);
+  }, [startTime, endTime, calculateDuration]);
   // Placeholder: group capacity and selected patients
   const groupCapacity = 10;
   const [selectedPatients, setSelectedPatients] = useState<any[]>([]);
@@ -111,6 +148,20 @@ const GroupAppointmentForm: React.FC = () => {
     setSelectedPatients([]); // Clear modal selection
   }, [selectedPatients]);
 
+  // Handle room selection from RoomAllocationModal
+  const handleRoomSelected = useCallback((room: any) => {
+    setSelectedRoom(room);
+    console.log('Room selected:', room);
+    // You can add additional logic here to update the form with room details
+  }, []);
+
+  // Handle address selection from AddressSelectionModal
+  const handleAddressSelected = useCallback((address: any) => {
+    setSelectedAddress(address);
+    console.log('Address selected:', address);
+    // You can add additional logic here to update the form with address details
+  }, []);
+
   return (
     <div className="p-4 space-y-4">
       {/* Main Group Appointment Form Card */}
@@ -199,63 +250,174 @@ const GroupAppointmentForm: React.FC = () => {
               <Input id="groupAssistingStaff" className="h-8 text-sm" />
             </div>
           </div>
-          {/* Right Column */}
-          <div className="space-y-3">
-            <div className="space-y-1">
+          {/* Right Column - Enhanced DATE Section */}
+          <div className="space-y-4">
+            {/* Date Input with All Day Event Select */}
+            <div className="space-y-2">
               <Label htmlFor="groupDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date:</Label>
-              <Input id="groupDate" type="date" className="h-8 text-sm" />
-            </div>
-            <div className="flex items-center gap-4">
-              <Checkbox id="groupAllDayEvent" className="h-3 w-3" />
-              <label htmlFor="groupAllDayEvent" className="text-xs text-gray-600">All day event</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Time</span>
-              <Input id="groupStartTime" type="time" className="h-8 text-sm w-24" />
-              <Input id="groupEndTime" type="time" className="h-8 text-sm w-24" />
-              <Input id="groupDuration" type="number" min="0" className="h-8 text-sm w-16" placeholder="0" />
-              <span className="text-xs text-gray-500">mins</span>
-            </div>
-            <div className="flex flex-row items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Checkbox id="groupRepeats" className="h-3 w-3" />
-                <label htmlFor="groupRepeats" className="text-xs text-gray-600 select-none">Repeats</label>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Input 
+                    id="groupDate" 
+                    type="date" 
+                    className="h-9 text-sm w-44 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    id="groupAllDayEvent"
+                    checked={isAllDayEvent}
+                    onCheckedChange={setIsAllDayEvent}
+                  />
+                  <label htmlFor="groupAllDayEvent" className="text-sm text-gray-700 font-medium cursor-pointer">
+                    All day event
+                  </label>
+                </div>
               </div>
-              <Select>
-                <SelectTrigger className="h-10 text-base w-24" >
-                  <SelectValue placeholder="every" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="every">every</SelectItem>
-                  <SelectItem value="every other">every other</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select>
-                <SelectTrigger className="h-10 text-base w-24" >
-                  <SelectValue placeholder="day" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">day</SelectItem>
-                  <SelectItem value="week">week</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-xs text-gray-500 flex-shrink-0">until</span>
-              <Input id="groupRepeatUntil" type="date" className="h-10 text-base w-36" placeholder="dd/mm/yyyy" />
             </div>
+
+            {/* Time Controls - Hidden when All Day Event is on */}
+            {!isAllDayEvent && (
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Time:</Label>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      id="groupStartTime" 
+                      type="time" 
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    />
+                    <span className="text-sm text-gray-400">—</span>
+                    <Input 
+                      id="groupEndTime" 
+                      type="time" 
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    />
+                  </div>
+                  {duration > 0 && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-md border border-blue-200">
+                      <span className="text-sm font-semibold text-blue-700">{duration}</span>
+                      <span className="text-xs text-blue-600 font-medium">mins</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Repeats Switch */}
+            <div className="flex items-center gap-3">
+              <Switch 
+                id="groupRepeats"
+                checked={hasRepeats}
+                onCheckedChange={setHasRepeats}
+              />
+              <label htmlFor="groupRepeats" className="text-sm text-gray-700 font-medium cursor-pointer">
+                Repeats
+              </label>
+            </div>
+
+            {/* Repeat Controls - Only show when Repeats is on */}
+            {hasRepeats && (
+              <div className="space-y-3 pl-7 border-l-2 border-blue-100">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Select>
+                    <SelectTrigger className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <SelectValue placeholder="every" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="every">every</SelectItem>
+                      <SelectItem value="every other">every other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select>
+                    <SelectTrigger className="h-9 text-sm w-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <SelectValue placeholder="day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">day</SelectItem>
+                      <SelectItem value="week">week</SelectItem>
+                      <SelectItem value="month">month</SelectItem>
+                      <SelectItem value="year">year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500 font-medium">until</span>
+                  <div className="relative">
+                    <Input 
+                      id="groupRepeatUntil" 
+                      type="date" 
+                      className="h-9 text-sm w-40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      placeholder="dd/mm/yyyy" 
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="pt-2">
-              <Button type="button" variant="outline" size="sm" className="text-blue-600 text-xs">
-                Allocate Room
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                className={selectedRoom ? "text-green-600 text-xs border-green-300" : "text-blue-600 text-xs"}
+                onClick={() => setShowRoomAllocationModal(true)}
+              >
+                {selectedRoom ? 'Change Room' : 'Allocate Room'}
               </Button>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Event Address:</Label>
               <div className="flex items-center gap-2">
-                <Button type="button" variant="outline" size="sm" className="text-blue-600 text-xs">
-                  Select Address
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className={selectedAddress ? "text-green-600 text-xs border-green-300" : "text-blue-600 text-xs"}
+                  onClick={() => setShowAddressSelectionModal(true)}
+                >
+                  {selectedAddress ? 'Change Address' : 'Select Address'}
                 </Button>
-                <span className="text-xs text-gray-700">145, 8th Avenue<br />Portland, FL - 433323455</span>
+                {selectedAddress ? (
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900">{selectedAddress.name}</div>
+                    <div className="text-xs text-gray-600">
+                      {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} {selectedAddress.zipCode}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-700">145, 8th Avenue<br />Portland, FL - 433323455</span>
+                )}
               </div>
             </div>
+            
+            {/* Selected Room Display */}
+            {selectedRoom && (
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Allocated Room:</Label>
+                <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-green-800">{selectedRoom.name}</div>
+                    <div className="text-xs text-green-600">
+                      {selectedRoom.building} • Floor {selectedRoom.floor} • Capacity: {selectedRoom.capacity}
+                    </div>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedRoom(null)}
+                    className="text-green-600 hover:text-green-800 p-1"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3 pt-2">
               <Switch
                 id="groupTelehealth"
@@ -377,6 +539,23 @@ const GroupAppointmentForm: React.FC = () => {
           onAddToEvent={handleAddToEvent}
         />
       )}
+      
+      {/* Room Allocation Modal */}
+      <RoomAllocationModal
+        open={showRoomAllocationModal}
+        onClose={() => setShowRoomAllocationModal(false)}
+        onRoomSelected={handleRoomSelected}
+        selectedDate={new Date().toLocaleDateString()}
+        selectedTime="10:00 AM"
+      />
+      
+      {/* Address Selection Modal */}
+      <AddressSelectionModal
+        open={showAddressSelectionModal}
+        onClose={() => setShowAddressSelectionModal(false)}
+        onAddressSelected={handleAddressSelected}
+        selectedAddress={selectedAddress}
+      />
       {/* Show groupEventPatients in AG Grid table below Add Patients section */}
       <div className="mt-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-2">Patients Added to Event</h3>
@@ -399,7 +578,6 @@ const GroupAppointmentForm: React.FC = () => {
             columnDefs={columnDefs}
             className="w-full"
             gridOptions={{
-              rowSelection: 'none',
               domLayout: 'autoHeight',
               pagination: false,
               overlayNoRowsTemplate: '<span>No patients found.</span>',

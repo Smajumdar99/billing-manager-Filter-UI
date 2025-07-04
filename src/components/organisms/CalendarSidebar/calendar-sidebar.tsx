@@ -5,7 +5,7 @@ import {
   ChevronRightIcon, 
   PlusIcon,
   EllipsisHorizontalIcon,
-  Squares2X2Icon,
+  Bars3Icon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
 import { format, subDays, addDays, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, isToday, isSameDay } from 'date-fns';
@@ -177,8 +177,10 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   // Filter providers based on search term, status, and client count
   const filteredProviders = providerOptions.slice(1).filter(provider => {
     const matchesSearch = provider.label.toLowerCase().includes(providerSearchTerm.toLowerCase());
-    const matchesStatus = showInactiveProviders ? provider.status === 'inactive' : provider.status === 'active';
-    const hasClients = provider.clientCount > 0;
+    // Show both active and inactive providers by default, or filter by status if toggle is used
+    const matchesStatus = showInactiveProviders ? provider.status === 'inactive' : true;
+    // For inactive providers, don't require client count > 0 since they typically have 0 clients
+    const hasClients = provider.status === 'active' ? provider.clientCount > 0 : true;
     return matchesSearch && matchesStatus && hasClients;
   });
 
@@ -342,39 +344,50 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
       
       {/* Content overlay */}
       <div className="relative z-10 flex flex-col h-full overflow-y-auto overflow-x-hidden">
-        {/* Collapse/Expand Button */}
-        <button 
-          onClick={toggleSidebar}
-          className="absolute top-1 left-3 transform -translate-x-1/2 z-10 text-gray-600 hover:text-blue-600 transition-colors"
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? (
-            <Squares2X2Icon className="w-4 h-4" />
-          ) : (
-            <Squares2X2Icon className="w-4 h-4" />
-          )}
-        </button>
-
-        {/* Create Button */}
-        <div className={`p-4 ${isCollapsed ? 'flex justify-center' : ''}`}>
-          {isCollapsed ? (
+        {/* Header Section */}
+        {isCollapsed ? (
+          /* Collapsed Layout - Vertical Stack */
+          <div className="p-4 flex flex-col items-center gap-3">
+            {/* Hamburger Menu Button */}
+            <button 
+              onClick={toggleSidebar}
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+              aria-label="Expand sidebar"
+            >
+              <Bars3Icon className="w-4 h-4" />
+            </button>
+            
+            {/* New Appointment Button - Icon Only */}
             <button 
               className="rounded-full bg-white/80 backdrop-blur-sm border border-gray-300/50 hover:bg-white/90 hover:shadow-md p-2 shadow-sm transition-all duration-200"
               onClick={handleOpenModal}
-              title="..."
+              title="New Appointment"
             >
               <PlusIcon className="w-4 h-4 text-gray-700" />
             </button>
-          ) : (
+          </div>
+        ) : (
+          /* Expanded Layout - Horizontal Row */
+          <div className="p-4 flex items-center gap-3">
+            {/* Hamburger Menu Button */}
             <button 
-              className="flex items-center justify-center w-full rounded-full bg-white/80 backdrop-blur-sm border border-gray-300/50 hover:bg-white/90 hover:shadow-md py-2 px-4 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200"
+              onClick={toggleSidebar}
+              className="flex-shrink-0 text-gray-600 hover:text-blue-600 transition-colors"
+              aria-label="Collapse sidebar"
+            >
+              <Bars3Icon className="w-4 h-4" />
+            </button>
+            
+            {/* New Appointment Button - Full Width with Label */}
+            <button 
+              className="flex items-center justify-center flex-1 rounded-full bg-white/80 backdrop-blur-sm border border-gray-300/50 hover:bg-white/90 hover:shadow-md py-2 px-4 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200"
               onClick={handleOpenModal}
             >
               <PlusIcon className="w-4 h-4 mr-2" />
               New Appointment
             </button>
-          )}
-        </div>
+          </div>
+        )}
         
         {/* Mini Calendar - Only show when not collapsed */}
         {!isCollapsed && (

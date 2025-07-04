@@ -187,6 +187,7 @@ const AppRoutes = () => {
         } 
       />
       <Route path="/new-appointment" element={<NewAppointmentPage />} />
+      <Route path="/edit-appointment/:appointmentId" element={<NewAppointmentPage />} />
       <Route path="*" element={<ComingSoonPage />} />
     </Routes>
   )

@@ -2,6 +2,7 @@ import React from 'react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { UserGroupIcon, UserIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import EventPopover from '../../atoms/EventPopover/event-popover';
+import EventTypeBadge from '../../atoms/EventTypeBadge';
 
 interface Event {
   id: string;
@@ -27,6 +28,20 @@ interface EventCardProps {
   onEditEvent?: (event: Event) => void;
 }
 
+// Helper to get standard background color for event types (copy from calendar-main-view)
+const getEventBgColor = (type?: string) => {
+  switch (type) {
+    case 'Group':
+      return '#E6F9ED'; // soft green
+    case 'Individual':
+      return '#E5EDFF'; // soft blue
+    case 'Provider':
+      return '#F3E8FF'; // soft purple
+    default:
+      return '#F3F4F6'; // soft gray
+  }
+};
+
 const EventCard: React.FC<EventCardProps> = ({ event, onEditEvent }) => {
   const getEventIcon = () => {
     switch (event.type) {
@@ -39,25 +54,31 @@ const EventCard: React.FC<EventCardProps> = ({ event, onEditEvent }) => {
     }
   };
 
+  // Use standard background color for event type
+  const bgColor = getEventBgColor(event.type);
+
   const eventContent = (
     <div 
-      className="absolute top-0 left-0 right-0 mx-1 p-1 rounded border text-xs overflow-hidden cursor-pointer"
+      className="mx-1 my-1 p-2 rounded border text-xs overflow-hidden cursor-pointer bg-white flex flex-col gap-1 min-w-0"
       style={{ 
-        backgroundColor: event.backgroundColor || '#E5EDFF',
+        backgroundColor: bgColor,
         borderColor: event.type === 'Individual' ? '#C7D2FE' : 
-                    event.type === 'Group' ? '#FDE68A' : '#E5E7EB',
-        height: '46px'
+                    event.type === 'Group' ? '#A7F3D0' : 
+                    event.type === 'Provider' ? '#D8B4FE' : '#E5E7EB',
       }}
     >
-      <div className="flex items-center gap-1">
+      {/* Badge and title row */}
+      <div className="flex items-center gap-2 min-w-0">
+        <EventTypeBadge type={event.type} />
         {getEventIcon()}
         <div className="font-medium truncate flex-1">{event.title}</div>
       </div>
-      <div className="text-gray-600 mt-0.5 flex items-center gap-1 text-[10px]">
+      {/* Time and phone row */}
+      <div className="text-gray-600 flex items-center gap-2 min-w-0">
         <span>{event.startTime} - {event.endTime}</span>
         {event.mobile && (
-          <span className="flex items-center gap-0.5 text-blue-600">
-            <PhoneIcon className="w-2.5 h-2.5" />
+          <span className="flex items-center gap-1 text-blue-600">
+            <PhoneIcon className="w-3 h-3" />
             {event.mobile}
           </span>
         )}
@@ -72,12 +93,32 @@ const EventCard: React.FC<EventCardProps> = ({ event, onEditEvent }) => {
   );
 };
 
+// Helper to generate 30-minute time slots for a day
+const generateTimeSlots = () => {
+  const slots = [];
+  for (let h = 0; h < 24; h++) {
+    slots.push(`${h === 0 ? 12 : h > 12 ? h - 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`);
+    slots.push(`${h === 0 ? 12 : h > 12 ? h - 12 : h}:30 ${h < 12 ? 'AM' : 'PM'}`);
+  }
+  return slots;
+};
+
 const WeekView: React.FC<WeekViewProps> = ({ selectedDate, events, timeSlots, onEditEvent }) => {
-  // Get the start of the week (Monday)
+  // Use 30-minute intervals for time slots
+  const slots = generateTimeSlots();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  
-  // Generate array of dates for the week
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  // Helper to check if event starts at a given slot (hour and minute)
+  const eventMatchesSlot = (event: Event, slot: string) => {
+    const [slotTime, slotPeriod] = slot.split(' ');
+    const [slotHour, slotMinute] = slotTime.split(':').map(Number);
+    const [eventHour, eventMinute] = event.startTime.split(':').map(Number);
+    const eventPeriod = eventHour < 12 ? 'AM' : 'PM';
+    // Convert to 12-hour format for comparison
+    const eventHour12 = eventHour === 0 ? 12 : eventHour > 12 ? eventHour - 12 : eventHour;
+    return eventHour12 === slotHour && eventMinute === slotMinute && eventPeriod === slotPeriod;
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -97,10 +138,10 @@ const WeekView: React.FC<WeekViewProps> = ({ selectedDate, events, timeSlots, on
 
       {/* Time slots */}
       <div className="flex-1 overflow-y-auto">
-        {timeSlots.map((time, timeIndex) => (
-          <div key={timeIndex} className="flex border-b border-gray-100 min-h-[48px]">
-            <div className="w-16 pr-2 text-right text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
-              {time}
+        {slots.map((slot, slotIndex) => (
+          <div key={slotIndex} className="flex border-b border-gray-100 min-h-[32px]">
+            <div className="w-16 pl-2 text-left text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
+              {slot}
             </div>
             {weekDates.map((date, dateIndex) => (
               <div 
@@ -108,10 +149,7 @@ const WeekView: React.FC<WeekViewProps> = ({ selectedDate, events, timeSlots, on
                 className="flex-1 border-l border-gray-100 first:border-l-0 relative"
               >
                 {events
-                  .filter(event => {
-                    const eventHour = parseInt(event.startTime.split(':')[0]);
-                    return eventHour === timeIndex;
-                  })
+                  .filter(event => eventMatchesSlot(event, slot))
                   .map(event => (
                     <EventCard 
                       key={event.id} 

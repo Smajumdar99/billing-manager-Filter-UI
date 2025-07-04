@@ -2,6 +2,7 @@ import React from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, parse, isValid, parseISO } from 'date-fns';
 import { UserGroupIcon, UserIcon, PhoneIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import EventPopover from '../../atoms/EventPopover/event-popover';
+import EventTypeBadge from '../../atoms/EventTypeBadge';
 
 interface Event {
   id: string;
@@ -33,16 +34,17 @@ const getStatusColor = (status?: string) => {
   }
 };
 
-const getEventBackground = (type?: string) => {
+// Helper to get standard background color for event types (copy from calendar-main-view)
+const getEventBgColor = (type?: string) => {
   switch (type) {
-    case 'Individual':
-      return 'bg-blue-50 border-blue-200';
     case 'Group':
-      return 'bg-yellow-50 border-yellow-200';
+      return '#E6F9ED'; // soft green
+    case 'Individual':
+      return '#E5EDFF'; // soft blue
     case 'Provider':
-      return 'bg-purple-50 border-purple-200';
+      return '#F3E8FF'; // soft purple
     default:
-      return 'bg-gray-50 border-gray-200';
+      return '#F3F4F6'; // soft gray
   }
 };
 
@@ -70,24 +72,29 @@ const EventCard: React.FC<EventCardProps> = ({ event, isCompact = false, onEditE
     }
   };
 
+  // Use standard background color for event type
+  const bgColor = getEventBgColor(event.type);
+
   const eventContent = isCompact ? (
     <div 
-      className={`flex items-center gap-1 px-1.5 py-1 rounded-md border text-[10px] mb-1 overflow-hidden cursor-pointer ${getEventBackground(event.type)}`}
+      className={"flex items-center gap-1 px-1.5 py-1 rounded-md border text-[10px] mb-1 overflow-hidden cursor-pointer min-w-0"}
+      style={{ backgroundColor: bgColor, borderColor: event.type === 'Individual' ? '#C7D2FE' : event.type === 'Group' ? '#A7F3D0' : event.type === 'Provider' ? '#D8B4FE' : '#E5E7EB' }}
     >
-      <div className="flex items-center gap-1 flex-1 min-w-0">
-        {getEventIcon()}
-        <span className="truncate font-medium">{event.title}</span>
-      </div>
+      <EventTypeBadge type={event.type} />
+      {getEventIcon()}
+      <span className="truncate font-medium">{event.title}</span>
       <span className={`flex-shrink-0 ${getStatusColor(event.status)}`}>
         {format(parse(event.startTime, 'HH:mm', new Date()), 'h:mm a')}
       </span>
     </div>
   ) : (
     <div 
-      className={`px-2 py-1 rounded-md border text-xs mb-1 overflow-hidden cursor-pointer ${getEventBackground(event.type)}`}
+      className={"px-2 py-1 rounded-md border text-xs mb-1 overflow-hidden cursor-pointer min-w-0"}
+      style={{ backgroundColor: bgColor, borderColor: event.type === 'Individual' ? '#C7D2FE' : event.type === 'Group' ? '#A7F3D0' : event.type === 'Provider' ? '#D8B4FE' : '#E5E7EB' }}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1 min-w-0">
+          <EventTypeBadge type={event.type} />
           {getEventIcon()}
           <span className="font-medium truncate">{event.title}</span>
         </div>

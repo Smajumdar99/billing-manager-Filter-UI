@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import TopNavigationBar from '../components/old-ui/TopNavigationBar';
 import MainNavigationBar from '../components/old-ui/MainNavigationBar';
 import { 
@@ -19,6 +19,7 @@ import {
   SelectContent
 } from '../components/atoms/Select';
 import { Checkbox } from '../components/atoms/Checkbox';
+import { Switch } from '../components/atoms/Switch/switch';
 import { Textarea } from '../components/atoms/Textarea';
 import { Button } from '../components/atoms/Button';
 import { 
@@ -30,6 +31,8 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/molecules/Tabs/tabs';
 import GroupAppointmentForm from '../components/molecules/GroupAppointmentForm/group-appointment-form';
 import { Breadcrumb } from '../components/atoms/Breadcrumb/breadcrumb';
+import { useParams } from 'react-router-dom';
+import AppointmentEditActions from '../components/molecules/AppointmentEditActions/appointment-edit-actions';
 // Import other atomic components and form sections as needed
 // (Assume Person and Provider form content is modularized or inline for now)
 
@@ -48,6 +51,10 @@ const samplePatients = [
 ];
 
 const NewAppointmentPage: React.FC = () => {
+  // Get appointmentId from route params to detect edit mode
+  const { appointmentId } = useParams<{ appointmentId?: string }>();
+  const isEditMode = Boolean(appointmentId);
+
   // Tab state
   const [activeTab, setActiveTab] = useState<'person' | 'provider' | 'group' | 'benefits'>('person');
   // Form state (copied from modal)
@@ -75,6 +82,102 @@ const NewAppointmentPage: React.FC = () => {
   const [printAppointmentSlip, setPrintAppointmentSlip] = useState(false);
   const [showOnlyMine, setShowOnlyMine] = useState(false);
 
+  // Duration calculation function - matches Group form logic
+  const calculateDuration = (start: string, end: string): number => {
+    if (!start || !end) return 0;
+    
+    const [startHour, startMin] = start.split(':').map(Number);
+    const [endHour, endMin] = end.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    let endMinutes = endHour * 60 + endMin;
+    
+    // Handle overnight appointments (end time is next day)
+    if (endMinutes < startMinutes) {
+      endMinutes += 24 * 60; // Add 24 hours
+    }
+    
+    return endMinutes - startMinutes;
+  };
+
+  // Memoized duration calculation
+  const calculatedDuration = useMemo(() => {
+    return calculateDuration(appointmentStartTime, appointmentEndTime);
+  }, [appointmentStartTime, appointmentEndTime]);
+
+  // Mock fetch function for demo (replace with real API call)
+  const fetchAppointment = async (id: string) => {
+    // Simulate fetching appointment data
+    if (id === '6') {
+      return {
+        title: 'Group Therapy Session',
+        provider: 'Sarah Wilson, LCSW',
+        patient: '',
+        appointmentDate: '2025-07-04',
+        appointmentStartTime: '08:40',
+        appointmentEndTime: '09:40',
+        isAllDay: false,
+        duration: '60',
+        encounterType: 'Therapy',
+        program: '1111ADiamond1111 Facility',
+        billingProgram: 'APOLLO1234',
+        supervisingProvider: 'James Taylor, LCDC',
+        status: 'Confirmed',
+        room: 'Conference Room A',
+        comments: 'Staff Training',
+        isRepeating: false,
+        repeatFrequency: 'every',
+        repeatInterval: 'week',
+        repeatUntil: '',
+        location: 'main-clinic',
+        isTelehealth: false,
+        printAppointmentSlip: false,
+        showOnlyMine: false,
+        type: 'Group',
+      };
+    }
+    // Default mock
+    return null;
+  };
+
+  // Load appointment data if editing
+  useEffect(() => {
+    if (isEditMode && appointmentId) {
+      fetchAppointment(appointmentId).then(data => {
+        if (data) {
+          setTitle(data.title || '');
+          setProvider(data.provider || '');
+          setPatient(data.patient || '');
+          setAppointmentDate(data.appointmentDate || '');
+          setAppointmentStartTime(data.appointmentStartTime || '');
+          setAppointmentEndTime(data.appointmentEndTime || '');
+          setIsAllDay(data.isAllDay || false);
+          setDuration(data.duration || '');
+          setEncounterType(data.encounterType || '');
+          setProgram(data.program || '');
+          setBillingProgram(data.billingProgram || '');
+          setSupervisingProvider(data.supervisingProvider || '');
+          setStatus(data.status || '');
+          setRoom(data.room || '');
+          setComments(data.comments || '');
+          setIsRepeating(data.isRepeating || false);
+          setRepeatFrequency(data.repeatFrequency || 'every');
+          setRepeatInterval(data.repeatInterval || 'day');
+          setRepeatUntil(data.repeatUntil || '');
+          setLocation(data.location || '');
+          setIsTelehealth(data.isTelehealth || false);
+          setPrintAppointmentSlip(data.printAppointmentSlip || false);
+          setShowOnlyMine(data.showOnlyMine || false);
+          // Auto-select correct tab based on type
+          if (data.type === 'Group') setActiveTab('group');
+          else if (data.type === 'provider') setActiveTab('provider');
+          else if (data.type === 'benefits') setActiveTab('benefits');
+          else setActiveTab('person');
+        }
+      });
+    }
+  }, [isEditMode, appointmentId]);
+
   // Calculate end time based on start time and duration
   useEffect(() => {
     if (appointmentStartTime && duration && !isAllDay) {
@@ -99,118 +202,128 @@ const NewAppointmentPage: React.FC = () => {
       {/* Top Navigation Bar */}
       <TopNavigationBar hospitalName="Demo Hospital" userAvatarUrl="/avatar.png" />
       {/* Main Navigation Bar */}
-      <MainNavigationBar />
+      <MainNavigationBar activeItem="Schedule" />
       <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col px-2 sm:px-4">
         {/* Breadcrumb */}
         <div className="px-0 pt-4 pb-0">
           <Breadcrumb items={[
-            { label: 'Schedule', href: '/schedule' },
+            { label: 'Schedule', href: '/my-calendar' },
             { label: 'New Appointment' }
           ]} />
         </div>
         {/* Page Header */}
         <div className="px-0 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Add New Appointment</h1>
-          {/* Action Buttons (desktop only, top right) */}
-          <div className="hidden sm:flex flex-row gap-2 w-full sm:w-auto">
-            <Button type="button" variant="outline" size="sm" className="text-xs h-8 w-full sm:w-auto">Cancel</Button>
-            {/* Only show Find Available for person or benefits tab */}
-            {(activeTab === 'person' || activeTab === 'benefits') && (
-              <Button type="button" variant="outline" size="sm" className="text-xs h-8 w-full sm:w-auto">Find Available</Button>
-            )}
-            <Button type="button" variant="outline" size="sm" className="text-xs h-8 text-red-600 border-red-400 p-2 w-full sm:w-auto" aria-label="Delete">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </Button>
-            <Button type="submit" size="sm" className="text-xs h-8 bg-sky-500 hover:bg-sky-600 text-white w-full sm:w-auto">Save Appointment</Button>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Appointment' : 'Add New Appointment'}</h1>
+          {/* Action Buttons (desktop only, top right) - only show in create mode */}
+          {!isEditMode && (
+            <div className="hidden sm:flex flex-row gap-2 w-full sm:w-auto">
+              <Button type="button" variant="outline" size="sm" className="text-xs h-8 w-full sm:w-auto">Cancel</Button>
+              {/* Only show Find Available for person or benefits tab */}
+              {(activeTab === 'person' || activeTab === 'benefits') && (
+                <Button type="button" variant="outline" size="sm" className="text-xs h-8 w-full sm:w-auto">Find Available</Button>
+              )}
+              <Button type="button" variant="outline" size="sm" className="text-xs h-8 text-red-600 border-red-400 p-2 w-full sm:w-auto" aria-label="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </Button>
+              <Button type="submit" size="sm" className="text-xs h-8 bg-sky-500 hover:bg-sky-600 text-white w-full sm:w-auto">Save Appointment</Button>
+            </div>
+          )}
         </div>
+        {/* Action Bar: Only show in edit mode */}
+        {isEditMode && <AppointmentEditActions onSave={handleSave} />}
         {/* Main Content - Scrollable Area */}
-        <form className="flex-1 p-2 pt-0" onSubmit={e => { e.preventDefault(); handleSave(); }}>
+        <form className="flex-1 p-0 pt-0" onSubmit={e => { e.preventDefault(); handleSave(); }}>
           {/* Card with fixed height and internal scroll, responsive */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm mx-auto" style={{ height: '82vh', overflowY: 'auto', maxWidth: '100%' }}>
-            {/* Appointment Type Selection as Tab Bar */}
+            {/* Appointment Type Selection as Tab Bar and Tab Content */}
             <div className="p-2 sm:p-4 border-b border-gray-100">
-              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Appointment Type</Label>
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'person' | 'provider' | 'group' | 'benefits')}>
-                <TabsList>
-                  <TabsTrigger value="person">
-                    <UserIcon className="h-3.5 w-3.5 mr-1.5" /> Person
-                  </TabsTrigger>
-                  <TabsTrigger value="provider">
-                    <UserIcon className="h-3.5 w-3.5 mr-1.5" /> Provider
-                  </TabsTrigger>
-                  <TabsTrigger value="group">
-                    <UserGroupIcon className="h-3.5 w-3.5 mr-1.5" /> Group
-                  </TabsTrigger>
-                  <TabsTrigger value="benefits">
-                    <InformationCircleIcon className="h-3.5 w-3.5 mr-1.5" /> Benefits
-                  </TabsTrigger>
-                </TabsList>
-                {/* Tab Content: Render form sections based on selected tab */}
+                {/* Only show label and tab triggers if not in edit mode */}
+                {!isEditMode && (
+                  <>
+                    <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Appointment Type</Label>
+                    <TabsList>
+                      <TabsTrigger value="person">
+                        <UserIcon className="h-3.5 w-3.5 mr-1.5" /> Person
+                      </TabsTrigger>
+                      <TabsTrigger value="provider">
+                        <UserIcon className="h-3.5 w-3.5 mr-1.5" /> Provider
+                      </TabsTrigger>
+                      <TabsTrigger value="group">
+                        <UserGroupIcon className="h-3.5 w-3.5 mr-1.5" /> Group
+                      </TabsTrigger>
+                      <TabsTrigger value="benefits">
+                        <InformationCircleIcon className="h-3.5 w-3.5 mr-1.5" /> Benefits
+                      </TabsTrigger>
+                    </TabsList>
+                  </>
+                )}
+                {/* Tab Content: Always render all, but only the activeTab is visible */}
                 <TabsContent value="person">
-                  {/* Person Appointment Form Content (copied from modal) */}
+                  {/* Person Appointment Form Content */}
                   <div>
                     <div className="p-4 space-y-4">
-                      {/* Basic Information Card */}
-                      <Card className="shadow-none border-gray-200">
-                        <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-                          <CardTitle className="text-sm font-semibold text-gray-800">Basic Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
-                          <div className="space-y-1">
-                            <Label htmlFor="patient" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Person:</Label>
-                            <Select value={patient} onValueChange={setPatient}>
-                              <SelectTrigger id="patient" className="h-8 text-sm">
-                                <SelectValue placeholder="Click to select" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {samplePatients.map(p => (
-                                  <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category:*</Label>
-                              <div className="flex items-center">
-                                <Checkbox
-                                  id="showOnlyMine"
-                                  checked={showOnlyMine}
-                                  onCheckedChange={(checked) => setShowOnlyMine(checked as boolean)}
-                                  className="h-3 w-3"
-                                />
-                                <label htmlFor="showOnlyMine" className="ml-1.5 text-xs text-gray-600">
-                                  Show Only Mine
-                                </label>
-                              </div>
+                      {/* Basic Information and Date & Time - 2 Column Layout */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left Column - Basic Information */}
+                        <Card className="shadow-none border-gray-200">
+                          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+                            <CardTitle className="text-sm font-semibold text-gray-800">Basic Information</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 space-y-3">
+                            <div className="space-y-1">
+                              <Label htmlFor="patient" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Person:</Label>
+                              <Select value={patient} onValueChange={setPatient}>
+                                <SelectTrigger id="patient" className="h-8 text-sm">
+                                  <SelectValue placeholder="Click to select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {samplePatients.map(p => (
+                                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
-                            <Select value={encounterType} onValueChange={setEncounterType}>
-                              <SelectTrigger id="encounterType" className="h-8 text-sm">
-                                <SelectValue placeholder="-- Select Encounter Type --" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
-                                <SelectItem value="Follow-up">Follow-up</SelectItem>
-                                <SelectItem value="Therapy">Therapy</SelectItem>
-                                <SelectItem value="Medication Management">Medication Management</SelectItem>
-                                <SelectItem value="Crisis Intervention">Crisis Intervention</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label htmlFor="title" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Title:</Label>
-                            <Input
-                              id="title"
-                              value={title}
-                              onChange={(e) => setTitle(e.target.value)}
-                              className="h-8 text-sm"
-                              required
-                            />
-                          </div>
-                          <div className="grid grid-cols-1 gap-2">
+                            <div className="space-y-1">
+                              <div className="flex justify-between">
+                                <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category:*</Label>
+                                <div className="flex items-center">
+                                  <Checkbox
+                                    id="showOnlyMine"
+                                    checked={showOnlyMine}
+                                    onCheckedChange={(checked) => setShowOnlyMine(checked as boolean)}
+                                    className="h-3 w-3"
+                                  />
+                                  <label htmlFor="showOnlyMine" className="ml-1.5 text-xs text-gray-600">
+                                    Show Only Mine
+                                  </label>
+                                </div>
+                              </div>
+                              <Select value={encounterType} onValueChange={setEncounterType}>
+                                <SelectTrigger id="encounterType" className="h-8 text-sm">
+                                  <SelectValue placeholder="-- Select Encounter Type --" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
+                                  <SelectItem value="Follow-up">Follow-up</SelectItem>
+                                  <SelectItem value="Therapy">Therapy</SelectItem>
+                                  <SelectItem value="Medication Management">Medication Management</SelectItem>
+                                  <SelectItem value="Crisis Intervention">Crisis Intervention</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="title" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Title:</Label>
+                              <Input
+                                id="title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="h-8 text-sm"
+                                required
+                              />
+                            </div>
                             <div className="space-y-1">
                               <Label htmlFor="room" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Room:</Label>
                               <div className="flex items-center gap-2">
@@ -220,99 +333,97 @@ const NewAppointmentPage: React.FC = () => {
                                   onChange={(e) => setRoom(e.target.value)}
                                   className="h-8 text-sm flex-1"
                                 />
-                                <button
-                                  type="button"
-                                  className="text-blue-600 hover:text-blue-800 text-xs font-medium underline whitespace-nowrap"
+                                <Button 
+                                  type="button" 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="text-blue-600 text-xs"
                                   onClick={() => { console.log('Allocate Room clicked'); }}
                                 >
                                   Allocate Room
-                                </button>
+                                </Button>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      {/* Date & Time Card */}
-                      <Card className="shadow-none border-gray-200">
+                          </CardContent>
+                        </Card>
+                        
+                        {/* Right Column - Date & Time */}
+                        <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                           <CardTitle className="text-sm font-semibold text-gray-800">Date & Time</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4">
                           <div className="space-y-3">
-                            {/* Date and All Day Event Row */}
-                            <div className="grid grid-cols-3 gap-4">
-                              <div className="col-span-2 space-y-1">
-                                <Label htmlFor="appointmentDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date:</Label>
-                                <Input
-                                  id="appointmentDate"
-                                  type="date"
-                                  value={appointmentDate}
-                                  onChange={(e) => setAppointmentDate(e.target.value)}
-                                  className="h-8 text-sm"
-                                  required
-                                />
-                              </div>
-                              <div className="flex items-center pt-6">
-                                <Checkbox
-                                  id="allDayEvent"
-                                  checked={isAllDay}
-                                  onCheckedChange={(checked) => setIsAllDay(checked as boolean)}
-                                  className="h-3 w-3"
-                                />
-                                <label htmlFor="allDayEvent" className="ml-1.5 text-xs text-gray-600">All day event</label>
+                            {/* Date and All Day Event Row - Matches Group form layout */}
+                            <div className="space-y-2">
+                              <Label htmlFor="appointmentDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date:</Label>
+                              <div className="flex items-center gap-4">
+                                <div className="relative">
+                                  <Input 
+                                    id="appointmentDate" 
+                                    type="date" 
+                                    value={appointmentDate}
+                                    onChange={(e) => setAppointmentDate(e.target.value)}
+                                    className="h-9 text-sm w-44 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    required
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Switch 
+                                    id="allDayEvent"
+                                    checked={isAllDay}
+                                    onCheckedChange={setIsAllDay}
+                                  />
+                                  <label htmlFor="allDayEvent" className="text-sm text-gray-700 font-medium cursor-pointer">
+                                    All day event
+                                  </label>
+                                </div>
                               </div>
                             </div>
-                            {/* Time and Duration Row */}
+                            {/* Time Controls - Hidden when All Day Event is on - Matches Group form */}
                             {!isAllDay && (
-                              <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-1">
-                                  <Label htmlFor="startTime" className="text-xs text-gray-500">Start Time</Label>
-                                  <Input
-                                    id="startTime"
-                                    type="time"
-                                    value={appointmentStartTime}
-                                    onChange={(e) => setAppointmentStartTime(e.target.value)}
-                                    className="h-8 text-sm"
-                                    required
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label htmlFor="endTime" className="text-xs text-gray-500">End Time</Label>
-                                  <Input
-                                    id="endTime"
-                                    type="time"
-                                    value={appointmentEndTime}
-                                    onChange={(e) => setAppointmentEndTime(e.target.value)}
-                                    className="h-8 text-sm"
-                                    required
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label htmlFor="duration" className="text-xs text-gray-500">Duration</Label>
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      id="duration"
-                                      type="number"
-                                      value={duration}
-                                      onChange={(e) => setDuration(e.target.value)}
-                                      min="0"
-                                      className="h-8 text-sm flex-1"
+                              <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Time:</Label>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <div className="flex items-center gap-2">
+                                    <Input 
+                                      id="startTime" 
+                                      type="time" 
+                                      value={appointmentStartTime}
+                                      onChange={(e) => setAppointmentStartTime(e.target.value)}
+                                      className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                      required
                                     />
-                                    <span className="text-xs text-gray-500 whitespace-nowrap">min</span>
+                                    <span className="text-sm text-gray-400">—</span>
+                                    <Input 
+                                      id="endTime" 
+                                      type="time" 
+                                      value={appointmentEndTime}
+                                      onChange={(e) => setAppointmentEndTime(e.target.value)}
+                                      className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                      required
+                                    />
                                   </div>
+                                  {calculatedDuration > 0 && (
+                                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-md border border-blue-200">
+                                      <span className="text-sm font-semibold text-blue-700">{calculatedDuration}</span>
+                                      <span className="text-xs text-blue-600 font-medium">mins</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}
-                            {/* Repeating Appointment Section */}
+                            {/* Repeating Appointment Section - Matches Group form with Switch */}
                             <div className="pt-1 space-y-2">
-                              <div className="flex items-center">
-                                <Checkbox
+                              <div className="flex items-center gap-3">
+                                <Switch 
                                   id="repeats"
                                   checked={isRepeating}
-                                  onCheckedChange={(checked) => setIsRepeating(checked as boolean)}
-                                  className="h-3 w-3"
+                                  onCheckedChange={setIsRepeating}
                                 />
-                                <label htmlFor="repeats" className="ml-1.5 text-xs font-medium text-gray-700">Repeating Appointment</label>
+                                <label htmlFor="repeats" className="text-sm text-gray-700 font-medium cursor-pointer">
+                                  Repeats
+                                </label>
                               </div>
                               {isRepeating && (
                                 <div className="ml-5 space-y-2">
@@ -366,7 +477,9 @@ const NewAppointmentPage: React.FC = () => {
                             </div>
                           </div>
                         </CardContent>
-                      </Card>
+                        </Card>
+                      </div>
+                      
                       {/* Provider Information Card */}
                       <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
@@ -519,7 +632,7 @@ const NewAppointmentPage: React.FC = () => {
                   </div>
                 </TabsContent>
                 <TabsContent value="provider">
-                  {/* Provider Appointment Form Content (copied from modal) */}
+                  {/* Provider Appointment Form Content */}
                   <div>
                     <div className="p-4 space-y-4">
                       {/* Basic Information Card */}
@@ -640,25 +753,25 @@ const NewAppointmentPage: React.FC = () => {
                   <GroupAppointmentForm />
                 </TabsContent>
                 <TabsContent value="benefits">
-                  {/* ...Copy all Benefits tab form content from modal here... */}
+                  {/* ...existing benefits tab content... */}
                 </TabsContent>
               </Tabs>
-            </div>
-            {/* Mobile Action Buttons (bottom of form card, only on mobile) */}
-            <div className="flex flex-col gap-2 sm:hidden mt-4 px-4 pb-4">
-              <div className="flex flex-row gap-2 w-full">
-                <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-blue-600 border-blue-400 flex-1">Cancel</Button>
-                {/* Only show Find Available for person or benefits tab */}
-                {(activeTab === 'person' || activeTab === 'benefits') && (
-                  <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-blue-600 border-blue-400 flex-1">Find Available</Button>
-                )}
-                <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-red-600 border-red-400 p-2 flex-1" aria-label="Delete">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mx-auto">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </Button>
+              {/* Mobile Action Buttons (bottom of form card, only on mobile) */}
+              <div className="flex flex-col gap-2 sm:hidden mt-4 px-4 pb-4">
+                <div className="flex flex-row gap-2 w-full">
+                  <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-blue-600 border-blue-400 flex-1">Cancel</Button>
+                  {/* Only show Find Available for person or benefits tab */}
+                  {(activeTab === 'person' || activeTab === 'benefits') && (
+                    <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-blue-600 border-blue-400 flex-1">Find Available</Button>
+                  )}
+                  <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-red-600 border-red-400 p-2 flex-1" aria-label="Delete">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mx-auto">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </Button>
+                </div>
+                <Button type="submit" size="sm" className="text-xs h-10 bg-sky-500 hover:bg-sky-600 text-white w-full">Save Appointment</Button>
               </div>
-              <Button type="submit" size="sm" className="text-xs h-10 bg-sky-500 hover:bg-sky-600 text-white w-full">Save Appointment</Button>
             </div>
           </div>
         </form>

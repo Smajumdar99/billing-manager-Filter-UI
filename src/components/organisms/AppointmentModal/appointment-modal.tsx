@@ -267,16 +267,18 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                                   onChange={(e) => setRoom(e.target.value)}
                                   className="h-8 text-sm flex-1"
                                 />
-                                <button
-                                  type="button"
-                                  className="text-blue-600 hover:text-blue-800 text-xs font-medium underline whitespace-nowrap"
+                                <Button 
+                                  type="button" 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="text-blue-600 text-xs"
                                   onClick={() => {
                                     // Handle allocate room functionality
                                     console.log('Allocate Room clicked');
                                   }}
                                 >
                                   Allocate Room
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           </div>

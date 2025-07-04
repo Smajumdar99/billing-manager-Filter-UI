@@ -41,6 +41,8 @@ import WeekView from '../../molecules/WeekView/week-view';
 import MonthView from '../../molecules/MonthView/month-view';
 import { DataTable } from '../DataTable';
 import EventPopover from '../../atoms/EventPopover/event-popover';
+import { useNavigate } from 'react-router-dom';
+import EventTypeBadge from '../../atoms/EventTypeBadge';
 
 /**
  * CalendarMainView Component
@@ -155,6 +157,20 @@ const formatTimeRange = (startTime: string, endTime: string, isAllDay?: boolean)
   }
 };
 
+// Helper to get standard background color for event types
+const getEventBgColor = (type?: string) => {
+  switch (type) {
+    case 'Group':
+      return '#E6F9ED'; // soft green
+    case 'Individual':
+      return '#E5EDFF'; // soft blue
+    case 'Provider':
+      return '#F3E8FF'; // soft purple
+    default:
+      return '#F3F4F6'; // soft gray
+  }
+};
+
 const EventCard: React.FC<{ 
   event: Event;
   onEditEvent?: (event: Event) => void;
@@ -170,21 +186,27 @@ const EventCard: React.FC<{
     }
   };
 
+  // Use standard background color for event type
+  const bgColor = getEventBgColor(event.type);
+
   const eventContent = (
     <div 
-      className="absolute top-0 left-0 right-0 mx-2 p-2 rounded border text-xs overflow-hidden cursor-pointer"
+      className="mx-2 my-1 p-2 rounded border text-xs overflow-hidden cursor-pointer bg-white flex flex-col gap-1 min-w-0"
       style={{ 
-        backgroundColor: event.backgroundColor || '#E5EDFF',
+        backgroundColor: bgColor,
         borderColor: event.type === 'Individual' ? '#C7D2FE' : 
-                    event.type === 'Group' ? '#FDE68A' : '#E5E7EB',
-        height: '46px'
+                    event.type === 'Group' ? '#A7F3D0' : 
+                    event.type === 'Provider' ? '#D8B4FE' : '#E5E7EB',
       }}
     >
-      <div className="flex items-center gap-1">
+      {/* Badge and title row */}
+      <div className="flex items-center gap-2 min-w-0">
+        <EventTypeBadge type={event.type} />
         {getEventIcon()}
         <div className="font-medium truncate flex-1">{event.title}</div>
       </div>
-      <div className="text-gray-600 mt-1 flex items-center gap-2">
+      {/* Time and phone row */}
+      <div className="text-gray-600 flex items-center gap-2 min-w-0">
         <span>{event.startTime} - {event.endTime}</span>
         {event.mobile && (
           <span className="flex items-center gap-1 text-blue-600">
@@ -313,7 +335,17 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     }
   };
 
-  const goToToday = () => onDateChange(new Date());
+  const goToToday = () => {
+    // Set date to today and switch to day view
+    onDateChange(new Date());
+    onViewChange('day');
+  };
+
+  // Helper function to check if selected date is today AND we're in day view
+  const isTodayActive = () => {
+    const today = new Date();
+    return selectedDate.toDateString() === today.toDateString() && view === 'day';
+  };
 
   // Helper function to check if any filters are active
   const hasActiveFilters = () => {
@@ -790,6 +822,19 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     return true;
   });
 
+  const navigate = useNavigate();
+
+  // Handler for editing events (only navigates for Group events)
+  const handleEditEvent = (event: Event) => {
+    if (event.type === 'Group') {
+      // Navigate to Edit Appointment page for Group events
+      navigate(`/edit-appointment/${event.id}`);
+    } else if (onEditEvent) {
+      // Fallback to parent handler for other event types
+      onEditEvent(event);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Calendar Header */}
@@ -825,7 +870,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
               <input
                 type="text"
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Search appointments..."
+                placeholder="Search appointments"
                 value={currentSearchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
@@ -1038,7 +1083,11 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           {/* Today button */}
           <button 
             onClick={goToToday}
-            className="px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            className={`px-4 py-1.5 text-sm font-medium border rounded-md transition-colors ${
+              isTodayActive() 
+                ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100' 
+                : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
           >
             Today
           </button>
@@ -1330,7 +1379,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                         <EventCard 
                           key={event.id} 
                           event={event}
-                          onEditEvent={onEditEvent}
+                          onEditEvent={handleEditEvent}
                         />
                       ))}
                     </div>
@@ -1353,7 +1402,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                               <EventCard 
                                 key={event.id} 
                                 event={event}
-                                onEditEvent={onEditEvent}
+                                onEditEvent={handleEditEvent}
                               />
                             ))
                           }
@@ -1413,7 +1462,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                             <EventCard 
                               key={event.id} 
                               event={event}
-                              onEditEvent={onEditEvent}
+                              onEditEvent={handleEditEvent}
                             />
                           ))}
                         </div>
@@ -1436,7 +1485,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                                   <EventCard 
                                     key={event.id} 
                                     event={event}
-                                    onEditEvent={onEditEvent}
+                                    onEditEvent={handleEditEvent}
                                   />
                                 ))
                               }
@@ -1450,13 +1499,13 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                       selectedDate={selectedDate} 
                       events={filteredEvents}
                       timeSlots={timeSlots}
-                      onEditEvent={onEditEvent}
+                      onEditEvent={handleEditEvent}
                     />
                   ) : (
                     <MonthView 
                       selectedDate={selectedDate} 
                       events={filteredEvents}
-                      onEditEvent={onEditEvent}
+                      onEditEvent={handleEditEvent}
                     />
                   )}
                 </div>
@@ -1492,7 +1541,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                       <EventCard 
                         key={event.id} 
                         event={event}
-                        onEditEvent={onEditEvent}
+                        onEditEvent={handleEditEvent}
                       />
                     ))}
                   </div>
@@ -1515,7 +1564,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                             <EventCard 
                               key={event.id} 
                               event={event}
-                              onEditEvent={onEditEvent}
+                              onEditEvent={handleEditEvent}
                             />
                           ))
                         }
@@ -1529,13 +1578,13 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 selectedDate={selectedDate} 
                 events={filteredEvents}
                 timeSlots={timeSlots}
-                onEditEvent={onEditEvent}
+                onEditEvent={handleEditEvent}
               />
             ) : (
               <MonthView 
                 selectedDate={selectedDate} 
                 events={filteredEvents}
-                onEditEvent={onEditEvent}
+                onEditEvent={handleEditEvent}
               />
             )}
           </>
