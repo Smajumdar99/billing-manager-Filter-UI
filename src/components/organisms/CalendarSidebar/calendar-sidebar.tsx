@@ -343,7 +343,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
       <div className="absolute inset-0 bg-gradient-to-tr from-rose-100/25 via-orange-100/20 to-amber-100/30 animate-gradient-xy-2 animation-delay-2000"></div>
       
       {/* Content overlay */}
-      <div className="relative z-10 flex flex-col h-full overflow-y-auto overflow-x-hidden">
+      <div className="relative z-10 flex flex-col h-full overflow-y-auto overflow-x-hidden smart-scrollbar calendar-sidebar-scroll">
         {/* Header Section */}
         {isCollapsed ? (
           /* Collapsed Layout - Vertical Stack */
@@ -487,7 +487,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
             {/* Locations table */}
             <div className="border border-gray-200 rounded-md overflow-hidden bg-white/60 backdrop-blur-sm">
               {filteredLocations.length > 0 ? (
-                <div className="max-h-32 overflow-y-auto">
+                <div className="max-h-32 overflow-y-auto smart-scrollbar dropdown-scroll">
                   {/* Table header */}
                   <div className="bg-gray-50/80 border-b border-gray-200 px-2 py-1 flex items-center space-x-2">
                     <input
@@ -576,7 +576,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
             {/* Providers table */}
             <div className="border border-gray-200 rounded-md overflow-hidden bg-white/60 backdrop-blur-sm">
               {filteredProviders.length > 0 ? (
-                <div className="max-h-32 overflow-y-auto">
+                <div className="max-h-32 overflow-y-auto smart-scrollbar dropdown-scroll">
                   {/* Table header */}
                   <div className="bg-gray-50/80 border-b border-gray-200 px-2 py-1 flex items-center space-x-2">
                     <input
@@ -668,7 +668,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
             {/* Programs table */}
             <div className="border border-gray-200 rounded-md overflow-hidden bg-white/60 backdrop-blur-sm">
               {filteredPrograms.length > 0 ? (
-                <div className="max-h-32 overflow-y-auto">
+                <div className="max-h-32 overflow-y-auto smart-scrollbar dropdown-scroll">
                   {/* Table header */}
                   <div className="bg-gray-50/80 border-b border-gray-200 px-2 py-1 flex items-center space-x-2">
                     <input

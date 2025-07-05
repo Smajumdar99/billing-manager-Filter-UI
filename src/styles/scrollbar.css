@@ -1,0 +1,140 @@
+/* Smart Scrollbars - Modern, Auto-hiding Design */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4); /* gray-400 with opacity */
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.6); /* gray-500 with opacity */
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(75, 85, 99, 0.8); /* gray-600 with opacity */
+}
+
+/* Corner where horizontal and vertical scrollbars meet */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox - Modern scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+
+/* Smart scrollbar behavior - Auto-hide on desktop */
+@media (hover: hover) and (pointer: fine) {
+  /* Desktop: Hide scrollbars by default, show on hover */
+  .smart-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  
+  .smart-scrollbar::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+  
+  .smart-scrollbar:hover {
+    scrollbar-width: thin; /* Firefox */
+  }
+  
+  .smart-scrollbar:hover::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* Mobile: Always show thin scrollbars */
+@media (hover: none) and (pointer: coarse) {
+  .smart-scrollbar {
+    scrollbar-width: thin;
+  }
+  
+  .smart-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* Specific scrollbar styles for different components */
+
+/* Calendar sidebar scrollbar */
+.calendar-sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.calendar-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3); /* blue-500 with opacity */
+  border-radius: 3px;
+}
+
+.calendar-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+/* Calendar main view scrollbar */
+.calendar-main-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.calendar-main-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 4px;
+}
+
+.calendar-main-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Dropdown menus and modals */
+.dropdown-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dropdown-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 2px;
+}
+
+/* Smooth scrolling behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollable containers */
+.scrollable-container {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+
+/* Overlay scrollbars for floating elements */
+.overlay-scroll {
+  overflow: overlay;
+}
+
+/* Invisible scrollbar for specific use cases */
+.invisible-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.invisible-scrollbar::-webkit-scrollbar {
+  display: none;
+}

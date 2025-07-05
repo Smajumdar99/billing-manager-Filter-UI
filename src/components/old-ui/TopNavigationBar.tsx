@@ -94,7 +94,7 @@ const TopNavigationBar: React.FC<TopNavigationBarProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between p-2 min-h-[64px] bg-primary/10 text-slate-700 overflow-visible">
+    <div className="flex items-center justify-between p-2 min-h-[68px] bg-primary/20 text-slate-700 overflow-visible border-b border-blue-200">
       {/* Left side - Logo and search only */}
       <div className="flex items-center gap-4 flex-shrink-0">
         <img 
@@ -107,7 +107,7 @@ const TopNavigationBar: React.FC<TopNavigationBarProps> = ({
           <input
             type="text"
             placeholder="Search"
-            className="w-48 lg:w-64 px-4 py-1.5 pl-10 rounded text-sm bg-white border border-slate-200 placeholder-slate-400 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 shadow-sm"
+            className="w-48 lg:w-64 px-4 py-1.5 pl-10 rounded text-md bg-white border border-slate-200 placeholder-slate-400 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 shadow-sm"
             onChange={handleSearchInputChange}
           />
           <MagnifyingGlassIcon className="absolute left-3 top-2 h-5 w-5 text-slate-400" />

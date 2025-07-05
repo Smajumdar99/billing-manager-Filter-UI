@@ -23,11 +23,12 @@ import {
   PhoneIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
-  XMarkIcon,
   Squares2X2Icon,
   QueueListIcon,
-  ViewColumnsIcon
+  ViewColumnsIcon,
+  Bars3Icon
 } from '@heroicons/react/24/outline';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select';
 import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
 import {
   DropdownMenu,
@@ -43,6 +44,7 @@ import { DataTable } from '../DataTable';
 import EventPopover from '../../atoms/EventPopover/event-popover';
 import { useNavigate } from 'react-router-dom';
 import EventTypeBadge from '../../atoms/EventTypeBadge';
+import { Button } from '../../atoms/Button/button';
 
 /**
  * CalendarMainView Component
@@ -241,6 +243,20 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   // State for internal search functionality if no external handler provided
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   
+  // State for tab functionality - Provider selected by default
+  const [activeTab, setActiveTab] = useState<'provider' | 'room'>('provider');
+  
+  // State for advanced search overlay
+  const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    serviceType: 'Any Service Type',
+    dateFrom: '',
+    dateTo: '',
+    program: 'All Programs',
+    status: 'All Statuses',
+    provider: 'All Providers'
+  });
+  
   // State for filter functionality
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
@@ -250,6 +266,9 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     nextHours: false,
     hoursValue: 3
   });
+  
+  // State for mobile hamburger menu
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Use external search state if provided, otherwise use internal state
   const currentSearchQuery = searchQuery || internalSearchQuery;
@@ -433,6 +452,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const searchOverlayRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -442,6 +462,9 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       }
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
         setShowFilters(false);
+      }
+      if (searchOverlayRef.current && !searchOverlayRef.current.contains(event.target as Node)) {
+        setShowSearchOverlay(false);
       }
     }
     
@@ -836,12 +859,22 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
-      {/* Calendar Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200">
-        {/* Left side with profile image and date display */}
-        <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 rounded-full overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden bg-white">
+      {/* Mobile-Responsive Calendar Header */}
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-200">
+        {/* Left side - Mobile: Simplified, Desktop: Full */}
+        <div className="flex items-center space-x-2 md:space-x-4">
+          {/* Mobile hamburger menu - only visible on mobile */}
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            title="Menu"
+          >
+            <Bars3Icon className="w-5 h-5 text-gray-600" />
+          </button>
+          
+          {/* Profile image - smaller on mobile */}
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden">
             <img 
               src="/profile-placeholder.jpg" 
               alt="Profile" 
@@ -853,27 +886,225 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
               }}
             />
           </div>
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-800">
+          <div className="flex flex-col">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-800">
               {getHeaderDate()}
             </h2>
+            
+            {/* Tab Bar - Hidden on mobile, shown on desktop */}
+            <div className="hidden md:flex items-center mt-1">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setActiveTab('provider')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
+                    activeTab === 'provider'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Provider
+                </button>
+                <button
+                  onClick={() => setActiveTab('room')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
+                    activeTab === 'room'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Room
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         
-        {/* Middle section with search and filter functionality */}
-        <div className="flex-1 max-w-md mx-8">
+        {/* Middle section - Hidden on mobile, shown on desktop */}
+        <div className="hidden md:flex flex-1 max-w-4xl mx-8">
           <div className="flex items-center space-x-2">
-            <div className="relative flex-1">
+            <div className="relative flex-1" ref={searchOverlayRef}>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
               </div>
               <input
                 type="text"
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Search appointments"
+                placeholder="Search appointments or click for advanced filters..."
                 value={currentSearchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                onClick={() => setShowSearchOverlay(true)}
               />
+              
+              {/* Modern Search Overlay */}
+              {showSearchOverlay && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden min-w-[600px]">
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Advanced Search</h3>
+                      <button
+                        onClick={() => setShowSearchOverlay(false)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    {/* Filter Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      {/* Service Type */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
+                        <Select
+                          value={advancedFilters.serviceType}
+                          onValueChange={(value) => setAdvancedFilters({...advancedFilters, serviceType: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Any Service Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Any Service Type">Any Service Type</SelectItem>
+                            <SelectItem value="Individual Therapy">Individual Therapy</SelectItem>
+                            <SelectItem value="Group Therapy">Group Therapy</SelectItem>
+                            <SelectItem value="Assessment">Assessment</SelectItem>
+                            <SelectItem value="Consultation">Consultation</SelectItem>
+                            <SelectItem value="Follow-up">Follow-up</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Program */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Program</label>
+                        <Select
+                          value={advancedFilters.program}
+                          onValueChange={(value) => setAdvancedFilters({...advancedFilters, program: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All Programs" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="All Programs">All Programs</SelectItem>
+                            <SelectItem value="Outpatient">Outpatient</SelectItem>
+                            <SelectItem value="Intensive Outpatient">Intensive Outpatient</SelectItem>
+                            <SelectItem value="Partial Hospitalization">Partial Hospitalization</SelectItem>
+                            <SelectItem value="Residential">Residential</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Status */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <Select
+                          value={advancedFilters.status}
+                          onValueChange={(value) => setAdvancedFilters({...advancedFilters, status: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All Statuses" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="All Statuses">All Statuses</SelectItem>
+                            <SelectItem value="Scheduled">Scheduled</SelectItem>
+                            <SelectItem value="Confirmed">Confirmed</SelectItem>
+                            <SelectItem value="In Progress">In Progress</SelectItem>
+                            <SelectItem value="Completed">Completed</SelectItem>
+                            <SelectItem value="Cancelled">Cancelled</SelectItem>
+                            <SelectItem value="No Show">No Show</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Provider */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Provider</label>
+                        <Select
+                          value={advancedFilters.provider}
+                          onValueChange={(value) => setAdvancedFilters({...advancedFilters, provider: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All Providers" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="All Providers">All Providers</SelectItem>
+                            <SelectItem value="Dr. Sarah Johnson">Dr. Sarah Johnson</SelectItem>
+                            <SelectItem value="Dr. Michael Chen">Dr. Michael Chen</SelectItem>
+                            <SelectItem value="Dr. Emily Rodriguez">Dr. Emily Rodriguez</SelectItem>
+                            <SelectItem value="Dr. David Kim">Dr. David Kim</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {/* Date Range */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            value={advancedFilters.dateFrom}
+                            onChange={(e) => setAdvancedFilters({...advancedFilters, dateFrom: e.target.value})}
+                            placeholder="From"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            value={advancedFilters.dateTo}
+                            onChange={(e) => setAdvancedFilters({...advancedFilters, dateTo: e.target.value})}
+                            placeholder="To"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex justify-between pt-4 border-t border-gray-200">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setAdvancedFilters({
+                            serviceType: 'Any Service Type',
+                            dateFrom: '',
+                            dateTo: '',
+                            program: 'All Programs',
+                            status: 'All Statuses',
+                            provider: 'All Providers'
+                          });
+                          handleSearchChange('');
+                        }}
+                      >
+                        Clear All
+                      </Button>
+                      <div className="flex space-x-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSearchOverlay(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            // Apply filters logic here
+                            setShowSearchOverlay(false);
+                          }}
+                        >
+                          Apply Filters
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Filter toggle button with dropdown */}
@@ -1018,11 +1249,21 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </div>
         </div>
         
-        {/* Right side with navigation controls */}
-        <div className="flex items-center space-x-3">
-          {/* View selector dropdown */}
+        {/* Right side - Mobile: Essential controls, Desktop: Full controls */}
+        <div className="flex items-center space-x-2 md:space-x-3">
+          {/* Mobile: Search button */}
+          <button 
+            onClick={() => setShowSearchOverlay(true)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <MagnifyingGlassIcon className="w-5 h-5 text-gray-600" />
+          </button>
+          
+          {/* Mobile: Filter button - Hidden, moved to hamburger menu */}
+          
+          {/* View selector - Desktop only */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
+            <DropdownMenuTrigger className="hidden md:flex items-center px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
               <span>{view === 'agenda' ? 'Agenda' : view.charAt(0).toUpperCase() + view.slice(1)}</span>
               <ChevronDownIcon className="w-4 h-4 ml-1" />
             </DropdownMenuTrigger>
@@ -1080,55 +1321,60 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* Today button */}
+          {/* Today button - Desktop only */}
           <button 
             onClick={goToToday}
-            className={`px-4 py-1.5 text-sm font-medium border rounded-md transition-colors ${
+            className={`hidden md:flex px-4 py-1.5 text-sm font-medium border rounded-md transition-colors ${
               isTodayActive() 
                 ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100' 
                 : 'text-gray-700 border-gray-300 hover:bg-gray-50'
             }`}
+            title="Go to Today"
           >
             Today
           </button>
 
-          {/* Agenda button */}
-          <button 
-            onClick={() => onViewChange(view === 'agenda' ? 'day' : 'agenda')}
-            className={`px-4 py-1.5 text-sm font-medium border rounded-md transition-colors ${
-              view === 'agenda' 
-                ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100' 
-                : 'text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            Agenda
-          </button>
-          
-          {/* Navigation arrows */}
+          {/* Navigation arrows - Always visible */}
           <div className="flex items-center">
             <button 
               onClick={goToPrevDate}
               className="p-1.5 rounded-full hover:bg-gray-100"
+              title="Previous"
             >
               <ArrowLeftIcon className="w-4 h-4 text-gray-600" />
             </button>
             <button 
               onClick={goToNextDate}
               className="p-1.5 rounded-full hover:bg-gray-100"
+              title="Next"
             >
               <ArrowRightIcon className="w-4 h-4 text-gray-600" />
             </button>
           </div>
           
-          {/* Settings button */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                className="p-1.5 rounded-full hover:bg-gray-100"
-              >
-                <Cog6ToothIcon className="w-5 h-5 text-gray-600" />
-              </button>
-            </DropdownMenuTrigger>
+          {/* Desktop-only controls */}
+          <div className="hidden md:flex items-center space-x-3">
+            {/* Agenda button */}
+            <button 
+              onClick={() => onViewChange(view === 'agenda' ? 'day' : 'agenda')}
+              className={`px-4 py-1.5 text-sm font-medium border rounded-md transition-colors ${
+                view === 'agenda' 
+                  ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100' 
+                  : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Agenda
+            </button>
+            
+            {/* Settings button */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  className="p-1.5 rounded-full hover:bg-gray-100"
+                >
+                  <Cog6ToothIcon className="w-5 h-5 text-gray-600" />
+                </button>
+              </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={handleTransfer}>
                 <ArrowsRightLeftIcon className="w-4 h-4 mr-2" />
@@ -1301,8 +1547,208 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
               </DropdownMenu>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </div>
+      
+      {/* Mobile Menu Overlay - Only visible on mobile when hamburger is clicked */}
+      {showMobileMenu && (
+        <div className="md:hidden absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 z-50" onClick={() => setShowMobileMenu(false)}>
+          <div className="bg-white w-64 h-full shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-800">Calendar Views</h3>
+                <button
+                  onClick={() => setShowMobileMenu(false)}
+                  className="p-1 rounded-full hover:bg-gray-100"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4">
+              <div className="space-y-2">
+                {/* Day View */}
+                <button
+                  onClick={() => {
+                    onViewChange('day');
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    view === 'day'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="font-medium">Day</span>
+                  {view === 'day' && <CheckIcon className="w-5 h-5" />}
+                </button>
+                
+                {/* Week View */}
+                <button
+                  onClick={() => {
+                    onViewChange('week');
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    view === 'week'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="font-medium">Week</span>
+                  {view === 'week' && <CheckIcon className="w-5 h-5" />}
+                </button>
+                
+                {/* Month View */}
+                <button
+                  onClick={() => {
+                    onViewChange('month');
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    view === 'month'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="font-medium">Month</span>
+                  {view === 'month' && <CheckIcon className="w-5 h-5" />}
+                </button>
+                
+                {/* Agenda View */}
+                <button
+                  onClick={() => {
+                    onViewChange('agenda');
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    view === 'agenda'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="font-medium">Agenda</span>
+                  {view === 'agenda' && <CheckIcon className="w-5 h-5" />}
+                </button>
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                {/* Today Button */}
+                <button
+                  onClick={() => {
+                    goToToday();
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full p-3 rounded-lg transition-colors ${
+                    isTodayActive()
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-50 border border-gray-200'
+                  }`}
+                >
+                  <span className="font-medium">Go to Today</span>
+                </button>
+              </div>
+              
+              {/* Filter Options Section */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-gray-800">Filters</h4>
+                  {hasActiveFilters() && (
+                    <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {[filters.personAppts, filters.providerReserv, filters.groupAppts, filters.nextHours].filter(Boolean).length}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="space-y-3">
+                  {/* Person appointments filter */}
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.personAppts}
+                      onChange={(e) => setFilters(prev => ({ ...prev, personAppts: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Person appointments only</span>
+                  </label>
+                  
+                  {/* Group appointments filter */}
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.groupAppts}
+                      onChange={(e) => setFilters(prev => ({ ...prev, groupAppts: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Group appointments only</span>
+                  </label>
+                  
+                  {/* Provider reservations filter */}
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.providerReserv}
+                      onChange={(e) => setFilters(prev => ({ ...prev, providerReserv: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Provider reservations only</span>
+                  </label>
+                  
+                  {/* Next hours filter */}
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.nextHours}
+                        onChange={(e) => setFilters(prev => ({ ...prev, nextHours: e.target.checked }))}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Appointments in next</span>
+                    </label>
+                    
+                    {filters.nextHours && (
+                      <div className="ml-7 flex items-center space-x-2">
+                        <select
+                          value={filters.hoursValue}
+                          onChange={(e) => setFilters(prev => ({ ...prev, hoursValue: parseInt(e.target.value) }))}
+                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          {[1, 2, 3, 4, 5, 6, 12, 24].map(hour => (
+                            <option key={hour} value={hour}>{hour}</option>
+                          ))}
+                        </select>
+                        <span className="text-sm text-gray-600">hours</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Clear filters button */}
+                {hasActiveFilters() && (
+                  <button
+                    onClick={() => {
+                      setFilters({
+                        personAppts: false,
+                        groupAppts: false,
+                        providerReserv: false,
+                        nextHours: false,
+                        hoursValue: 3
+                      });
+                    }}
+                    className="w-full mt-4 p-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Provider Tabs - Only show if providers are selected and in tabs mode */}
       {displayProviders.length > 0 && effectiveLayoutMode === 'tabs' && (
@@ -1338,11 +1784,11 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       )}
       
       {/* Calendar Body - Conditional layout based on provider layout mode */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="flex-1 overflow-y-auto bg-white smart-scrollbar calendar-main-scroll">
         {effectiveLayoutMode === 'columns' && view === 'day' && displayProviders.length > 0 ? (
           // Responsive Column Layout - Side-by-side calendars for Day view only
           <div className="h-full flex">
-            {displayProviders.map((provider, providerIndex) => (
+            {displayProviders.map((provider, _) => (
               <div 
                 key={provider.id} 
                 className={`border-r border-gray-200 last:border-r-0 flex-1 ${
@@ -1368,7 +1814,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 </div>
                 
                 {/* Provider Day Calendar Content */}
-                <div className="h-full overflow-y-auto">
+                <div className="h-full overflow-y-auto smart-scrollbar calendar-main-scroll">
                   {/* All-day events */}
                   <div className="border-b border-gray-200 min-h-[40px] flex items-center px-2 text-sm text-gray-500">
                     <div className="w-12 pr-1 text-right text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
@@ -1417,7 +1863,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
         ) : effectiveLayoutMode === 'vertical' && displayProviders.length > 0 ? (
           // Vertical Layout - Show all provider calendars stacked vertically
           <div className="h-full overflow-y-auto">
-            {displayProviders.map((provider, providerIndex) => (
+            {displayProviders.map((provider, _) => (
               <div key={provider.id} className="border-b border-gray-200 last:border-b-0">
                 {/* Provider Header */}
                 <div className="sticky top-0 z-20 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 px-6 py-3">
@@ -1593,5 +2039,3 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     </div>
   );
 };
-
-export default CalendarMainView;

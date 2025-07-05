@@ -1,11 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TopNavigationBar, MainNavigationBar } from '../components/old-ui'
-import { format } from 'date-fns'
-import { UserGroupIcon, UserIcon } from '@heroicons/react/24/outline'
+
 import CalendarSidebar from '../components/organisms/CalendarSidebar/calendar-sidebar'
-import CalendarDetails from '../components/organisms/CalendarSidebar/calendar-details'
-import CalendarMainView from '../components/organisms/CalendarView/calendar-main-view'
+import { CalendarMainView } from '../components/organisms/CalendarView/calendar-main-view'
+import ResponsiveLayout from '../components/layouts/ResponsiveLayout/responsive-layout'
 
 // Define event types
 type AppointmentType = 'Individual' | 'Group' | 'Provider';
@@ -35,6 +33,10 @@ interface CalendarEvent {
 
 /**
  * MyCalendar Page Component
+ * 
+ * Enhanced with responsive navigation for mobile-friendly experience:
+ * - Desktop: Traditional TopNavigationBar + MainNavigationBar
+ * - Mobile: Simplified top bar + bottom navigation with overlay menu
  * 
  * This page displays a Google Calendar-like interface with a 3-column layout.
  * Uses modular components for each section to improve code organization and maintainability.
@@ -204,68 +206,85 @@ const MyCalendar: React.FC = () => {
     }
   ];
 
-  return (
-    <div className="flex flex-col h-screen overflow-hidden bg-white">
-      {/* Top Navigation Bar */}
-      <TopNavigationBar 
-        hospitalName="DrCloud EHR"
-        userAvatarUrl="/images/avatars/default-avatar.png"
-      />
+  // Handle navigation from responsive navigation components
+  const handleNavigate = (itemName: string) => {
+    console.log('Navigate to:', itemName);
+    
+    if (itemName === 'Schedule') {
+      navigate('/schedule');
+    } else if (itemName === 'Inbox') {
+      navigate('/inbox');
+    } else if (itemName === 'Dashboard') {
+      navigate('/dashboard');
+    } else if (itemName === 'Settings') {
+      navigate('/settings');
+    } else if (itemName === 'Clients') {
+      navigate('/old-ui');
+    } else if (itemName === 'ADL') {
+      navigate('/adl');
+    } else if (itemName === 'Wait List') {
+      navigate('/wait-list');
+    } else if (itemName === 'Staff Dashboard') {
+      navigate('/staff-dashboard');
+    } else if (itemName === 'Practice') {
+      navigate('/practice');
+    } else if (itemName === 'Billing') {
+      navigate('/billing');
+    } else if (itemName === 'Reports') {
+      navigate('/reports');
+    } else if (itemName === 'Administration') {
+      navigate('/administration');
+    } else if (itemName === 'Notifications') {
+      navigate('/notifications');
+    }
+  };
 
-      {/* Main Navigation */}
-      <MainNavigationBar 
-        activeItem="Schedule"
-        onNavigate={(itemName) => {
-          console.log('Navigate to:', itemName);
-          
-          if (itemName === 'Schedule') {
-            navigate('/schedule');
-          } else if (itemName === 'Inbox') {
-            navigate('/inbox');
-          } else if (itemName === 'Dashboard') {
-            navigate('/dashboard');
-          } else if (itemName === 'Settings') {
-            navigate('/settings');
-          } else if (itemName === 'Clients') {
-            navigate('/old-ui');
-          }
-        }}
-      />
-      
+  // Handle search from responsive navigation
+  const handleSearch = (query: string) => {
+    console.log('Search query:', query);
+    setSearchQuery(query);
+  };
+
+  return (
+    <ResponsiveLayout
+      hospitalName="DrCloud EHR"
+      userAvatarUrl="/images/avatars/default-avatar.png"
+      activeItem="Schedule"
+      onNavigate={handleNavigate}
+      onSearch={handleSearch}
+    >
       {/* Calendar Interface */}
-      <div className="flex flex-1 overflow-hidden border-t bg-white">
-        {/* Left Column - Calendar Navigation */}
-        <CalendarSidebar 
-          currentDate={currentDate}
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          onCurrentMonthChange={setCurrentDate}
-          onCreateAppointment={handleCreateAppointment}
-          selectedProviders={selectedProviders}
-          onProviderSelectionChange={setSelectedProviders}
-        />
+      <div className="flex h-full overflow-hidden bg-white">
+        {/* Left Column - Calendar Navigation (Hidden on mobile) */}
+        <div className="hidden md:block">
+          <CalendarSidebar 
+            currentDate={currentDate}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            onCurrentMonthChange={setCurrentDate}
+            onCreateAppointment={handleCreateAppointment}
+            selectedProviders={selectedProviders}
+            onProviderSelectionChange={setSelectedProviders}
+          />
+        </div>
         
-        {/* Middle Column - Main Calendar View */}
-        <CalendarMainView
-          selectedDate={selectedDate}
-          view={view}
-          onViewChange={setView}
-          onDateChange={setSelectedDate}
-          onSettingsClick={handleSettingsClick}
-          events={sampleEvents}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          selectedProviders={selectedProviders}
-          availableProviders={availableProviders}
-        />
-        
-        {/* Right Column - Event Details - Hidden for now */}
-        {/* <CalendarDetails 
-          onCreateMeeting={handleCreateAppointment}
-          searchQuery={searchQuery}
-        /> */}
+        {/* Main Calendar View - Full width on mobile, flex-1 on desktop */}
+        <div className="flex-1">
+          <CalendarMainView
+            selectedDate={selectedDate}
+            view={view}
+            onViewChange={setView}
+            onDateChange={setSelectedDate}
+            onSettingsClick={handleSettingsClick}
+            events={sampleEvents}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedProviders={selectedProviders}
+            availableProviders={availableProviders}
+          />
+        </div>
       </div>
-    </div>
+    </ResponsiveLayout>
   )
 }
 

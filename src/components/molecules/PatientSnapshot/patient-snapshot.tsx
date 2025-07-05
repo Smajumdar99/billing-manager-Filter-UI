@@ -361,7 +361,7 @@ export const PatientSnapshot: FC<PatientSnapshotProps> = ({
   };
 
   const headerContent = (
-    <div className="relative flex items-center h-14 bg-blue-50/10 px-3 lg:px-4 w-full pt-0 rounded-lg border border-blue-300 shadow-lg overflow-hidden">
+    <div className="relative flex items-center h-14 bg-white px-3 lg:px-4 w-full pt-0 rounded-lg border border-blue-300 overflow-hidden">
       <FlickeringGrid
         className="absolute inset-0 -z-10"
         squareSize={6}
