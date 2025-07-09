@@ -254,9 +254,9 @@ const MyCalendar: React.FC = () => {
       onSearch={handleSearch}
     >
       {/* Calendar Interface */}
-      <div className="flex h-full overflow-hidden bg-white">
+      <div className="flex h-full overflow-hidden bg-white w-full min-w-0">
         {/* Left Column - Calendar Navigation (Hidden on mobile) */}
-        <div className="hidden md:block">
+        <div className="hidden md:block flex-shrink-0">
           <CalendarSidebar 
             currentDate={currentDate}
             selectedDate={selectedDate}
@@ -269,7 +269,7 @@ const MyCalendar: React.FC = () => {
         </div>
         
         {/* Main Calendar View - Full width on mobile, flex-1 on desktop */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <CalendarMainView
             selectedDate={selectedDate}
             view={view}

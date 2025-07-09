@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  ChevronDownIcon,
   Cog6ToothIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -36,7 +35,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
+  
 } from "@/components/ui/dropdown-menu";
 import WeekView from '../../molecules/WeekView/week-view';
 import MonthView from '../../molecules/MonthView/month-view';
@@ -1127,7 +1126,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
 
               {/* Filter dropdown overlay */}
               {showFilters && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-2rem)]">
+                  {/* Ensure filter dropdown doesn't overflow viewport */}
                   {/* Header */}
                   <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
                     <div className="flex items-center space-x-2">
@@ -1261,78 +1261,73 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           
           {/* Mobile: Filter button - Hidden, moved to hamburger menu */}
           
-          {/* View selector - Desktop only */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="hidden md:flex items-center px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
-              <span>{view === 'agenda' ? 'Agenda' : view.charAt(0).toUpperCase() + view.slice(1)}</span>
-              <ChevronDownIcon className="w-4 h-4 ml-1" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem 
-                className="flex justify-between items-center"
-                onClick={() => onViewChange('day')}
-              >
-                <div className="flex items-center">
-                  {view === 'day' && <CheckIcon className="w-4 h-4 mr-2" />}
-                  <span className={view !== 'day' ? "ml-6" : ""}>Day</span>
-                </div>
-                <DropdownMenuShortcut>1 or D</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                className="flex justify-between items-center"
-                onClick={() => onViewChange('week')}
-              >
-                <div className="flex items-center">
-                  {view === 'week' && <CheckIcon className="w-4 h-4 mr-2" />}
-                  <span className={view !== 'week' ? "ml-6" : ""}>Week</span>
-                </div>
-                <DropdownMenuShortcut>0 or W</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                className="flex justify-between items-center"
-                onClick={() => onViewChange('month')}
-              >
-                <div className="flex items-center">
-                  {view === 'month' && <CheckIcon className="w-4 h-4 mr-2" />}
-                  <span className={view !== 'month' ? "ml-6" : ""}>Month</span>
-                </div>
-                <DropdownMenuShortcut>M</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                className="flex justify-between items-center"
-                onClick={() => onViewChange('agenda')}
-              >
-                <div className="flex items-center">
-                  {view === 'agenda' && <CheckIcon className="w-4 h-4 mr-2" />}
-                  <span className={view !== 'agenda' ? "ml-6" : ""}>Agenda</span>
-                </div>
-                <DropdownMenuShortcut>A</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuItem className="flex justify-between items-center">
-                <span>Number of days</span>
-                <ChevronRightIcon className="w-4 h-4" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {/* Today button - Desktop only */}
-          <button 
-            onClick={goToToday}
-            className={`hidden md:flex px-4 py-1.5 text-sm font-medium border rounded-md transition-colors ${
-              isTodayActive() 
-                ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100' 
-                : 'text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`}
-            title="Go to Today"
-          >
-            Today
-          </button>
+          {/* View selector as tab bar with Today button */}
+          <div className="hidden md:flex items-center bg-gray-100 rounded-lg p-1">
+            {/* Today button */}
+            <button 
+              onClick={goToToday}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                isTodayActive() 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-gray-600 hover:bg-gray-200'
+              }`}
+              title="Go to Today"
+            >
+              Today
+            </button>
+            
+            {/* Separator */}
+            <div className="h-6 w-px bg-gray-300 mx-1"></div>
+            
+            {/* View tabs */}
+            <button 
+              onClick={() => onViewChange('day')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                view === 'day' 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-gray-600 hover:bg-gray-200'
+              }`}
+              title="Day view"
+            >
+              Day
+            </button>
+            
+            <button 
+              onClick={() => onViewChange('week')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                view === 'week' 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-gray-600 hover:bg-gray-200'
+              }`}
+              title="Week view"
+            >
+              Week
+            </button>
+            
+            <button 
+              onClick={() => onViewChange('month')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                view === 'month' 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-gray-600 hover:bg-gray-200'
+              }`}
+              title="Month view"
+            >
+              Month
+            </button>
+            
+            <button 
+              onClick={() => onViewChange('agenda')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                view === 'agenda' 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-gray-600 hover:bg-gray-200'
+              }`}
+              title="Agenda view"
+            >
+              Agenda
+            </button>
+          </div>
 
           {/* Navigation arrows - Always visible */}
           <div className="flex items-center">
@@ -1354,18 +1349,6 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           
           {/* Desktop-only controls */}
           <div className="hidden md:flex items-center space-x-3">
-            {/* Agenda button */}
-            <button 
-              onClick={() => onViewChange(view === 'agenda' ? 'day' : 'agenda')}
-              className={`px-4 py-1.5 text-sm font-medium border rounded-md transition-colors ${
-                view === 'agenda' 
-                  ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100' 
-                  : 'text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Agenda
-            </button>
-            
             {/* Settings button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1784,7 +1767,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       )}
       
       {/* Calendar Body - Conditional layout based on provider layout mode */}
-      <div className="flex-1 overflow-y-auto bg-white smart-scrollbar calendar-main-scroll">
+      <div className="flex-1 overflow-hidden bg-white smart-scrollbar calendar-main-scroll w-full min-w-0">
         {effectiveLayoutMode === 'columns' && view === 'day' && displayProviders.length > 0 ? (
           // Responsive Column Layout - Side-by-side calendars for Day view only
           <div className="h-full flex">
@@ -2020,12 +2003,14 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 </div>
               </div>
             ) : view === 'week' ? (
-              <WeekView 
-                selectedDate={selectedDate} 
-                events={filteredEvents}
-                timeSlots={timeSlots}
-                onEditEvent={handleEditEvent}
-              />
+              <div className="h-full w-full overflow-hidden">
+                <WeekView 
+                  selectedDate={selectedDate} 
+                  events={filteredEvents}
+                  timeSlots={timeSlots}
+                  onEditEvent={handleEditEvent}
+                />
+              </div>
             ) : (
               <MonthView 
                 selectedDate={selectedDate} 

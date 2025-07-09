@@ -103,7 +103,7 @@ const generateTimeSlots = () => {
   return slots;
 };
 
-const WeekView: React.FC<WeekViewProps> = ({ selectedDate, events, timeSlots, onEditEvent }) => {
+const WeekView: React.FC<WeekViewProps> = ({ selectedDate, events, onEditEvent }) => {
   // Use 30-minute intervals for time slots
   const slots = generateTimeSlots();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -121,44 +121,50 @@ const WeekView: React.FC<WeekViewProps> = ({ selectedDate, events, timeSlots, on
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Week header */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 min-w-0">
         <div className="w-16 flex-shrink-0" /> {/* Time column spacer */}
-        {weekDates.map((date, index) => (
-          <div 
-            key={index}
-            className="flex-1 text-center py-2 text-sm font-medium border-l border-gray-100 first:border-l-0"
-          >
-            <div className="text-gray-600">{format(date, 'EEE')}</div>
-            <div className="text-gray-900">{format(date, 'd')}</div>
-          </div>
-        ))}
+        <div className="flex flex-1 min-w-0">
+          {weekDates.map((date, index) => (
+            <div 
+              key={index}
+              className="flex-1 text-center py-2 text-sm font-medium border-l border-gray-100 first:border-l-0 min-w-0"
+              style={{ minWidth: '100px' }} // Ensure minimum readable width per day
+            >
+              <div className="text-gray-600">{format(date, 'EEE')}</div>
+              <div className="text-gray-900">{format(date, 'd')}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Time slots */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-auto">
         {slots.map((slot, slotIndex) => (
-          <div key={slotIndex} className="flex border-b border-gray-100 min-h-[32px]">
-            <div className="w-16 pl-2 text-left text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
+          <div key={slotIndex} className="flex border-b border-gray-100 min-h-[32px] min-w-0">
+            <div className="w-16 pl-2 text-left text-xs text-gray-500 py-2 sticky left-0 bg-white z-10 flex-shrink-0">
               {slot}
             </div>
-            {weekDates.map((date, dateIndex) => (
-              <div 
-                key={dateIndex} 
-                className="flex-1 border-l border-gray-100 first:border-l-0 relative"
-              >
-                {events
-                  .filter(event => eventMatchesSlot(event, slot))
-                  .map(event => (
-                    <EventCard 
-                      key={event.id} 
-                      event={event}
-                      onEditEvent={onEditEvent}
-                    />
-                  ))}
-              </div>
-            ))}
+            <div className="flex flex-1 min-w-0">
+              {weekDates.map((_, dateIndex) => (
+                <div 
+                  key={dateIndex} 
+                  className="flex-1 border-l border-gray-100 first:border-l-0 relative min-w-0"
+                  style={{ minWidth: '100px' }} // Ensure minimum readable width per day
+                >
+                  {events
+                    .filter(event => eventMatchesSlot(event, slot))
+                    .map(event => (
+                      <EventCard 
+                        key={event.id} 
+                        event={event}
+                        onEditEvent={onEditEvent}
+                      />
+                    ))}
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>

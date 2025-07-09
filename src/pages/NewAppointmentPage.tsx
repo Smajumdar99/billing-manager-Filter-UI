@@ -32,7 +32,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/molecule
 import GroupAppointmentForm from '../components/molecules/GroupAppointmentForm/group-appointment-form';
 import { Breadcrumb } from '../components/atoms/Breadcrumb/breadcrumb';
 import { useParams } from 'react-router-dom';
+import FindAvailableDialog from '@/components/organisms/FindAvailableDialog/find-available-dialog';
 import AppointmentEditActions from '../components/molecules/AppointmentEditActions/appointment-edit-actions';
+import { RecurringEditDialog } from '../components/molecules/RecurringEditDialog';
 // Import other atomic components and form sections as needed
 // (Assume Person and Provider form content is modularized or inline for now)
 
@@ -73,7 +75,8 @@ const NewAppointmentPage: React.FC = () => {
   const [status, setStatus] = useState('Scheduled');
   const [room, setRoom] = useState('');
   const [comments, setComments] = useState('');
-  const [isRepeating, setIsRepeating] = useState(false);
+  // Set isRepeating to true for group appointments in edit mode (for demo)
+  const [isRepeating, setIsRepeating] = useState(isEditMode && activeTab === 'group');
   const [repeatFrequency, setRepeatFrequency] = useState('every');
   const [repeatInterval, setRepeatInterval] = useState('day');
   const [repeatUntil, setRepeatUntil] = useState('');
@@ -81,6 +84,10 @@ const NewAppointmentPage: React.FC = () => {
   const [isTelehealth, setIsTelehealth] = useState(false);
   const [printAppointmentSlip, setPrintAppointmentSlip] = useState(false);
   const [showOnlyMine, setShowOnlyMine] = useState(false);
+  
+  // Recurring edit dialog state
+  const [showRecurringEditDialog, setShowRecurringEditDialog] = useState(false);
+  const [showFindAvailableDialog, setShowFindAvailableDialog] = useState(false);
 
   // Duration calculation function - matches Group form logic
   const calculateDuration = (start: string, end: string): number => {
@@ -191,10 +198,58 @@ const NewAppointmentPage: React.FC = () => {
     }
   }, [appointmentStartTime, duration, isAllDay]);
 
-  // Handler for Save (stub)
+  // Update isRepeating when switching to group tab in edit mode (for demo)
+  useEffect(() => {
+    if (isEditMode && activeTab === 'group') {
+      setIsRepeating(true);
+    }
+  }, [isEditMode, activeTab]);
+
+  // Handler for Save - checks for recurring appointments
   const handleSave = () => {
-    // TODO: Implement save logic
-    alert('Appointment saved!');
+    // Check if this is an edit mode and appointment is recurring
+    if (isEditMode && isRepeating) {
+      // Show recurring edit dialog to let user choose
+      setShowRecurringEditDialog(true);
+    } else {
+      // Save normally for non-recurring or new appointments
+      handleSaveAppointment('single');
+    }
+  };
+
+  // Actual save logic - handles both single and recurring saves
+  const handleSaveAppointment = (editType: 'single' | 'all') => {
+    // Close the recurring dialog if it was open
+    setShowRecurringEditDialog(false);
+    
+    // TODO: Implement actual save logic based on editType
+    if (editType === 'single') {
+      console.log('Saving only this occurrence...');
+      // API call to save only this occurrence
+      alert('This appointment occurrence saved!');
+    } else {
+      console.log('Saving all occurrences in the series...');
+      // API call to save all occurrences in the recurring series
+      alert('All appointment occurrences saved!');
+    }
+    
+    // TODO: Navigate back to calendar or show success message
+    // Example: navigate('/calendar');
+  };
+
+  // Handler for editing this occurrence only
+  const handleEditThisOccurrence = () => {
+    handleSaveAppointment('single');
+  };
+
+  // Handler for editing all occurrences
+  const handleEditAllOccurrences = () => {
+    handleSaveAppointment('all');
+  };
+
+  // Handler for closing recurring edit dialog
+  const handleCloseRecurringDialog = () => {
+    setShowRecurringEditDialog(false);
   };
 
   return (
@@ -220,7 +275,15 @@ const NewAppointmentPage: React.FC = () => {
               <Button type="button" variant="outline" size="sm" className="text-xs h-8 w-full sm:w-auto">Cancel</Button>
               {/* Only show Find Available for person or benefits tab */}
               {(activeTab === 'person' || activeTab === 'benefits') && (
-                <Button type="button" variant="outline" size="sm" className="text-xs h-8 w-full sm:w-auto">Find Available</Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs h-8 w-full sm:w-auto"
+                  onClick={() => setShowFindAvailableDialog(true)}
+                >
+                  Find Available
+                </Button>
               )}
               <Button type="button" variant="outline" size="sm" className="text-xs h-8 text-red-600 border-red-400 p-2 w-full sm:w-auto" aria-label="Delete">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -776,6 +839,21 @@ const NewAppointmentPage: React.FC = () => {
           </div>
         </form>
       </div>
+      
+      {/* Recurring Edit Dialog */}
+      <RecurringEditDialog
+        isOpen={showRecurringEditDialog}
+        onClose={handleCloseRecurringDialog}
+        onEditThis={handleEditThisOccurrence}
+        onEditAll={handleEditAllOccurrences}
+        appointmentTitle={title || 'Untitled Appointment'}
+      />
+      
+      {/* Find Available Dialog */}
+      <FindAvailableDialog
+        open={showFindAvailableDialog}
+        onClose={() => setShowFindAvailableDialog(false)}
+      />
     </div>
   );
 };

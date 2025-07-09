@@ -13,7 +13,6 @@ import {
   ArrowRightOnRectangleIcon,
   BookOpenIcon,
   ChevronLeftIcon,
-  UserCircleIcon,
   IdentificationIcon,
   LanguageIcon,
 } from '@heroicons/react/24/outline'
@@ -175,15 +174,19 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({ trigger, userInfo, variant =
         {trigger}
       </DropdownMenu.Trigger>
 
-      <DropdownMenu.Portal>
+      <DropdownMenu.Portal container={document.body}>
         <DropdownMenu.Content
           className={cn(
-            "w-[320px] rounded-md border bg-white p-2",
+            "w-[320px] rounded-md border bg-white p-2 shadow-lg",
             "data-[side=bottom]:animate-slideUpAndFade",
-            "data-[side=top]:animate-slideDownAndFade"
+            "data-[side=top]:animate-slideDownAndFade",
+            "z-[9999] relative", // High z-index to ensure it appears above calendar
+            "max-h-[80vh] overflow-y-auto smart-scrollbar dropdown-scroll" // Prevent overflow beyond viewport
           )}
           align="end"
           sideOffset={5}
+          avoidCollisions={true}
+          collisionPadding={10}
         >
           {/* User Info Section */}
           <div className="px-4 py-3 border-b border-gray-100">
