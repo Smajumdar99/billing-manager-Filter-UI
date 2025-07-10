@@ -3,12 +3,17 @@ import {
   XMarkIcon,
   UserIcon,
   UserGroupIcon,
+  UsersIcon,
   InformationCircleIcon,
   PhoneIcon,
   PrinterIcon,
   CalendarIcon,
-  ClockIcon
+  ClockIcon,
+  TrashIcon,
+  HeartIcon
 } from '@heroicons/react/24/outline'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faUserMd, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { Input } from '../../atoms/Input'
 import { Label } from '../../atoms/Label'
 import { 
@@ -179,17 +184,15 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'person' | 'provider' | 'group' | 'benefits')}>
                 <TabsList>
                   <TabsTrigger value="person">
-                    <UserIcon className="h-3.5 w-3.5 mr-1.5" /> Person
+                    <UserIcon className="h-4 w-4 mr-1.5" /> Person
                   </TabsTrigger>
                   <TabsTrigger value="provider">
-                    <UserIcon className="h-3.5 w-3.5 mr-1.5" /> Provider
+                    <FontAwesomeIcon icon={faUserMd} className="h-4 w-4 mr-1.5" /> Provider
                   </TabsTrigger>
                   <TabsTrigger value="group">
-                    <UserGroupIcon className="h-3.5 w-3.5 mr-1.5" /> Group
+                    <FontAwesomeIcon icon={faUsers} className="h-4 w-4 mr-1.5" /> Group
                   </TabsTrigger>
-                  <TabsTrigger value="benefits">
-                    <InformationCircleIcon className="h-3.5 w-3.5 mr-1.5" /> Benefits
-                  </TabsTrigger>
+
                 </TabsList>
                 {/* Tab Content: Render form sections based on selected tab */}
                 <TabsContent value="person">
@@ -197,10 +200,10 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                   <div>
                     {/* Main Content - Scrollable Area */}
                     <div className="p-4 space-y-4">
-                      {/* Basic Information Card */}
+                      {/* For Whom Card */}
                       <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-                          <CardTitle className="text-sm font-semibold text-gray-800">Basic Information</CardTitle>
+                          <CardTitle className="text-sm font-semibold text-gray-800">For Whom</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 grid grid-cols-2 gap-x-4 gap-y-3">
                           <div className="space-y-1">
@@ -217,34 +220,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                             </Select>
                           </div>
 
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category:*</Label>
-                              <div className="flex items-center">
-                                <Checkbox
-                                  id="showOnlyMine"
-                                  checked={showOnlyMine}
-                                  onCheckedChange={(checked) => setShowOnlyMine(checked as boolean)}
-                                  className="h-3 w-3"
-                                />
-                                <label htmlFor="showOnlyMine" className="ml-1.5 text-xs text-gray-600">
-                                  Show Only Mine
-                                </label>
-                              </div>
-                            </div>
-                            <Select value={encounterType} onValueChange={setEncounterType}>
-                              <SelectTrigger id="encounterType" className="h-8 text-sm">
-                                <SelectValue placeholder="-- Select Encounter Type --" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
-                                <SelectItem value="Follow-up">Follow-up</SelectItem>
-                                <SelectItem value="Therapy">Therapy</SelectItem>
-                                <SelectItem value="Medication Management">Medication Management</SelectItem>
-                                <SelectItem value="Crisis Intervention">Crisis Intervention</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+
 
                           <div className="space-y-1">
                             <Label htmlFor="title" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Title:</Label>
@@ -284,10 +260,10 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                           </div>
                         </CardContent>
                       </Card>
-                      {/* Date & Time Card */}
+                      {/* When Card */}
                       <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-                          <CardTitle className="text-sm font-semibold text-gray-800">Date & Time</CardTitle>
+                          <CardTitle className="text-sm font-semibold text-gray-800">When</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4">
                           <div className="space-y-3">
@@ -419,7 +395,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                                           className="h-8 text-sm pr-8"
                                           placeholder="Select end date"
                                         />
-                                        <CalendarIcon className="absolute right-2 top-2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                        <CalendarIcon className="absolute right-2 top-2 w-5 h-5 text-gray-400 pointer-events-none" />
                                       </div>
                                     </div>
                                   </div>
@@ -429,10 +405,10 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                           </div>
                         </CardContent>
                       </Card>
-                      {/* Provider Information Card */}
+                      {/* With Whom Card */}
                       <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-                          <CardTitle className="text-sm font-semibold text-gray-800">Provider Information</CardTitle>
+                          <CardTitle className="text-sm font-semibold text-gray-800">With Whom</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 grid grid-cols-2 gap-x-4 gap-y-3">
                           <div className="space-y-1">
@@ -509,6 +485,44 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
                           </div>
                         </CardContent>
                       </Card>
+                      
+                      {/* For What Card */}
+                      <Card className="shadow-none border-gray-200">
+                        <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+                          <CardTitle className="text-sm font-semibold text-gray-800">For What</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-3">
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact Type:*</Label>
+                              <div className="flex items-center">
+                                <Checkbox
+                                  id="showOnlyMine"
+                                  checked={showOnlyMine}
+                                  onCheckedChange={(checked) => setShowOnlyMine(checked as boolean)}
+                                  className="h-3 w-3"
+                                />
+                                <label htmlFor="showOnlyMine" className="ml-1.5 text-xs text-gray-600">
+                                  Show Only Mine
+                                </label>
+                              </div>
+                            </div>
+                            <Select value={encounterType} onValueChange={setEncounterType}>
+                              <SelectTrigger id="encounterType" className="h-8 text-sm">
+                                <SelectValue placeholder="-- Select Contact Type --" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
+                                <SelectItem value="Follow-up">Follow-up</SelectItem>
+                                <SelectItem value="Therapy">Therapy</SelectItem>
+                                <SelectItem value="Medication Management">Medication Management</SelectItem>
+                                <SelectItem value="Crisis Intervention">Crisis Intervention</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
                       {/* Additional Options Card */}
                       <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
@@ -785,6 +799,7 @@ export const AppointmentModal: FC<AppointmentModalProps> = ({
               size="sm"
               className="text-xs h-8 text-red-600 border-red-400"
             >
+              <TrashIcon className="w-4 h-4 mr-1" />
               Delete
             </Button>
             <Button

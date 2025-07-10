@@ -121,7 +121,7 @@ const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
   );
 
   return (
-    <div className="flex items-center bg-gradient-to-r from-primary to-orange-600 border-b border-blue-200 shadow-lg">
+    <div className="flex items-center bg-gradient-to-r from-primary to-primary/90 border-b border-blue-200 shadow-lg">
       <nav ref={navRef} className="flex w-full px-4 items-center">
         {/* Visible navigation items */}
         {visibleItems.map((item) => (

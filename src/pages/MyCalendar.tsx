@@ -48,9 +48,15 @@ const MyCalendar: React.FC = () => {
   const [view, setView] = useState<'day' | 'week' | 'month' | 'agenda'>('day');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Add activeTab state
+  const [activeTab, setActiveTab] = useState<'provider' | 'room' | 'patient'>('provider');
+  
   // Provider selection state
   const [selectedProviders, setSelectedProviders] = useState<string[]>(['sarah_wilson']); // Default to first provider
   
+  // Patient selection state
+  const [selectedPatients, setSelectedPatients] = useState<string[]>([]);
+
   // Available providers data (this should match the sidebar data)
   const availableProviders = [
     { id: 'sarah_wilson', value: 'sarah_wilson', label: 'Sarah Wilson, LCSW', status: 'active' as const, clientCount: 23 },
@@ -61,6 +67,15 @@ const MyCalendar: React.FC = () => {
     { id: 'robert_johnson', value: 'robert_johnson', label: 'Robert Johnson, LADC', status: 'active' as const, clientCount: 27 },
     { id: 'jennifer_davis', value: 'jennifer_davis', label: 'Jennifer Davis, LCSW-S', status: 'active' as const, clientCount: 19 },
     { id: 'thomas_martinez', value: 'thomas_martinez', label: 'Thomas Martinez, LPC-S', status: 'active' as const, clientCount: 22 }
+  ];
+
+  // Sample patient data
+  const availablePatients = [
+    { id: '1', value: 'john_doe', label: 'John Doe', status: 'active' },
+    { id: '2', value: 'jane_smith', label: 'Jane Smith', status: 'active' },
+    { id: '3', value: 'bob_johnson', label: 'Bob Johnson', status: 'active' },
+    { id: '4', value: 'alice_brown', label: 'Alice Brown', status: 'active' },
+    { id: '5', value: 'charlie_davis', label: 'Charlie Davis', status: 'active' }
   ];
 
   // Handle creating a new appointment or meeting
@@ -265,6 +280,9 @@ const MyCalendar: React.FC = () => {
             onCreateAppointment={handleCreateAppointment}
             selectedProviders={selectedProviders}
             onProviderSelectionChange={setSelectedProviders}
+            selectedPatients={selectedPatients}
+            onPatientSelectionChange={setSelectedPatients}
+            activeTab={activeTab}
           />
         </div>
         
@@ -281,6 +299,10 @@ const MyCalendar: React.FC = () => {
             onSearchChange={setSearchQuery}
             selectedProviders={selectedProviders}
             availableProviders={availableProviders}
+            selectedPatients={selectedPatients}
+            availablePatients={availablePatients}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
           />
         </div>
       </div>

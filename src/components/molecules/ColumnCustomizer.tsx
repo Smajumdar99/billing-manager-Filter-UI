@@ -129,7 +129,7 @@ export const ColumnCustomizer: React.FC<ColumnCustomizerProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className={cn("flex items-center gap-2", className)}
+          className={cn("flex items-center gap-2 bg-white hover:bg-gray-50", className)}
         >
           <AdjustmentsHorizontalIcon className="w-4 h-4" />
           Columns ({visibleCount})

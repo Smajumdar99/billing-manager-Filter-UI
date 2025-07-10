@@ -25,6 +25,11 @@ interface CalendarSidebarProps {
   onCreateAppointment: () => void;
   selectedProviders?: string[];
   onProviderSelectionChange?: (providers: string[]) => void;
+  // Add patients selection props
+  selectedPatients?: string[];
+  onPatientSelectionChange?: (patients: string[]) => void;
+  // Add activeTab prop
+  activeTab?: 'provider' | 'patient' | 'room';
 }
 
 // Sample location data for behavioral health clinics
@@ -78,6 +83,13 @@ const providerOptions = [
   { id: 'carlos_rivera', value: 'carlos_rivera', label: 'Carlos Rivera, LPC', status: 'inactive', clientCount: 0 }
 ];
 
+// Sample patient data for behavioral health clinics
+const patientOptions = [
+  { id: '1', value: 'john_doe', label: 'John Doe', status: 'active' },
+  { id: '2', value: 'jane_smith', label: 'Jane Smith', status: 'active' },
+  { id: '3', value: 'robert_johnson', label: 'Robert Johnson', status: 'active' },
+  { id: '4', value: 'maria_garcia', label: 'Maria Garcia', status: 'active' },
+];
 
 
 export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
@@ -87,7 +99,10 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   onCurrentMonthChange,
   onCreateAppointment,
   selectedProviders: externalSelectedProviders = ['sarah_wilson'], // Default to Sarah Wilson
-  onProviderSelectionChange
+  onProviderSelectionChange,
+  selectedPatients: externalSelectedPatients = [],
+  onPatientSelectionChange,
+  activeTab
 }) => {
   // Sidebar collapse state
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -97,6 +112,8 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
   const [selectedProviders, setSelectedProviders] = useState<string[]>(externalSelectedProviders);
+  // Patients filter state
+  const [selectedPatients, setSelectedPatients] = useState<string[]>(externalSelectedPatients);
 
 
   
@@ -115,6 +132,9 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   const [showInactiveLocations, setShowInactiveLocations] = useState(false);
   const [showLocationFilters, setShowLocationFilters] = useState(false);
   
+  // Add state for patient search
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  
   // Ref for filter menu
   const filterMenuRef = useRef<HTMLDivElement>(null);
   
@@ -129,6 +149,17 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
       onProviderSelectionChange(selectedProviders);
     }
   }, [selectedProviders, onProviderSelectionChange]);
+
+  // Sync external patient selection
+  useEffect(() => {
+    setSelectedPatients(externalSelectedPatients);
+  }, [externalSelectedPatients]);
+  // Notify parent when patient selection changes
+  useEffect(() => {
+    if (onPatientSelectionChange) {
+      onPatientSelectionChange(selectedPatients);
+    }
+  }, [selectedPatients, onPatientSelectionChange]);
 
   // Close filter menu when clicking outside
   useEffect(() => {
@@ -174,6 +205,15 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     );
   };
 
+  // Handle patient selection
+  const handlePatientToggle = (patientId: string) => {
+    setSelectedPatients(prev =>
+      prev.includes(patientId)
+        ? prev.filter(id => id !== patientId)
+        : [...prev, patientId]
+    );
+  };
+
   // Filter providers based on search term, status, and client count
   const filteredProviders = providerOptions.slice(1).filter(provider => {
     const matchesSearch = provider.label.toLowerCase().includes(providerSearchTerm.toLowerCase());
@@ -196,6 +236,11 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     const matchesSearch = location.label.toLowerCase().includes(locationSearchTerm.toLowerCase());
     return matchesSearch && location.status === 'active';
   });
+
+  // Filter patients based on search term
+  const filteredPatients = patientOptions.filter(patient =>
+    patient.label.toLowerCase().includes(patientSearchTerm.toLowerCase())
+  );
 
   // Handle select all providers
   const handleSelectAllProviders = () => {
@@ -288,6 +333,37 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   // Check if some filtered locations are selected
   const someFilteredLocationsSelected = filteredLocations.some(location => 
     selectedLocations.includes(location.value)
+  );
+
+  // Handle select all patients
+  const handleSelectAllPatients = () => {
+    const availablePatients = filteredPatients.map(patient => patient.value);
+    const allSelected = availablePatients.every(id => selectedPatients.includes(id));
+    
+    if (allSelected) {
+      // Deselect all filtered patients
+      setSelectedPatients(prev => prev.filter(id => !availablePatients.includes(id)));
+    } else {
+      // Select all filtered patients
+      setSelectedPatients(prev => {
+        const newSelection = [...prev];
+        availablePatients.forEach(id => {
+          if (!newSelection.includes(id)) {
+            newSelection.push(id);
+          }
+        });
+        return newSelection;
+      });
+    }
+  };
+
+  // Check if all filtered patients are selected
+  const allFilteredPatientsSelected = filteredPatients.length > 0 && 
+    filteredPatients.every(patient => selectedPatients.includes(patient.value));
+  
+  // Check if some filtered patients are selected
+  const someFilteredPatientsSelected = filteredPatients.some(patient => 
+    selectedPatients.includes(patient.value)
   );
 
   // Generate days for the mini calendar
@@ -526,8 +602,8 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
           </div>
         )}
         
-        {/* Providers Section - Only show when not collapsed */}
-        {!isCollapsed && (
+        {/* Providers Section - Only show when not collapsed and activeTab is provider */}
+        {!isCollapsed && activeTab === 'provider' && (
           <div className="px-4 mb-3 relative">
             {/* Title with filter icon */}
             <div className="flex items-center justify-between mb-2">
@@ -702,6 +778,64 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                 </div>
               ) : (
                 <div className="text-xs text-gray-500 py-4 text-center">No programs found</div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Patients Section - Only show when not collapsed and activeTab is patient */}
+        {!isCollapsed && activeTab === 'patient' && (
+          <div className="px-4 mb-3 relative">
+            {/* Title */}
+            <div className="mb-2">
+              <h3 className="text-xs font-semibold text-gray-700">Patients</h3>
+            </div>
+            {/* Search input for patients */}
+            <div className="mb-2">
+              <input
+                type="text"
+                placeholder="Search patients..."
+                value={patientSearchTerm}
+                onChange={(e) => setPatientSearchTerm(e.target.value)}
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              />
+            </div>
+            {/* Patients table */}
+            <div className="border border-gray-200 rounded-md overflow-hidden bg-white/60 backdrop-blur-sm">
+              {filteredPatients.length > 0 ? (
+                <div className="max-h-32 overflow-y-auto smart-scrollbar dropdown-scroll">
+                  {/* Table header */}
+                  <div className="bg-gray-50/80 border-b border-gray-200 px-2 py-1 flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredPatientsSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someFilteredPatientsSelected && !allFilteredPatientsSelected;
+                      }}
+                      onChange={handleSelectAllPatients}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1"
+                    />
+                    <span className="text-xs font-medium text-gray-600 flex-1">Patient</span>
+                  </div>
+                  {/* Table body */}
+                  <div>
+                    {filteredPatients.map((patient) => (
+                      <div key={patient.id} className={`flex items-center space-x-2 px-2 py-1.5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60 transition-colors ${selectedPatients.includes(patient.value) ? 'bg-blue-50/80 border-blue-200/50' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={selectedPatients.includes(patient.value)}
+                          onChange={() => handlePatientToggle(patient.value)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1"
+                        />
+                        <span className="text-xs flex-1 text-gray-700">
+                          {patient.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-500 py-4 text-center">No patients found</div>
               )}
             </div>
           </div>

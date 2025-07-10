@@ -27,8 +27,8 @@ import {
   ViewColumnsIcon,
   Bars3Icon
 } from '@heroicons/react/24/outline';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select';
 import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -88,12 +88,16 @@ interface CalendarMainViewProps {
   onViewChange: (view: 'day' | 'week' | 'month' | 'agenda') => void;
   onDateChange: (date: Date) => void;
   onSettingsClick: () => void;
-  onEditEvent?: (event: Event) => void;
+  onViewEvent?: (event: Event) => void;
   events?: Event[];
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   selectedProviders?: string[];
   availableProviders?: Provider[];
+  selectedPatients?: string[];
+  availablePatients?: { id: string; value: string; label: string; status: string }[];
+  activeTab: 'provider' | 'room' | 'patient';
+  onTabChange: (tab: 'provider' | 'room' | 'patient') => void;
 }
 
 type ColorScheme = {
@@ -174,8 +178,9 @@ const getEventBgColor = (type?: string) => {
 
 const EventCard: React.FC<{ 
   event: Event;
+  onViewEvent?: (event: Event) => void;
   onEditEvent?: (event: Event) => void;
-}> = ({ event, onEditEvent }) => {
+}> = ({ event, onViewEvent, onEditEvent }) => {
   const getEventIcon = () => {
     switch (event.type) {
       case 'Individual':
@@ -220,7 +225,7 @@ const EventCard: React.FC<{
   );
 
   return (
-    <EventPopover event={event} onEdit={onEditEvent}>
+    <EventPopover event={event} onEdit={onEditEvent} onView={onViewEvent}>
       {eventContent}
     </EventPopover>
   );
@@ -232,18 +237,22 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   onViewChange,
   onDateChange,
   onSettingsClick,
-  onEditEvent,
+  onViewEvent,
   events = [],
   searchQuery = '',
   onSearchChange,
   selectedProviders = [],
-  availableProviders = []
+  availableProviders = [],
+  selectedPatients = [],
+  availablePatients = [],
+  activeTab,
+  onTabChange
 }) => {
   // State for internal search functionality if no external handler provided
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   
   // State for tab functionality - Provider selected by default
-  const [activeTab, setActiveTab] = useState<'provider' | 'room'>('provider');
+  // const [activeTab, setActiveTab] = useState<'provider' | 'room' | 'patient'>('provider');
   
   // State for advanced search overlay
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
@@ -359,10 +368,12 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     onViewChange('day');
   };
 
-  // Helper function to check if selected date is today AND we're in day view
+  // Helper to check if selectedDate is today
   const isTodayActive = () => {
     const today = new Date();
-    return selectedDate.toDateString() === today.toDateString() && view === 'day';
+    return selectedDate.getDate() === today.getDate() &&
+      selectedDate.getMonth() === today.getMonth() &&
+      selectedDate.getFullYear() === today.getFullYear();
   };
 
   // Helper function to check if any filters are active
@@ -448,17 +459,12 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   const timeEvents = filteredEvents.filter(event => !event.isAllDay);
 
   // State for dropdown visibility
-  const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const searchOverlayRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsViewDropdownOpen(false);
-      }
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
         setShowFilters(false);
       }
@@ -846,16 +852,31 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
 
   const navigate = useNavigate();
 
-  // Handler for editing events (only navigates for Group events)
-  const handleEditEvent = (event: Event) => {
-    if (event.type === 'Group') {
-      // Navigate to Edit Appointment page for Group events
-      navigate(`/edit-appointment/${event.id}`);
-    } else if (onEditEvent) {
-      // Fallback to parent handler for other event types
-      onEditEvent(event);
-    }
+  // Handler for viewing events - Navigate to view appointment screen for all events
+  const handleViewEvent = (event: Event) => {
+    // Navigate to View Appointment page for all event types
+    navigate(`/view-appointment/${event.id}`);
   };
+
+  // Handler for editing events - Navigate to edit appointment screen for all events
+  const handleEditEvent = (event: Event) => {
+    // Navigate to Edit Appointment page for all event types
+    navigate(`/edit-appointment/${event.id}`);
+  };
+
+  // Patients to show (either from props or default)
+  const defaultPatients = [
+    { id: '1', value: 'john_doe', label: 'John Doe', status: 'active' },
+    { id: '2', value: 'jane_smith', label: 'Jane Smith', status: 'active' },
+    { id: '3', value: 'robert_johnson', label: 'Robert Johnson', status: 'active' },
+    { id: '4', value: 'maria_garcia', label: 'Maria Garcia', status: 'active' },
+  ];
+  const patientsToShow = availablePatients.length > 0 ? availablePatients : defaultPatients;
+  const selectedPatientsList = selectedPatients.length > 0 ? selectedPatients : [defaultPatients[0]?.value || ''];
+  // Filter patients to show only selected ones
+  const displayPatients = patientsToShow.filter(patient =>
+    selectedPatientsList.includes(patient.value)
+  );
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white">
@@ -885,36 +906,65 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
               }}
             />
           </div>
-          <div className="flex flex-col">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-800">
-              {getHeaderDate()}
-            </h2>
+          
+          {/* Date with navigation arrows and view button */}
+          <div className="flex items-center">
+            {/* Left arrow */}
+            {view !== 'agenda' && (
+              <button
+                onClick={goToPrevDate}
+                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Previous"
+              >
+                <ArrowLeftIcon className="w-4 h-4 text-gray-600" />
+              </button>
+            )}
             
-            {/* Tab Bar - Hidden on mobile, shown on desktop */}
-            <div className="hidden md:flex items-center mt-1">
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setActiveTab('provider')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
-                    activeTab === 'provider'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  Provider
-                </button>
-                <button
-                  onClick={() => setActiveTab('room')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
-                    activeTab === 'room'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  Room
-                </button>
+            <div className="flex items-center pr-3">
+              {/* Date display */}
+              <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                {getHeaderDate()}
+              </h2>
+              
+              {/* Show only the relevant button based on current view */}
+              <div className="ml-3">
+                {view === 'day' && (
+                  <button 
+                    onClick={goToToday}
+                    className="hidden md:flex items-center px-2.5 py-0.5 text-xs font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                  >
+                    Today
+                  </button>
+                )}
+                {view === 'week' && (
+                  <button 
+                    onClick={goToToday}
+                    className="hidden md:flex items-center px-2.5 py-0.5 text-xs font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                  >
+                    This Week
+                  </button>
+                )}
+                {view === 'month' && (
+                  <button 
+                    onClick={goToToday}
+                    className="hidden md:flex items-center px-2.5 py-0.5 text-xs font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                  >
+                    This Month
+                  </button>
+                )}
               </div>
             </div>
+            
+            {/* Right arrow */}
+            {view !== 'agenda' && (
+              <button
+                onClick={goToNextDate}
+                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Next"
+              >
+                <ArrowRightIcon className="w-4 h-4 text-gray-600" />
+              </button>
+            )}
           </div>
         </div>
         
@@ -1259,27 +1309,25 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 text-gray-600" />
           </button>
           
-          {/* Mobile: Filter button - Hidden, moved to hamburger menu */}
-          
-          {/* View selector as tab bar with Today button */}
-          <div className="hidden md:flex items-center bg-gray-100 rounded-lg p-1">
-            {/* Today button */}
-            <button 
-              onClick={goToToday}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                isTodayActive() 
-                  ? 'bg-white text-blue-600 shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-200'
-              }`}
-              title="Go to Today"
+          {/* Provider/Room/Patient selector */}
+          <div className="hidden md:block w-40 mr-4">
+            <Select 
+              value={activeTab}
+              onValueChange={(value: 'provider' | 'room' | 'patient') => onTabChange(value)}
             >
-              Today
-            </button>
-            
-            {/* Separator */}
-            <div className="h-6 w-px bg-gray-300 mx-1"></div>
-            
-            {/* View tabs */}
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select view" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="provider">Provider</SelectItem>
+                <SelectItem value="room">Room</SelectItem>
+                <SelectItem value="patient">Patient</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* View selector as tab bar */}
+          <div className="hidden md:flex items-center bg-gray-100 rounded-lg p-1">
             <button 
               onClick={() => onViewChange('day')}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
@@ -1326,24 +1374,6 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
               title="Agenda view"
             >
               Agenda
-            </button>
-          </div>
-
-          {/* Navigation arrows - Always visible */}
-          <div className="flex items-center">
-            <button 
-              onClick={goToPrevDate}
-              className="p-1.5 rounded-full hover:bg-gray-100"
-              title="Previous"
-            >
-              <ArrowLeftIcon className="w-4 h-4 text-gray-600" />
-            </button>
-            <button 
-              onClick={goToNextDate}
-              className="p-1.5 rounded-full hover:bg-gray-100"
-              title="Next"
-            >
-              <ArrowRightIcon className="w-4 h-4 text-gray-600" />
             </button>
           </div>
           
@@ -1768,30 +1798,31 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       
       {/* Calendar Body - Conditional layout based on provider layout mode */}
       <div className="flex-1 overflow-hidden bg-white smart-scrollbar calendar-main-scroll w-full min-w-0">
-        {effectiveLayoutMode === 'columns' && view === 'day' && displayProviders.length > 0 ? (
-          // Responsive Column Layout - Side-by-side calendars for Day view only
+        {effectiveLayoutMode === 'columns' && view === 'day' && (activeTab === 'provider' ? displayProviders.length > 0 : displayPatients.length > 0) ? (
           <div className="h-full flex">
-            {displayProviders.map((provider, _) => (
+            {(activeTab === 'provider' ? displayProviders : displayPatients).map((entity, _) => (
               <div 
-                key={provider.id} 
+                key={entity.id} 
                 className={`border-r border-gray-200 last:border-r-0 flex-1 ${
-                  displayProviders.length === 1 ? 'w-full' : 
-                  displayProviders.length === 2 ? 'w-1/2' : 
-                  displayProviders.length === 3 ? 'w-1/3' : 
+                  (activeTab === 'provider' ? displayProviders : displayPatients).length === 1 ? 'w-full' : 
+                  (activeTab === 'provider' ? displayProviders : displayPatients).length === 2 ? 'w-1/2' : 
+                  (activeTab === 'provider' ? displayProviders : displayPatients).length === 3 ? 'w-1/3' : 
                   'w-1/4'
                 }`}
-                style={{ minWidth: displayProviders.length > 2 ? '300px' : 'auto' }}
+                style={{ minWidth: (activeTab === 'provider' ? displayProviders : displayPatients).length > 2 ? '300px' : 'auto' }}
               >
-                {/* Provider Header */}
-                <div className="sticky top-0 z-20 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 px-4 py-2">
+                {/* Entity Header */}
+                <div className={`sticky top-0 z-20 ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-2`}>
                   <div className="flex items-center justify-center">
                     <div className="text-center">
-                      <h3 className="text-sm font-semibold text-blue-900 truncate">{provider.label}</h3>
-                      {provider.clientCount > 0 && (
-                        <span className="text-xs text-blue-600">
-                          {provider.clientCount} clients
-                        </span>
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        <h3 className={`text-sm font-semibold ${activeTab === 'provider' ? 'text-blue-900' : 'text-green-900'} truncate`}>{entity.label}</h3>
+                        {activeTab === 'provider' && 'clientCount' in entity && (entity as Provider).clientCount > 0 && (
+                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 font-medium">
+                            {(entity as Provider).clientCount} clients
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1808,6 +1839,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                         <EventCard 
                           key={event.id} 
                           event={event}
+                          onViewEvent={handleViewEvent}
                           onEditEvent={handleEditEvent}
                         />
                       ))}
@@ -1831,6 +1863,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                               <EventCard 
                                 key={event.id} 
                                 event={event}
+                                onViewEvent={handleViewEvent}
                                 onEditEvent={handleEditEvent}
                               />
                             ))
@@ -1843,22 +1876,23 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
               </div>
             ))}
           </div>
-        ) : effectiveLayoutMode === 'vertical' && displayProviders.length > 0 ? (
-          // Vertical Layout - Show all provider calendars stacked vertically
+        ) : effectiveLayoutMode === 'vertical' && (activeTab === 'provider' ? displayProviders.length > 0 : displayPatients.length > 0) ? (
           <div className="h-full overflow-y-auto">
-            {displayProviders.map((provider, _) => (
-              <div key={provider.id} className="border-b border-gray-200 last:border-b-0">
-                {/* Provider Header */}
-                <div className="sticky top-0 z-20 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 px-6 py-3">
+            {(activeTab === 'provider' ? displayProviders : displayPatients).map((entity, _) => (
+              <div key={entity.id} className="border-b border-gray-200 last:border-b-0">
+                {/* Entity Header */}
+                <div className={`sticky top-0 z-20 ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-6 py-3`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <UserIcon className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-blue-900">{provider.label}</h3>
-                      {provider.clientCount > 0 && (
-                        <span className="text-sm text-blue-600 bg-blue-200 px-2 py-1 rounded-full">
-                          {provider.clientCount} clients
-                        </span>
-                      )}
+                      {activeTab === 'provider' ? <UserIcon className="w-5 h-5 text-blue-600" /> : <UserIcon className="w-5 h-5 text-green-600" />}
+                      <div className="flex items-center gap-2">
+                        <h3 className={`text-lg font-semibold ${activeTab === 'provider' ? 'text-blue-900' : 'text-green-900'}`}>{entity.label}</h3>
+                        {activeTab === 'provider' && 'clientCount' in entity && (entity as Provider).clientCount > 0 && (
+                          <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full border border-blue-200 font-medium">
+                            {(entity as Provider).clientCount} clients
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1891,7 +1925,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                             <EventCard 
                               key={event.id} 
                               event={event}
-                              onEditEvent={handleEditEvent}
+                              onViewEvent={handleViewEvent}
                             />
                           ))}
                         </div>
@@ -1914,7 +1948,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                                   <EventCard 
                                     key={event.id} 
                                     event={event}
-                                    onEditEvent={handleEditEvent}
+                                    onViewEvent={handleViewEvent}
                                   />
                                 ))
                               }

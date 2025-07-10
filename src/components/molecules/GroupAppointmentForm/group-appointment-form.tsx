@@ -8,12 +8,14 @@ import { Button } from '../../atoms/Button';
 import { Switch } from '../../atoms/Switch/switch';
 
 import { Combobox, ComboboxOption } from '../../atoms/Combobox/Combobox';
-import { DataTable } from '../../organisms/DataTable';
-import { ColDef } from 'ag-grid-community';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/atoms/Tooltip/tooltip';
 import AddPatientsModal from './AddPatientsModal';
 import RoomAllocationModal from './RoomAllocationModal';
 import AddressSelectionModal from './AddressSelectionModal';
+// Import PatientsTable and types
+import { PatientsTable } from '../../organisms/PatientsTable';
+import { PatientData, PatientActionHandlers } from '../../../types/patients';
 
 // GroupAppointmentForm: Modular form for Group tab in AppointmentModal
 const GroupAppointmentForm: React.FC = () => {
@@ -88,21 +90,7 @@ const GroupAppointmentForm: React.FC = () => {
     { value: '1003425', label: 'Ivy Orange', description: '999-000-1111 | XXX-XX-1230 | 11/11/1991 | 1003425' },
   ], []);
 
-  // Memoize selected patient row data for DataTable
-  const selectedPatientRowData = useMemo(() => patientOptions
-    .filter(p => selectedPatients.includes(p.value))
-    .map(p => {
-      const [phone, ss, dob, extId] = (p.description || '').split(' | ');
-      return {
-        id: p.value,
-        name: p.label,
-        phone,
-        ss,
-        dob,
-        pid: p.value,
-        externalId: extId
-      };
-    }), [selectedPatients, patientOptions]);
+  // Removed unused selectedPatientRowData - now using PatientsTable component
 
   // Memoize event handlers
   const handleSelectedPatients = useCallback((newSelected: string[]) => {
@@ -114,28 +102,9 @@ const GroupAppointmentForm: React.FC = () => {
     setSelectedPatients(newSelected);
   }, [groupCapacity]);
 
-  const onSelectionChanged = useCallback((event: any) => {
-    const selectedRows = event.api.getSelectedRows();
-    if (selectedRows.length > groupCapacity) {
-      setCapacityError(true);
-      // Deselect the last selected row
-      event.node.setSelected(false);
-      return;
-    }
-    setCapacityError(false);
-    setSelectedPatients(selectedRows.map((row: any) => row.id));
-  }, [groupCapacity]);
+  // Removed unused onSelectionChanged - now using PatientsTable component
 
-  // AG Grid column definitions
-  const columnDefs: ColDef[] = [
-    { headerName: '', field: 'checkbox', checkboxSelection: true, headerCheckboxSelection: true, width: 40, suppressMenu: true, pinned: 'left' },
-    { headerName: 'Name', field: 'name', minWidth: 150 },
-    { headerName: 'Phone', field: 'phone', minWidth: 120 },
-    { headerName: 'SS', field: 'ss', minWidth: 120 },
-    { headerName: 'DOB', field: 'dob', minWidth: 120 },
-    { headerName: 'PID', field: 'pid', minWidth: 100 },
-    { headerName: 'External ID', field: 'externalId', minWidth: 100 },
-  ];
+  // Removed unused AG Grid column definitions - now using PatientsTable component
 
   // Handler for Add to Event
   const handleAddToEvent = useCallback(() => {
@@ -147,6 +116,75 @@ const GroupAppointmentForm: React.FC = () => {
     setAddPatientsModalOpen(false);
     setSelectedPatients([]); // Clear modal selection
   }, [selectedPatients]);
+
+  // Transform patient data to match PatientData interface
+  const transformedPatients: PatientData[] = useMemo(() => {
+    return patientOptions
+      .filter(p => groupEventPatients.includes(p.value))
+      .map(p => {
+        const [phone, ss, dob, extId] = (p.description || '').split(' | ');
+        return {
+          id: p.value,
+          clientName: p.label,
+          allowEmail: Math.random() > 0.5, // Random for demo
+          email: `${p.label.toLowerCase().replace(/[^a-z]+/g, '.')}@email.com`,
+          notes: 'Group appointment participant',
+          primaryCounselor: 'Admin, Ensoftek',
+          insurance: 'MHSA',
+          serviceProgram: 'A-AADO',
+          status: 'Scheduled',
+          encounter: 'Pending',
+          benefits: 'Active',
+          isSignedIn: false
+        };
+      });
+  }, [groupEventPatients, patientOptions]);
+
+  // Patient action handlers for PatientsTable
+  const patientActionHandlers: PatientActionHandlers = {
+    onSignInOut: (patient) => {
+      console.log('Sign in/out patient:', patient);
+      // TODO: Implement sign in/out logic
+    },
+    onViewNotes: (patient) => {
+      console.log('View notes for patient:', patient);
+      // TODO: Implement view notes logic
+    },
+    onGoldenThreat: (patient) => {
+      console.log('Golden threat for patient:', patient);
+      // TODO: Implement golden threat logic
+    },
+    onPriorAuth: (patient) => {
+      console.log('Prior auth for patient:', patient);
+      // TODO: Implement prior auth logic
+    },
+    onUndoCheckIn: (patient) => {
+      console.log('Undo check-in for patient:', patient);
+      // TODO: Implement undo check-in logic
+    },
+    onEditEncounterTime: (patient) => {
+      console.log('Edit encounter time for patient:', patient);
+      // TODO: Implement edit encounter time logic
+    },
+    onRulesSatisfied: (patient) => {
+      console.log('Rules satisfied for patient:', patient);
+      // TODO: Implement rules satisfied logic
+    },
+    onViewEncounter: (patient) => {
+      console.log('View encounter for patient:', patient);
+      // TODO: Implement view encounter logic
+    },
+    onNotInterested: (patient) => {
+      console.log('Not interested for patient:', patient);
+      // TODO: Implement not interested logic
+    }
+  };
+
+  // Handle patient updates from PatientsTable
+  const handlePatientsUpdate = useCallback((updatedPatients: PatientData[]) => {
+    console.log('Patients updated:', updatedPatients);
+    // TODO: Handle patient updates if needed
+  }, []);
 
   // Handle room selection from RoomAllocationModal
   const handleRoomSelected = useCallback((room: any) => {
@@ -163,261 +201,340 @@ const GroupAppointmentForm: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Main Group Appointment Form Card */}
-      <Card className="shadow-none border-gray-200">
-        <CardContent className="p-4 grid grid-cols-2 gap-x-4 gap-y-3">
-          {/* Left Column */}
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="groupProgram" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program:*</Label>
-              <Select>
-                <SelectTrigger id="groupProgram" className="h-8 text-sm">
-                  <SelectValue placeholder="A-AADO" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="A-AADO">A-AADO</SelectItem>
-                  <SelectItem value="B-BILL">B-BILL</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="groupBillingLocation" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Billing Location:*</Label>
-              <Select>
-                <SelectTrigger id="groupBillingLocation" className="h-8 text-sm">
-                  <SelectValue placeholder="Select Billing Location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="loc1">Location 1</SelectItem>
-                  <SelectItem value="loc2">Location 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="groupCategory" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category:</Label>
-              <Select>
-                <SelectTrigger id="groupCategory" className="h-8 text-sm">
-                  <SelectValue placeholder="-- Select One --" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cat1">Category 1</SelectItem>
-                  <SelectItem value="cat2">Category 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="groupLocation" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:*</Label>
-              <Select>
-                <SelectTrigger id="groupLocation" className="h-8 text-sm">
-                  <SelectValue placeholder="-- Select Location --" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="main">Main Clinic</SelectItem>
-                  <SelectItem value="east">East Wing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="groupIncludedPrograms" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Included Programs:</Label>
-              <Input id="groupIncludedPrograms" className="h-8 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="groupProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Provider:</Label>
-              <Select>
-                <SelectTrigger id="groupProvider" className="h-8 text-sm">
-                  <SelectValue placeholder="Admin, Ensoftek" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin, Ensoftek</SelectItem>
-                  <SelectItem value="provider2">Provider 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="groupSupervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:*</Label>
-              <Select>
-                <SelectTrigger id="groupSupervisingProvider" className="h-8 text-sm">
-                  <SelectValue placeholder="-- Unassigned --" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">-- Unassigned --</SelectItem>
-                  <SelectItem value="supervisor1">Supervisor 1</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="groupAssistingStaff" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assisting Staff:</Label>
-              <Input id="groupAssistingStaff" className="h-8 text-sm" />
-            </div>
-          </div>
-          {/* Right Column - Enhanced DATE Section */}
-          <div className="space-y-4">
-            {/* Date Input with All Day Event Select */}
-            <div className="space-y-2">
-              <Label htmlFor="groupDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date:</Label>
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Input 
-                    id="groupDate" 
-                    type="date" 
-                    className="h-9 text-sm w-44 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch 
-                    id="groupAllDayEvent"
-                    checked={isAllDayEvent}
-                    onCheckedChange={setIsAllDayEvent}
-                  />
-                  <label htmlFor="groupAllDayEvent" className="text-sm text-gray-700 font-medium cursor-pointer">
-                    All day event
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Time Controls - Hidden when All Day Event is on */}
-            {!isAllDayEvent && (
+    <TooltipProvider>
+      <div className="p-4 space-y-4">
+      {/* When and Where Sections Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* When Section */}
+        <Card className="shadow-none border-gray-200">
+          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+            <CardTitle className="text-sm font-semibold text-gray-800">When</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="space-y-4">
+              {/* Date Input with All Day Event Select */}
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Time:</Label>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
+                <Label htmlFor="groupDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date:</Label>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
                     <Input 
-                      id="groupStartTime" 
-                      type="time" 
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                    />
-                    <span className="text-sm text-gray-400">—</span>
-                    <Input 
-                      id="groupEndTime" 
-                      type="time" 
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      id="groupDate" 
+                      type="date" 
+                      className="h-9 text-sm w-44 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                     />
                   </div>
-                  {duration > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-md border border-blue-200">
-                      <span className="text-sm font-semibold text-blue-700">{duration}</span>
-                      <span className="text-xs text-blue-600 font-medium">mins</span>
+                  <div className="flex items-center gap-2">
+                    <Switch 
+                      id="groupAllDayEvent"
+                      checked={isAllDayEvent}
+                      onCheckedChange={setIsAllDayEvent}
+                    />
+                    <label htmlFor="groupAllDayEvent" className="text-sm text-gray-700 font-medium cursor-pointer">
+                      All day event
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Controls - Hidden when All Day Event is on */}
+              {!isAllDayEvent && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Time:</Label>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        id="groupStartTime" 
+                        type="time" 
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      />
+                      <span className="text-sm text-gray-400">—</span>
+                      <Input 
+                        id="groupEndTime" 
+                        type="time" 
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      />
                     </div>
+                    {duration > 0 && (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-md border border-blue-200">
+                        <span className="text-sm font-semibold text-blue-700">{duration}</span>
+                        <span className="text-xs text-blue-600 font-medium">mins</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Repeats Switch */}
+              <div className="flex items-center gap-3">
+                <Switch 
+                  id="groupRepeats"
+                  checked={hasRepeats}
+                  onCheckedChange={setHasRepeats}
+                />
+                <label htmlFor="groupRepeats" className="text-sm text-gray-700 font-medium cursor-pointer">
+                  Repeats
+                </label>
+              </div>
+
+              {/* Repeat Controls - Only show when Repeats is on */}
+              {hasRepeats && (
+                <div className="space-y-3 pl-7 border-l-2 border-blue-100">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Select>
+                      <SelectTrigger className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <SelectValue placeholder="every" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="every">every</SelectItem>
+                        <SelectItem value="every other">every other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select>
+                      <SelectTrigger className="h-9 text-sm w-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <SelectValue placeholder="day" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="day">day</SelectItem>
+                        <SelectItem value="week">week</SelectItem>
+                        <SelectItem value="month">month</SelectItem>
+                        <SelectItem value="year">year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-500 font-medium">until</span>
+                    <div className="relative">
+                      <Input 
+                        id="groupRepeatUntil" 
+                        type="date" 
+                        className="h-9 text-sm w-40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        placeholder="dd/mm/yyyy" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Where Section */}
+        <Card className="shadow-none border-gray-200">
+          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+            <CardTitle className="text-sm font-semibold text-gray-800">Where</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Event Address:</Label>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className={selectedAddress ? "text-green-600 text-xs border-green-300" : "text-blue-600 text-xs"}
+                    onClick={() => setShowAddressSelectionModal(true)}
+                  >
+                    {selectedAddress ? 'Change Address' : 'Select Address'}
+                  </Button>
+                  {selectedAddress ? (
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">{selectedAddress.name}</div>
+                      <div className="text-xs text-gray-600">
+                        {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} {selectedAddress.zipCode}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-700">145, 8th Avenue<br />Portland, FL - 433323455</span>
                   )}
                 </div>
               </div>
-            )}
-
-            {/* Repeats Switch */}
-            <div className="flex items-center gap-3">
-              <Switch 
-                id="groupRepeats"
-                checked={hasRepeats}
-                onCheckedChange={setHasRepeats}
-              />
-              <label htmlFor="groupRepeats" className="text-sm text-gray-700 font-medium cursor-pointer">
-                Repeats
-              </label>
-            </div>
-
-            {/* Repeat Controls - Only show when Repeats is on */}
-            {hasRepeats && (
-              <div className="space-y-3 pl-7 border-l-2 border-blue-100">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Select>
-                    <SelectTrigger className="h-9 text-sm w-28 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                      <SelectValue placeholder="every" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="every">every</SelectItem>
-                      <SelectItem value="every other">every other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select>
-                    <SelectTrigger className="h-9 text-sm w-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                      <SelectValue placeholder="day" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="day">day</SelectItem>
-                      <SelectItem value="week">week</SelectItem>
-                      <SelectItem value="month">month</SelectItem>
-                      <SelectItem value="year">year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500 font-medium">until</span>
-                  <div className="relative">
-                    <Input 
-                      id="groupRepeatUntil" 
-                      type="date" 
-                      className="h-9 text-sm w-40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                      placeholder="dd/mm/yyyy" 
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="pt-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                className={selectedRoom ? "text-green-600 text-xs border-green-300" : "text-blue-600 text-xs"}
-                onClick={() => setShowRoomAllocationModal(true)}
-              >
-                {selectedRoom ? 'Change Room' : 'Allocate Room'}
-              </Button>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Event Address:</Label>
-              <div className="flex items-center gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  className={selectedAddress ? "text-green-600 text-xs border-green-300" : "text-blue-600 text-xs"}
-                  onClick={() => setShowAddressSelectionModal(true)}
-                >
-                  {selectedAddress ? 'Change Address' : 'Select Address'}
-                </Button>
-                {selectedAddress ? (
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900">{selectedAddress.name}</div>
-                    <div className="text-xs text-gray-600">
-                      {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} {selectedAddress.zipCode}
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-xs text-gray-700">145, 8th Avenue<br />Portland, FL - 433323455</span>
-                )}
-              </div>
-            </div>
-            
-            {/* Selected Room Display */}
-            {selectedRoom && (
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Allocated Room:</Label>
-                <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-green-800">{selectedRoom.name}</div>
-                    <div className="text-xs text-green-600">
-                      {selectedRoom.building} • Floor {selectedRoom.floor} • Capacity: {selectedRoom.capacity}
-                    </div>
-                  </div>
+              
+              {/* Room Allocation */}
+              {!selectedRoom ? (
+                <div className="pt-2">
                   <Button 
                     type="button" 
-                    variant="ghost" 
+                    variant="outline" 
                     size="sm" 
-                    onClick={() => setSelectedRoom(null)}
-                    className="text-green-600 hover:text-green-800 p-1"
+                    className="text-blue-600 text-xs"
+                    onClick={() => setShowRoomAllocationModal(true)}
                   >
-                    <XMarkIcon className="w-4 h-4" />
+                    Allocate Room
                   </Button>
                 </div>
+              ) : (
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Allocated Room:</Label>
+                  <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-green-800">{selectedRoom.name}</div>
+                      <div className="text-xs text-green-600">
+                        {selectedRoom.building} • Floor {selectedRoom.floor} • Capacity: {selectedRoom.capacity}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setShowRoomAllocationModal(true)}
+                            className="text-green-600 hover:text-green-800 p-1"
+                          >
+                            <PencilIcon className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit room allocation</p>
+                        </TooltipContent>
+                      </TooltipRoot>
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setSelectedRoom(null)}
+                            className="text-green-600 hover:text-green-800 p-1"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Release room</p>
+                        </TooltipContent>
+                      </TooltipRoot>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* With Whom and For What Sections Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* With Whom Section */}
+        <Card className="shadow-none border-gray-200">
+          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+            <CardTitle className="text-sm font-semibold text-gray-800">With Whom</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="groupProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Provider:</Label>
+                <Select>
+                  <SelectTrigger id="groupProvider" className="h-8 text-sm">
+                    <SelectValue placeholder="Admin, Ensoftek" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin, Ensoftek</SelectItem>
+                    <SelectItem value="provider2">Provider 2</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+              <div className="space-y-1">
+                <Label htmlFor="groupSupervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:*</Label>
+                <Select>
+                  <SelectTrigger id="groupSupervisingProvider" className="h-8 text-sm">
+                    <SelectValue placeholder="-- Unassigned --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">-- Unassigned --</SelectItem>
+                    <SelectItem value="supervisor1">Supervisor 1</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="groupAssistingStaff" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assisting Staff:</Label>
+                <Input id="groupAssistingStaff" className="h-8 text-sm" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* For What Section */}
+        <Card className="shadow-none border-gray-200">
+          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+            <CardTitle className="text-sm font-semibold text-gray-800">For What</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="groupCategory" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category:</Label>
+                <Select>
+                  <SelectTrigger id="groupCategory" className="h-8 text-sm">
+                    <SelectValue placeholder="-- Select One --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cat1">Category 1</SelectItem>
+                    <SelectItem value="cat2">Category 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="groupProgram" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program:*</Label>
+                <Select>
+                  <SelectTrigger id="groupProgram" className="h-8 text-sm">
+                    <SelectValue placeholder="A-AADO" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A-AADO">A-AADO</SelectItem>
+                    <SelectItem value="B-BILL">B-BILL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="groupBillingLocation" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Billing Location:*</Label>
+                <Select>
+                  <SelectTrigger id="groupBillingLocation" className="h-8 text-sm">
+                    <SelectValue placeholder="Select Billing Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="loc1">Location 1</SelectItem>
+                    <SelectItem value="loc2">Location 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="groupLocation" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:*</Label>
+                <Select>
+                  <SelectTrigger id="groupLocation" className="h-8 text-sm">
+                    <SelectValue placeholder="-- Select Location --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="main">Main Clinic</SelectItem>
+                    <SelectItem value="east">East Wing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="groupIncludedPrograms" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Included Programs:</Label>
+                <Input id="groupIncludedPrograms" className="h-8 text-sm" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Options Section */}
+      <Card className="shadow-none border-gray-200">
+        <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+          <CardTitle className="text-sm font-semibold text-gray-800">Additional Options</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="space-y-4">
+            {/* Telehealth Switch */}
             <div className="flex items-center gap-3 pt-2">
               <Switch
                 id="groupTelehealth"
@@ -428,6 +545,7 @@ const GroupAppointmentForm: React.FC = () => {
                 Setup as Telehealth Appointment
               </label>
             </div>
+            
             {/* Telehealth Details - show when switch is ON */}
             {isTelehealth && (
               <div className="mt-4 p-4 rounded-lg bg-blue-50 border border-blue-100 space-y-4">
@@ -497,29 +615,40 @@ const GroupAppointmentForm: React.FC = () => {
                 </div>
               </div>
             )}
+            
+            {/* Group Notes and Plan */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="groupNotes" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Group Notes:</Label>
+                <Textarea id="groupNotes" className="text-sm" rows={2} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="groupPlan" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan:</Label>
+                <Textarea id="groupPlan" className="text-sm" rows={2} />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
-      {/* Group Notes and Plan */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <Label htmlFor="groupNotes" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Group Notes:</Label>
-          <Textarea id="groupNotes" className="text-sm" rows={2} />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="groupPlan" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan:</Label>
-          <Textarea id="groupPlan" className="text-sm" rows={2} />
-        </div>
-      </div>
-      {/* Prominent Add Patients Section (button always visible) */}
-      <Card className="mt-6 border-blue-400 bg-blue-50">
-        <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4 p-4">
-          <span className="text-base font-bold text-blue-900 flex-1">Would you like to add Patients to this Appointment?</span>
-          <Button type="button" variant="default" className="text-white font-semibold px-6 py-2 rounded shadow" onClick={() => setAddPatientsModalOpen(true)}>
-            Add Patients
-          </Button>
+
+      {/* For Whom Section */}
+      <Card className="shadow-none border-gray-200">
+        <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+          <CardTitle className="text-sm font-semibold text-gray-800">For Whom</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          {/* Prominent Add Patients Section */}
+          <div className="border-blue-400 bg-blue-50 rounded-lg p-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <span className="text-base font-bold text-blue-900 flex-1">Would you like to add Patients to this Appointment?</span>
+              <Button type="button" variant="default" className="text-white font-semibold px-6 py-2 rounded shadow" onClick={() => setAddPatientsModalOpen(true)}>
+                Add Patients
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
+      
       {/* AddPatientsModal rendered here */}
       {addPatientsModalOpen && (
         <AddPatientsModal
@@ -556,36 +685,31 @@ const GroupAppointmentForm: React.FC = () => {
         onAddressSelected={handleAddressSelected}
         selectedAddress={selectedAddress}
       />
-      {/* Show groupEventPatients in AG Grid table below Add Patients section */}
+      {/* Show groupEventPatients in PatientsTable below Add Patients section */}
       <div className="mt-6">
-        <h3 className="text-sm font-semibold text-gray-800 mb-2">Patients Added to Event</h3>
         {groupEventPatients.length === 0 ? (
-          <div className="text-xs text-gray-400">No patients have been added to this event yet.</div>
+          <Card className="shadow-none border-gray-200">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="text-sm font-semibold text-gray-800 mb-2">Patients Added to Event</div>
+                <div className="text-xs text-gray-400">No patients have been added to this event yet.</div>
+              </div>
+            </CardContent>
+          </Card>
         ) : (
-          <DataTable
-            rowData={patientOptions.filter(p => groupEventPatients.includes(p.value)).map(p => {
-              const [phone, ss, dob, extId] = (p.description || '').split(' | ');
-              return {
-                id: p.value,
-                name: p.label,
-                phone,
-                ss,
-                dob,
-                pid: p.value,
-                externalId: extId
-              };
-            })}
-            columnDefs={columnDefs}
-            className="w-full"
-            gridOptions={{
-              domLayout: 'autoHeight',
-              pagination: false,
-              overlayNoRowsTemplate: '<span>No patients found.</span>',
-            }}
+          <PatientsTable
+            patients={transformedPatients}
+            title="Patients Added to Event"
+            showGroupActions={true}
+            actionHandlers={patientActionHandlers}
+            maxHeight="80"
+            onPatientsUpdate={handlePatientsUpdate}
+            className="shadow-none border-gray-200"
           />
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
