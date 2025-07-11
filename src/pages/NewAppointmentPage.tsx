@@ -277,22 +277,17 @@ const NewAppointmentPage: React.FC = () => {
       <MainNavigationBar activeItem="Schedule" />
       <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col px-2 sm:px-4">
         {/* Breadcrumb */}
-        <div className="px-0 pt-4 pb-0">
+        <div className="px-0 pt-4 pb-2">
           <Breadcrumb items={[
             { label: 'Schedule', href: '/my-calendar' },
             { label: 'New Appointment' }
           ]} />
         </div>
-        {/* Page Header */}
-        <div className="px-0 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isEditMode ? 'Edit Appointment' : 'Add New Appointment'}
-          </h1>
-        </div>
+
         {/* Main Content - Scrollable Area */}
         <form className="flex-1 p-0 pt-0" onSubmit={e => { e.preventDefault(); handleSave(); }}>
           {/* Card with fixed height and internal scroll, responsive */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mx-auto" style={{ height: '82vh', overflowY: 'auto', maxWidth: '100%' }}>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mx-auto" style={{ height: '84vh', overflowY: 'auto', maxWidth: '100%' }}>
             {/* Appointment Type Selection as Tab Bar and Tab Content */}
             <div className="p-2 sm:p-4 border-b border-gray-100">
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'person' | 'provider' | 'group' | 'benefits')}>
@@ -520,7 +515,7 @@ const NewAppointmentPage: React.FC = () => {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label htmlFor="program" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program:<span className="text-red-500">*</span></Label>
+                            <Label htmlFor="program" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program:</Label>
                             <Select value={program} onValueChange={setProgram}>
                               <SelectTrigger id="program" className="h-8 text-sm">
                                 <SelectValue placeholder="Select Program" />
@@ -534,7 +529,7 @@ const NewAppointmentPage: React.FC = () => {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label htmlFor="billingProgram" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Billing Program:<span className="text-red-500">*</span></Label>
+                            <Label htmlFor="billingProgram" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Billing Program:</Label>
                             <Select value={billingProgram} onValueChange={setBillingProgram}>
                               <SelectTrigger id="billingProgram" className="h-8 text-sm">
                                 <SelectValue placeholder="Select Billing Program" />
@@ -547,7 +542,7 @@ const NewAppointmentPage: React.FC = () => {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label htmlFor="location" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:<span className="text-red-500">*</span></Label>
+                            <Label htmlFor="location" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:</Label>
                             <Select value={location} onValueChange={setLocation}>
                               <SelectTrigger id="location" className="h-8 text-sm">
                                 <SelectValue placeholder="Select Location" />
@@ -572,7 +567,7 @@ const NewAppointmentPage: React.FC = () => {
                         <CardContent className="p-4 space-y-3">
                           <div className="space-y-1">
                             <div className="flex justify-between">
-                              <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact Type:*</Label>
+                              <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact Type:</Label>
                               <div className="flex items-center">
                                 <Checkbox
                                   id="showOnlyMine"
