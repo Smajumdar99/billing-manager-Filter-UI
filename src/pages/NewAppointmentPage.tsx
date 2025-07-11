@@ -567,7 +567,7 @@ const NewAppointmentPage: React.FC = () => {
                         <CardContent className="p-4 space-y-3">
                           <div className="space-y-1">
                             <div className="flex justify-between">
-                              <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact Type:</Label>
+                              <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact Type:<span className="text-red-500">*</span></Label>
                               <div className="flex items-center">
                                 <Checkbox
                                   id="showOnlyMine"
