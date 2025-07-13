@@ -40,10 +40,6 @@ export interface PatientsTableProps {
   className?: string;
   maxHeight?: string;
   onPatientsUpdate?: (patients: PatientData[]) => void;
-}
-
-export interface GroupActionsData {
-  status?: string;
-  payer?: string;
-  feePaid?: string;
+  showAddMoreButton?: boolean;
+  onAddMorePatients?: () => void;
 } 

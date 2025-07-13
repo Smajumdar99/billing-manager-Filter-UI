@@ -12,10 +12,11 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/Card';
+import { Button } from '@/components/atoms/Button';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ColDef } from 'ag-grid-community';
 import { ColumnCustomizer, ColumnConfig } from '@/components/molecules/ColumnCustomizer';
-import { GroupActions } from '@/components/molecules/GroupActions/group-actions';
+import { GroupActions, GroupActionsData } from '@/components/molecules/GroupActions/group-actions';
 import { 
   TooltipProvider, 
   TooltipRoot, 
@@ -25,8 +26,7 @@ import {
 import { 
   PatientData, 
   PatientActionHandlers, 
-  PatientsTableProps, 
-  GroupActionsData 
+  PatientsTableProps
 } from '@/types/patients';
 
 /**
@@ -38,12 +38,14 @@ import {
 
 const PatientsTable: React.FC<PatientsTableProps> = ({
   patients,
-  title = 'Patients',
+  title = 'Manage Group Roaster',
   showGroupActions = true,
   actionHandlers = {},
   className = '',
   maxHeight = '96',
-  onPatientsUpdate
+  onPatientsUpdate,
+  showAddMoreButton = false,
+  onAddMorePatients
 }) => {
   // Column configuration state for patients table customization
   const [columnConfigs, setColumnConfigs] = useState<ColumnConfig[]>([
@@ -97,20 +99,42 @@ const PatientsTable: React.FC<PatientsTableProps> = ({
   const handleGroupActions = (actions: GroupActionsData) => {
     console.log('Applying group actions to patients:', selectedPatients, actions);
     
-    // TODO: Implement actual API calls for group actions
-    // This would typically:
-    // 1. Update patient statuses in the database
-    // 2. Update payer information
-    // 3. Record fee payments
-    // 4. Refresh the patient data
-    
-    // For now, just log the actions and clear selection
-    alert(`Group actions applied to ${selectedPatients.length} patients:\n${JSON.stringify(actions, null, 2)}`);
-    setSelectedPatients([]);
-    
-    // Notify parent component if callback provided
-    if (onPatientsUpdate) {
-      onPatientsUpdate(patients);
+    if (actions.action === 'delete') {
+      // Handle patient deletion
+      const patientsToDelete = selectedPatients.length;
+      const updatedPatients = patients.filter(patient => !selectedPatients.includes(patient.id));
+      
+      // Clear selection after deletion
+      setSelectedPatients([]);
+      
+      // Notify parent component with updated patient list
+      if (onPatientsUpdate) {
+        onPatientsUpdate(updatedPatients);
+      }
+      
+      // Show success message
+      alert(`Successfully deleted ${patientsToDelete} patient${patientsToDelete !== 1 ? 's' : ''} from the table.`);
+      
+      // TODO: Implement actual API call to delete patients from database
+      // Example: await deletePatients(selectedPatients);
+      
+    } else {
+      // Handle other group actions (update operations)
+      // TODO: Implement actual API calls for group actions
+      // This would typically:
+      // 1. Update patient statuses in the database
+      // 2. Update payer information
+      // 3. Record fee payments
+      // 4. Refresh the patient data
+      
+      // For now, just log the actions and clear selection
+      alert(`Group actions applied to ${selectedPatients.length} patients:\n${JSON.stringify(actions, null, 2)}`);
+      setSelectedPatients([]);
+      
+      // Notify parent component if callback provided
+      if (onPatientsUpdate) {
+        onPatientsUpdate(patients);
+      }
     }
   };
 
@@ -469,12 +493,26 @@ const PatientsTable: React.FC<PatientsTableProps> = ({
               <UserGroupIcon className="w-4 h-4" />
               {title} ({patients.length})
             </CardTitle>
-            {/* Column Customizer */}
-            <ColumnCustomizer
-              columns={columnConfigs}
-              onColumnsChange={handleColumnConfigChange}
-              className="ml-auto"
-            />
+            <div className="flex items-center gap-2">
+              {/* Add More Patients Button */}
+              {showAddMoreButton && onAddMorePatients && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddMorePatients}
+                  className="text-sm h-8 bg-white hover:bg-gray-50"
+                >
+                  Add More Patients
+                </Button>
+              )}
+              {/* Column Customizer */}
+              <ColumnCustomizer
+                columns={columnConfigs}
+                onColumnsChange={handleColumnConfigChange}
+                className=""
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-4">

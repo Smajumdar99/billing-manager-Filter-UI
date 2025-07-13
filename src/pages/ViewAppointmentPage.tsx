@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import TopNavigationBar from '../components/old-ui/TopNavigationBar';
 import MainNavigationBar from '../components/old-ui/MainNavigationBar';
 import { 
@@ -9,7 +9,14 @@ import {
   MapPinIcon,
   AcademicCapIcon,
   ClipboardDocumentListIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  VideoCameraIcon,
+  UsersIcon,
+  UserPlusIcon,
+  ArrowUpTrayIcon,
+  PrinterIcon,
+  XCircleIcon,
+  ArrowUpOnSquareStackIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '../components/atoms/Button';
 import { 
@@ -18,11 +25,13 @@ import {
   CardHeader,
   CardTitle
 } from '../components/atoms/Card';
-import { TooltipProvider } from '../components/atoms/Tooltip/tooltip';
+import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '../components/atoms/Tooltip/tooltip';
 import { Breadcrumb } from '../components/atoms/Breadcrumb/breadcrumb';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PatientsTable } from '../components/organisms/PatientsTable';
 import { PatientData, PatientActionHandlers } from '../types/patients';
+import AddPatientsModal from '../components/molecules/GroupAppointmentForm/AddPatientsModal';
+import { ComboboxOption } from '@/components/atoms/Combobox/Combobox';
 
 // Mock appointment data interface
 interface AppointmentData {
@@ -61,6 +70,36 @@ const ViewAppointmentPage: React.FC = () => {
   const navigate = useNavigate();
   const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // State for AddPatientsModal
+  const [addPatientsModalOpen, setAddPatientsModalOpen] = useState(false);
+  const groupCapacity = 10;
+  const [selectedPatients, setSelectedPatients] = useState<any[]>([]);
+  const [patientFilter, setPatientFilter] = useState('admitted');
+  const [capacityError, setCapacityError] = useState(false);
+  const [showWaitlist, setShowWaitlist] = useState(false);
+  
+  // Waitlist patients mock data
+  const waitlistPatients = useMemo(() => [
+    { id: '2003414', name: 'Waitlist, One', phone: '111-222-3333', ss: 'XXX-XX-1111', dob: '12/12/2000', pid: '2003414', externalId: '2003414' },
+    { id: '2003415', name: 'Waitlist, Two', phone: '222-333-4444', ss: 'XXX-XX-2222', dob: '11/11/1999', pid: '2003415', externalId: '2003415' },
+  ], []);
+  
+  // Patient options for Combobox
+  const patientOptions: ComboboxOption[] = useMemo(() => [
+    { value: '1003414', label: '12@3, Monster', description: '355-666-8888 | XXX-XX-5666 | 29/12/2004 | 1003414' },
+    { value: '1003415', label: 'Jane Doe', description: '123-456-7890 | XXX-XX-1234 | 01/01/1990 | 1003415' },
+    { value: '1003416', label: 'John Smith', description: '987-654-3210 | XXX-XX-4321 | 02/02/1985 | 1003416' },
+    { value: '1003417', label: 'Alice Johnson', description: '555-111-2222 | XXX-XX-5678 | 03/03/1982 | 1003417' },
+    { value: '1003418', label: 'Bob Brown', description: '444-222-3333 | XXX-XX-8765 | 04/04/1975 | 1003418' },
+    { value: '1003419', label: 'Carol White', description: '333-444-5555 | XXX-XX-3456 | 05/05/1995 | 1003419' },
+    { value: '1003420', label: 'David Black', description: '222-555-6666 | XXX-XX-6543 | 06/06/1988 | 1003420' },
+    { value: '1003421', label: 'Eve Green', description: '111-666-7777 | XXX-XX-7890 | 07/07/1992 | 1003421' },
+    { value: '1003422', label: 'Frank Blue', description: '666-777-8888 | XXX-XX-8901 | 08/08/1980 | 1003422' },
+    { value: '1003423', label: 'Grace Red', description: '777-888-9999 | XXX-XX-9012 | 09/09/1978 | 1003423' },
+    { value: '1003424', label: 'Hank Violet', description: '888-999-0000 | XXX-XX-0123 | 10/10/1983 | 1003424' },
+    { value: '1003425', label: 'Ivy Orange', description: '999-000-1111 | XXX-XX-1230 | 11/11/1991 | 1003425' },
+  ], []);
 
   // Patient action handlers for the PatientsTable component
   const patientActionHandlers: PatientActionHandlers = {
@@ -92,6 +131,19 @@ const ViewAppointmentPage: React.FC = () => {
       console.log('Undo Check-in clicked', patient);
     },
   };
+  
+  // Handler for adding patients to event
+  const handleAddToEvent = useCallback(() => {
+    // TODO: Implement actual logic to add patients to the appointment
+    console.log('Adding patients to event:', selectedPatients);
+    
+    // For now, just close the modal and show a success message
+    setAddPatientsModalOpen(false);
+    alert(`${selectedPatients.length} patients added to the appointment successfully!`);
+    
+    // Reset selected patients
+    setSelectedPatients([]);
+  }, [selectedPatients]);
 
   // Mock fetch function (replace with real API call)
   const fetchAppointment = async (id: string): Promise<AppointmentData | null> => {
@@ -358,17 +410,145 @@ const ViewAppointmentPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button 
-                    onClick={() => navigate(`/edit-appointment/${appointmentId}`)}
-                  >
-                    Edit Appointment
-                  </Button>
+                  {/* Action Buttons */}
+                  <TooltipProvider>
+                    <div className="flex items-center gap-1">
+                      {/* Create Telehealth Appointment */}
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            aria-label="Create Telehealth Appointment" 
+                            onClick={() => console.log('Create Telehealth Appointment')}
+                            className="hover:bg-blue-50"
+                          >
+                            <VideoCameraIcon className="w-5 h-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Create Telehealth Appointment</TooltipContent>
+                      </TooltipRoot>
+                      
+                      {/* Contact Attendees */}
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            aria-label="Contact Attendees" 
+                            onClick={() => console.log('Contact Attendees')}
+                            className="hover:bg-blue-50"
+                          >
+                            <UsersIcon className="w-5 h-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Contact Attendees</TooltipContent>
+                      </TooltipRoot>
+                      
+                      {/* Add or Remove Patients */}
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            aria-label="Add or Remove Patients" 
+                            onClick={() => setAddPatientsModalOpen(true)}
+                            className="hover:bg-blue-50"
+                          >
+                            <UserPlusIcon className="w-5 h-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Add or Remove Patients</TooltipContent>
+                      </TooltipRoot>
+                      
+                      {/* Upload Docs */}
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            aria-label="Upload Docs" 
+                            onClick={() => console.log('Upload Docs')}
+                            className="hover:bg-blue-50"
+                          >
+                            <ArrowUpTrayIcon className="w-5 h-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Upload Docs</TooltipContent>
+                      </TooltipRoot>
+                      
+                      {/* Print Roster */}
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            aria-label="Print Roster" 
+                            onClick={() => console.log('Print Roster')}
+                            className="hover:bg-blue-50"
+                          >
+                            <PrinterIcon className="w-5 h-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Print Roster</TooltipContent>
+                      </TooltipRoot>
+                      
+                      {/* Cancel Event */}
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            aria-label="Cancel Event" 
+                            onClick={() => console.log('Cancel Event')}
+                            className="hover:bg-red-50"
+                          >
+                            <XCircleIcon className="w-5 h-5 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Cancel Event</TooltipContent>
+                      </TooltipRoot>
+                      
+                      {/* Export to Outlook */}
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            type="button" 
+                            size="icon" 
+                            variant="ghost" 
+                            aria-label="Export to Outlook" 
+                            onClick={() => console.log('Export to Outlook')}
+                            className="hover:bg-blue-50"
+                          >
+                            <ArrowUpOnSquareStackIcon className="w-5 h-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Export to Outlook</TooltipContent>
+                      </TooltipRoot>
+                      
+                      {/* Separator */}
+                      <div className="h-6 w-px bg-gray-300 mx-2" />
+                    </div>
+                  </TooltipProvider>
+                  
                   {appointmentData.isTelehealth && (
                     <div className="flex items-center gap-1 px-3 py-1 bg-blue-50 rounded-full">
                       <PhoneIcon className="w-4 h-4 text-blue-600" />
                       <span className="text-sm text-blue-600 font-medium">Telehealth</span>
                     </div>
                   )}
+                  
+                  <Button 
+                    onClick={() => navigate(`/edit-appointment/${appointmentId}`)}
+                  >
+                    Edit Appointment
+                  </Button>
                 </div>
               </div>
             </div>
@@ -481,13 +661,18 @@ const ViewAppointmentPage: React.FC = () => {
               {appointmentData.type === 'Group' && appointmentData.patients && appointmentData.patients.length > 0 && (
                 <PatientsTable
                   patients={appointmentData.patients}
-                  title="Patients"
+                  title="Manage Group Roaster"
                   showGroupActions={true}
                   actionHandlers={patientActionHandlers}
                   maxHeight="96"
                   onPatientsUpdate={(updatedPatients) => {
                     // Handle patients update if needed
                     console.log('Patients updated:', updatedPatients);
+                  }}
+                  showAddMoreButton={true}
+                  onAddMorePatients={() => {
+                    // Open the AddPatientsModal
+                    setAddPatientsModalOpen(true);
                   }}
                 />
               )}
@@ -496,6 +681,26 @@ const ViewAppointmentPage: React.FC = () => {
         </div>
       </div>
     </div>
+    
+    {/* AddPatientsModal */}
+    {addPatientsModalOpen && (
+      <AddPatientsModal
+        open={addPatientsModalOpen}
+        onOpenChange={setAddPatientsModalOpen}
+        patientOptions={patientOptions}
+        selectedPatients={selectedPatients}
+        setSelectedPatients={setSelectedPatients}
+        groupCapacity={groupCapacity}
+        patientFilter={patientFilter}
+        setPatientFilter={setPatientFilter}
+        capacityError={capacityError}
+        setCapacityError={setCapacityError}
+        showWaitlist={showWaitlist}
+        setShowWaitlist={setShowWaitlist}
+        waitlistPatients={waitlistPatients}
+        onAddToEvent={handleAddToEvent}
+      />
+    )}
     </TooltipProvider>
   );
 };

@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/atoms/Card';
-import { CheckCircleIcon, UserGroupIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, UserGroupIcon, CurrencyDollarIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 /**
  * GroupActions Component
@@ -27,6 +27,7 @@ export interface GroupActionsData {
   status?: string;
   payer?: string;
   feePaid?: string;
+  action?: 'update' | 'delete';
 }
 
 interface GroupActionsProps {
@@ -66,7 +67,9 @@ export const GroupActions: React.FC<GroupActionsProps> = ({
 
   // Handle applying actions
   const handleApply = () => {
-    const actions: GroupActionsData = {};
+    const actions: GroupActionsData = {
+      action: 'update'
+    };
     
     if (status) actions.status = status;
     if (payer) actions.payer = payer;
@@ -78,6 +81,20 @@ export const GroupActions: React.FC<GroupActionsProps> = ({
     setStatus('');
     setPayer('');
     setFeePaid('');
+  };
+
+  // Handle delete action
+  const handleDelete = () => {
+    // Confirm deletion
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedCount} patient${selectedCount !== 1 ? 's' : ''}? This action cannot be undone.`
+    );
+    
+    if (confirmed) {
+      onApplyActions({
+        action: 'delete'
+      });
+    }
   };
 
   // Handle canceling actions
@@ -172,6 +189,18 @@ export const GroupActions: React.FC<GroupActionsProps> = ({
             >
               Cancel
             </Button>
+            
+            {/* Delete Button */}
+            <Button
+              onClick={handleDelete}
+              size="sm"
+              variant="destructive"
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              <TrashIcon className="w-4 h-4 mr-1" />
+              Delete Selected
+            </Button>
+            
             <Button
               onClick={handleApply}
               disabled={!hasActions}

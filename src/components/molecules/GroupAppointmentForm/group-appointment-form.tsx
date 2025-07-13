@@ -203,9 +203,72 @@ const GroupAppointmentForm: React.FC = () => {
   return (
     <TooltipProvider>
       <div className="p-4 space-y-4">
-      {/* When and Where Sections Side by Side */}
+      {/* First Row - For What - Full Width */}
+      <Card className="shadow-none border-gray-200">
+        <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+          <CardTitle className="text-sm font-semibold text-gray-800">For What</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="groupCategory" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category:</Label>
+              <Select>
+                <SelectTrigger id="groupCategory" className="h-8 text-sm">
+                  <SelectValue placeholder="-- Select One --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cat1">Category 1</SelectItem>
+                  <SelectItem value="cat2">Category 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="groupProgram" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program:*</Label>
+              <Select>
+                <SelectTrigger id="groupProgram" className="h-8 text-sm">
+                  <SelectValue placeholder="A-AADO" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A-AADO">A-AADO</SelectItem>
+                  <SelectItem value="B-BILL">B-BILL</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="groupBillingLocation" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Billing Location:*</Label>
+              <Select>
+                <SelectTrigger id="groupBillingLocation" className="h-8 text-sm">
+                  <SelectValue placeholder="Select Billing Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="loc1">Location 1</SelectItem>
+                  <SelectItem value="loc2">Location 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="groupLocation" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:*</Label>
+              <Select>
+                <SelectTrigger id="groupLocation" className="h-8 text-sm">
+                  <SelectValue placeholder="-- Select Location --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="main">Main Clinic</SelectItem>
+                  <SelectItem value="east">East Wing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="groupIncludedPrograms" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Included Programs:</Label>
+              <Input id="groupIncludedPrograms" className="h-8 text-sm" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Second Row - When and Where - Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* When Section */}
+        {/* Left Column - When */}
         <Card className="shadow-none border-gray-200">
           <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
             <CardTitle className="text-sm font-semibold text-gray-800">When</CardTitle>
@@ -324,7 +387,7 @@ const GroupAppointmentForm: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Where Section */}
+        {/* Right Column - Where */}
         <Card className="shadow-none border-gray-200">
           <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
             <CardTitle className="text-sm font-semibold text-gray-800">Where</CardTitle>
@@ -337,8 +400,6 @@ const GroupAppointmentForm: React.FC = () => {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    size="sm" 
-                    className={selectedAddress ? "text-green-600 text-xs border-green-300" : "text-blue-600 text-xs"}
                     onClick={() => setShowAddressSelectionModal(true)}
                   >
                     {selectedAddress ? 'Change Address' : 'Select Address'}
@@ -362,8 +423,6 @@ const GroupAppointmentForm: React.FC = () => {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    size="sm" 
-                    className="text-blue-600 text-xs"
                     onClick={() => setShowRoomAllocationModal(true)}
                   >
                     Allocate Room
@@ -386,7 +445,6 @@ const GroupAppointmentForm: React.FC = () => {
                           <Button 
                             type="button" 
                             variant="ghost" 
-                            size="sm" 
                             onClick={() => setShowRoomAllocationModal(true)}
                             className="text-green-600 hover:text-green-800 p-1"
                           >
@@ -402,7 +460,6 @@ const GroupAppointmentForm: React.FC = () => {
                           <Button 
                             type="button" 
                             variant="ghost" 
-                            size="sm" 
                             onClick={() => setSelectedRoom(null)}
                             className="text-green-600 hover:text-green-800 p-1"
                           >
@@ -422,115 +479,49 @@ const GroupAppointmentForm: React.FC = () => {
         </Card>
       </div>
 
-      {/* With Whom and For What Sections Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* With Whom Section */}
-        <Card className="shadow-none border-gray-200">
-          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-            <CardTitle className="text-sm font-semibold text-gray-800">With Whom</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="groupProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Provider:</Label>
-                <Select>
-                  <SelectTrigger id="groupProvider" className="h-8 text-sm">
-                    <SelectValue placeholder="Admin, Ensoftek" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin, Ensoftek</SelectItem>
-                    <SelectItem value="provider2">Provider 2</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="groupSupervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:*</Label>
-                <Select>
-                  <SelectTrigger id="groupSupervisingProvider" className="h-8 text-sm">
-                    <SelectValue placeholder="-- Unassigned --" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">-- Unassigned --</SelectItem>
-                    <SelectItem value="supervisor1">Supervisor 1</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="groupAssistingStaff" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assisting Staff:</Label>
-                <Input id="groupAssistingStaff" className="h-8 text-sm" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* For What Section */}
-        <Card className="shadow-none border-gray-200">
-          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-            <CardTitle className="text-sm font-semibold text-gray-800">For What</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="groupCategory" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category:</Label>
-                <Select>
-                  <SelectTrigger id="groupCategory" className="h-8 text-sm">
-                    <SelectValue placeholder="-- Select One --" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cat1">Category 1</SelectItem>
-                    <SelectItem value="cat2">Category 2</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="groupProgram" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program:*</Label>
-                <Select>
-                  <SelectTrigger id="groupProgram" className="h-8 text-sm">
-                    <SelectValue placeholder="A-AADO" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="A-AADO">A-AADO</SelectItem>
-                    <SelectItem value="B-BILL">B-BILL</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="groupBillingLocation" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Billing Location:*</Label>
-                <Select>
-                  <SelectTrigger id="groupBillingLocation" className="h-8 text-sm">
-                    <SelectValue placeholder="Select Billing Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="loc1">Location 1</SelectItem>
-                    <SelectItem value="loc2">Location 2</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="groupLocation" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:*</Label>
-                <Select>
-                  <SelectTrigger id="groupLocation" className="h-8 text-sm">
-                    <SelectValue placeholder="-- Select Location --" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="main">Main Clinic</SelectItem>
-                    <SelectItem value="east">East Wing</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="groupIncludedPrograms" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Included Programs:</Label>
-                <Input id="groupIncludedPrograms" className="h-8 text-sm" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Additional Options Section */}
+      {/* Third Row - With Whom - Full Width */}
       <Card className="shadow-none border-gray-200">
         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-          <CardTitle className="text-sm font-semibold text-gray-800">Additional Options</CardTitle>
+          <CardTitle className="text-sm font-semibold text-gray-800">With Whom</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="groupProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Provider:</Label>
+              <Select>
+                <SelectTrigger id="groupProvider" className="h-8 text-sm">
+                  <SelectValue placeholder="Admin, Ensoftek" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin, Ensoftek</SelectItem>
+                  <SelectItem value="provider2">Provider 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="groupSupervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:*</Label>
+              <Select>
+                <SelectTrigger id="groupSupervisingProvider" className="h-8 text-sm">
+                  <SelectValue placeholder="-- Unassigned --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">-- Unassigned --</SelectItem>
+                  <SelectItem value="supervisor1">Supervisor 1</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="groupAssistingStaff" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assisting Staff:</Label>
+              <Input id="groupAssistingStaff" className="h-8 text-sm" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Fourth Row - Everything Else - Full Width */}
+      <Card className="shadow-none border-gray-200">
+        <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+          <CardTitle className="text-sm font-semibold text-gray-800">Everything Else</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
           <div className="space-y-4">
@@ -631,21 +622,36 @@ const GroupAppointmentForm: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* For Whom Section */}
+      {/* Fifth Row - For Whom - Full Width */}
       <Card className="shadow-none border-gray-200">
         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
           <CardTitle className="text-sm font-semibold text-gray-800">For Whom</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          {/* Prominent Add Patients Section */}
-          <div className="border-blue-400 bg-blue-50 rounded-lg p-4 mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <span className="text-base font-bold text-blue-900 flex-1">Would you like to add Patients to this Appointment?</span>
-              <Button type="button" variant="default" className="text-white font-semibold px-6 py-2 rounded shadow" onClick={() => setAddPatientsModalOpen(true)}>
+          {/* Patients Added to Event Section - Always shown with Add Patients button */}
+          {groupEventPatients.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-sm font-semibold text-gray-800 mb-2">Patients Added to Event</div>
+              <div className="text-sm text-gray-500 mb-4">No patients have been added to this event yet.</div>
+              <Button type="button" variant="outline" onClick={() => setAddPatientsModalOpen(true)}>
                 Add Patients
               </Button>
             </div>
-          </div>
+          ) : (
+            <div>
+              <PatientsTable
+                patients={transformedPatients}
+                title="Manage Group Roaster"
+                showGroupActions={true}
+                actionHandlers={patientActionHandlers}
+                maxHeight="80"
+                onPatientsUpdate={handlePatientsUpdate}
+                className="shadow-none border-gray-200"
+                showAddMoreButton={true}
+                onAddMorePatients={() => setAddPatientsModalOpen(true)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -685,29 +691,6 @@ const GroupAppointmentForm: React.FC = () => {
         onAddressSelected={handleAddressSelected}
         selectedAddress={selectedAddress}
       />
-      {/* Show groupEventPatients in PatientsTable below Add Patients section */}
-      <div className="mt-6">
-        {groupEventPatients.length === 0 ? (
-          <Card className="shadow-none border-gray-200">
-            <CardContent className="p-6">
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-800 mb-2">Patients Added to Event</div>
-                <div className="text-xs text-gray-400">No patients have been added to this event yet.</div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <PatientsTable
-            patients={transformedPatients}
-            title="Patients Added to Event"
-            showGroupActions={true}
-            actionHandlers={patientActionHandlers}
-            maxHeight="80"
-            onPatientsUpdate={handlePatientsUpdate}
-            className="shadow-none border-gray-200"
-          />
-        )}
-      </div>
     </div>
     </TooltipProvider>
   );

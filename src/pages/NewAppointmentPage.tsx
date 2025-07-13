@@ -27,13 +27,13 @@ import {
 } from '../components/atoms/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/molecules/Tabs/tabs';
 import GroupAppointmentForm from '../components/molecules/GroupAppointmentForm/group-appointment-form';
+import AddressSelectionModal from '../components/molecules/GroupAppointmentForm/AddressSelectionModal';
 import { Breadcrumb } from '../components/atoms/Breadcrumb/breadcrumb';
 import { useParams } from 'react-router-dom';
 import FindAvailableDialog from '@/components/organisms/FindAvailableDialog/find-available-dialog';
 import AppointmentEditActions from '../components/molecules/AppointmentEditActions/appointment-edit-actions';
 import { RecurringEditDialog } from '../components/molecules/RecurringEditDialog';
 import RoomAllocationModal from '@/components/molecules/GroupAppointmentForm/RoomAllocationModal';
-import AddressSelectionModal from '@/components/molecules/GroupAppointmentForm/AddressSelectionModal';
 // Import other atomic components and form sections as needed
 // (Assume Person and Provider form content is modularized or inline for now)
 
@@ -72,7 +72,7 @@ const NewAppointmentPage: React.FC = () => {
   const [program, setProgram] = useState('1111ADiamond1111 Facility');
   const [billingProgram, setBillingProgram] = useState('');
   const [supervisingProvider, setSupervisingProvider] = useState('');
-  const [status, setStatus] = useState('Scheduled');
+  const [status, setStatus] = useState('Created');
   const [room, setRoom] = useState('');
   const [comments, setComments] = useState('');
   // Set isRepeating to true for group appointments in edit mode (for demo)
@@ -314,7 +314,7 @@ const NewAppointmentPage: React.FC = () => {
                   {/* Person Appointment Form Content */}
                   <div>
                     <div className="p-4 space-y-4">
-                      {/* Basic Information and Date & Time - 2 Column Layout */}
+                      {/* First Row - For Whom and For What - Side by Side */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Left Column - For Whom */}
                         <Card className="shadow-none border-gray-200">
@@ -349,7 +349,47 @@ const NewAppointmentPage: React.FC = () => {
                           </CardContent>
                         </Card>
                         
-                        {/* Right Column - When */}
+                        {/* Right Column - For What */}
+                        <Card className="shadow-none border-gray-200">
+                          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+                            <CardTitle className="text-sm font-semibold text-gray-800">For What</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 space-y-3">
+                            <div className="space-y-1">
+                              <div className="flex justify-between">
+                                <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact Type:<span className="text-red-500 font-bold text-sm">*</span></Label>
+                                <div className="flex items-center">
+                                  <Checkbox
+                                    id="showOnlyMine"
+                                    checked={showOnlyMine}
+                                    onCheckedChange={(checked) => setShowOnlyMine(checked as boolean)}
+                                    className="h-3 w-3"
+                                  />
+                                  <label htmlFor="showOnlyMine" className="ml-1.5 text-xs text-gray-600">
+                                    Show Only Mine
+                                  </label>
+                                </div>
+                              </div>
+                              <Select value={encounterType} onValueChange={setEncounterType}>
+                                <SelectTrigger id="encounterType" className="h-8 text-sm">
+                                  <SelectValue placeholder="-- Select Contact Type --" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
+                                  <SelectItem value="Follow-up">Follow-up</SelectItem>
+                                  <SelectItem value="Therapy">Therapy</SelectItem>
+                                  <SelectItem value="Medication Management">Medication Management</SelectItem>
+                                  <SelectItem value="Crisis Intervention">Crisis Intervention</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      {/* Second Row - When and Where - Side by Side */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left Column - When */}
                         <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                           <CardTitle className="text-sm font-semibold text-gray-800">When</CardTitle>
@@ -480,9 +520,102 @@ const NewAppointmentPage: React.FC = () => {
                           </div>
                         </CardContent>
                         </Card>
+                        
+                        {/* Right Column - Where */}
+                        <Card className="shadow-none border-gray-200">
+                          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+                            <CardTitle className="text-sm font-semibold text-gray-800">Where</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4">
+                            <div className="space-y-4">
+                              <div className="space-y-1">
+                                <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Event Address:</Label>
+                                <div className="flex items-center gap-2">
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    onClick={() => setShowAddressSelectionModal(true)}
+                                  >
+                                    {selectedAddress ? 'Change Address' : 'Select Address'}
+                                  </Button>
+                                  {selectedAddress ? (
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-gray-900">{selectedAddress.name}</div>
+                                      <div className="text-xs text-gray-600">
+                                        {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} {selectedAddress.zipCode}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-700">145, 8th Avenue<br />Portland, FL - 433323455</span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Room Allocation */}
+                              {!selectedRoom ? (
+                                <div className="pt-2">
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    onClick={() => setShowRoomAllocationModal(true)}
+                                  >
+                                    Allocate Room
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Allocated Room:</Label>
+                                  <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-green-800">{selectedRoom.name}</div>
+                                      <div className="text-xs text-green-600">
+                                        {selectedRoom.building} • Floor {selectedRoom.floor} • Capacity: {selectedRoom.capacity}
+                                      </div>
+                                    </div>
+                                    <TooltipProvider>
+                                      <div className="flex items-center gap-1">
+                                        <TooltipRoot>
+                                          <TooltipTrigger asChild>
+                                            <Button 
+                                              type="button" 
+                                              variant="ghost" 
+                                              onClick={() => setShowRoomAllocationModal(true)}
+                                              className="text-green-600 hover:text-green-800 p-1"
+                                            >
+                                              <PencilIcon className="w-4 h-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Edit room allocation</p>
+                                          </TooltipContent>
+                                        </TooltipRoot>
+                                        <TooltipRoot>
+                                          <TooltipTrigger asChild>
+                                            <Button 
+                                              type="button" 
+                                              variant="ghost" 
+                                              onClick={() => setSelectedRoom(null)}
+                                              className="text-green-600 hover:text-green-800 p-1"
+                                            >
+                                              <XMarkIcon className="w-4 h-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Release room</p>
+                                          </TooltipContent>
+                                        </TooltipRoot>
+                                      </div>
+                                    </TooltipProvider>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
                       
-                      {/* With Whom Card */}
+                      {/* Third Row - With Whom - Full Width */}
                       <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                           <CardTitle className="text-sm font-semibold text-gray-800">With Whom</CardTitle>
@@ -502,7 +635,7 @@ const NewAppointmentPage: React.FC = () => {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label htmlFor="supervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:<span className="text-red-500">*</span></Label>
+                            <Label htmlFor="supervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:<span className="text-red-500 font-bold text-sm">*</span></Label>
                             <Select value={supervisingProvider} onValueChange={setSupervisingProvider}>
                               <SelectTrigger id="supervisingProvider" className="h-8 text-sm">
                                 <SelectValue placeholder="-- Unassigned --" />
@@ -542,7 +675,7 @@ const NewAppointmentPage: React.FC = () => {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label htmlFor="location" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:</Label>
+                            <Label htmlFor="location" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Location:<span className="text-red-500 font-bold text-sm">*</span></Label>
                             <Select value={location} onValueChange={setLocation}>
                               <SelectTrigger id="location" className="h-8 text-sm">
                                 <SelectValue placeholder="Select Location" />
@@ -559,117 +692,10 @@ const NewAppointmentPage: React.FC = () => {
                         </CardContent>
                       </Card>
                       
-                      {/* For What Card */}
+                      {/* Fourth Row - Everything Else - Full Width */}
                       <Card className="shadow-none border-gray-200">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-                          <CardTitle className="text-sm font-semibold text-gray-800">For What</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 space-y-3">
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <Label htmlFor="encounterType" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact Type:<span className="text-red-500">*</span></Label>
-                              <div className="flex items-center">
-                                <Checkbox
-                                  id="showOnlyMine"
-                                  checked={showOnlyMine}
-                                  onCheckedChange={(checked) => setShowOnlyMine(checked as boolean)}
-                                  className="h-3 w-3"
-                                />
-                                <label htmlFor="showOnlyMine" className="ml-1.5 text-xs text-gray-600">
-                                  Show Only Mine
-                                </label>
-                              </div>
-                            </div>
-                            <Select value={encounterType} onValueChange={setEncounterType}>
-                              <SelectTrigger id="encounterType" className="h-8 text-sm">
-                                <SelectValue placeholder="-- Select Contact Type --" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
-                                <SelectItem value="Follow-up">Follow-up</SelectItem>
-                                <SelectItem value="Therapy">Therapy</SelectItem>
-                                <SelectItem value="Medication Management">Medication Management</SelectItem>
-                                <SelectItem value="Crisis Intervention">Crisis Intervention</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          {/* Room Allocation */}
-                          <div className="space-y-1">
-                            <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Room:</Label>
-                            <div className="space-y-4">
-                              {/* Room Allocation */}
-                              {!selectedRoom ? (
-                                <div className="pt-2">
-                                  <Button 
-                                    type="button" 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="text-blue-600 text-xs"
-                                    onClick={() => setShowRoomAllocationModal(true)}
-                                  >
-                                    Allocate Room
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div className="space-y-1">
-                                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Allocated Room:</Label>
-                                  <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                    <div className="flex-1">
-                                      <div className="text-sm font-medium text-green-800">{selectedRoom.name}</div>
-                                      <div className="text-xs text-green-600">
-                                        {selectedRoom.building} • Floor {selectedRoom.floor} • Capacity: {selectedRoom.capacity}
-                                      </div>
-                                    </div>
-                                    <TooltipProvider>
-                                      <div className="flex items-center gap-1">
-                                        <TooltipRoot>
-                                          <TooltipTrigger asChild>
-                                            <Button 
-                                              type="button" 
-                                              variant="ghost" 
-                                              size="sm" 
-                                              onClick={() => setShowRoomAllocationModal(true)}
-                                              className="text-green-600 hover:text-green-800 p-1"
-                                            >
-                                              <PencilIcon className="w-4 h-4" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Edit room allocation</p>
-                                          </TooltipContent>
-                                        </TooltipRoot>
-                                        <TooltipRoot>
-                                          <TooltipTrigger asChild>
-                                            <Button 
-                                              type="button" 
-                                              variant="ghost" 
-                                              size="sm" 
-                                              onClick={() => setSelectedRoom(null)}
-                                              className="text-green-600 hover:text-green-800 p-1"
-                                            >
-                                              <XMarkIcon className="w-4 h-4" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Release room</p>
-                                          </TooltipContent>
-                                        </TooltipRoot>
-                                      </div>
-                                    </TooltipProvider>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      {/* Additional Options Card */}
-                      <Card className="shadow-none border-gray-200">
-                        <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
-                          <CardTitle className="text-sm font-semibold text-gray-800">Additional Options</CardTitle>
+                          <CardTitle className="text-sm font-semibold text-gray-800">Everything Else</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 space-y-3">
                           <div className="space-y-1">
@@ -679,6 +705,7 @@ const NewAppointmentPage: React.FC = () => {
                                 <SelectValue placeholder="Select Status" />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="Created">Created</SelectItem>
                                 <SelectItem value="Scheduled">Scheduled</SelectItem>
                                 <SelectItem value="Confirmed">Confirmed</SelectItem>
                                 <SelectItem value="Checked In">Checked In</SelectItem>
@@ -705,10 +732,9 @@ const NewAppointmentPage: React.FC = () => {
                                 id="telehealth"
                                 checked={isTelehealth}
                                 onCheckedChange={(checked) => setIsTelehealth(checked as boolean)}
-                                className="h-3 w-3"
                               />
-                              <label htmlFor="telehealth" className="ml-1.5 text-xs text-gray-600">
-                                <FontAwesomeIcon icon={faPhone} className="w-3.5 h-3.5 inline mr-1 text-blue-500" />
+                              <label htmlFor="telehealth" className="ml-1.5 text-sm text-gray-600">
+                                <FontAwesomeIcon icon={faPhone} className="w-3.5 h-3.5 inline mr-1 text-primary" />
                                 Telehealth Appointment
                               </label>
                             </div>
@@ -717,25 +743,14 @@ const NewAppointmentPage: React.FC = () => {
                                 id="printAppointmentSlip"
                                 checked={printAppointmentSlip}
                                 onCheckedChange={(checked) => setPrintAppointmentSlip(checked as boolean)}
-                                className="h-3 w-3"
                               />
-                              <label htmlFor="printAppointmentSlip" className="ml-1.5 text-xs text-gray-600">
-                                <FontAwesomeIcon icon={faPrint} className="w-3.5 h-3.5 inline mr-1 text-blue-500" />
+                              <label htmlFor="printAppointmentSlip" className="ml-1.5 text-sm text-gray-600">
+                                <FontAwesomeIcon icon={faPrint} className="w-3.5 h-3.5 inline mr-1 text-primary" />
                                 Print Appointment Slip
                               </label>
                             </div>
                           </div>
-                          <div className="pt-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="text-blue-600 text-xs"
-                            >
-                              <FontAwesomeIcon icon={faUser} className="w-3.5 h-3.5 mr-1.5" />
-                              Check-In as Arrived
-                            </Button>
-                          </div>
+                        
                         </CardContent>
                       </Card>
                     </div>
@@ -765,7 +780,7 @@ const NewAppointmentPage: React.FC = () => {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label htmlFor="supervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:<span className="text-red-500">*</span></Label>
+                            <Label htmlFor="supervisingProvider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supervising provider:<span className="text-red-500 font-bold text-sm">*</span></Label>
                             <Select value={supervisingProvider} onValueChange={setSupervisingProvider}>
                               <SelectTrigger id="supervisingProvider" className="h-8 text-sm">
                                 <SelectValue placeholder="-- Unassigned --" />
@@ -967,6 +982,7 @@ const NewAppointmentPage: React.FC = () => {
                                 <SelectValue placeholder="Select Status" />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="Created">Created</SelectItem>
                                 <SelectItem value="Scheduled">Scheduled</SelectItem>
                                 <SelectItem value="Confirmed">Confirmed</SelectItem>
                                 <SelectItem value="Checked In">Checked In</SelectItem>
@@ -1002,43 +1018,42 @@ const NewAppointmentPage: React.FC = () => {
               {/* Mobile Action Buttons (bottom of form card, only on mobile) */}
               <div className="flex flex-col gap-2 sm:hidden mt-4 px-4 pb-4">
                 <div className="flex flex-row gap-2 w-full">
-                  <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-blue-600 border-blue-400 flex-1">Cancel</Button>
+                  <Button type="button" variant="outline" className="text-sm h-10 text-blue-600 border-blue-400 flex-1">Cancel</Button>
                   {/* Only show Find Available for person or benefits tab */}
                   {(activeTab === 'person' || activeTab === 'benefits') && (
-                    <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-blue-600 border-blue-400 flex-1">Find Available</Button>
+                    <Button type="button" variant="outline" className="text-sm h-10 text-blue-600 border-blue-400 flex-1">Find Available</Button>
                   )}
-                  <Button type="button" variant="outline" size="sm" className="text-xs h-10 text-red-600 border-red-400 p-2 flex-1" aria-label="Delete">
+                  <Button type="button" variant="outline" className="text-sm h-10 text-red-600 border-red-400 p-2 flex-1" aria-label="Delete">
                     <FontAwesomeIcon icon={faTrash} className="w-4 h-4 mx-auto" />
                   </Button>
                 </div>
-                <Button type="submit" size="sm" className="text-xs h-10 bg-sky-500 hover:bg-sky-600 text-white w-full">Save Appointment</Button>
+                <Button type="submit" className="text-sm h-10 bg-sky-500 hover:bg-sky-600 text-white w-full">Save Appointment</Button>
               </div>
               
               {/* Desktop Sticky Action Footer (only on desktop) */}
-              <div className="hidden sm:block sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3 mt-4">
+              <div className="hidden sm:block sticky bottom-0 bg-white px-4 py-3 mt-4">
                 {isEditMode ? (
                   /* Edit Mode Actions */
                   <AppointmentEditActions onSave={handleSave} />
                 ) : (
                   /* Create Mode Actions */
                   <div className="flex flex-row gap-2 justify-end">
-                    <Button type="button" variant="outline" size="sm" className="text-xs h-8">Cancel</Button>
+                    <Button type="button" variant="outline" className="text-sm h-8">Cancel</Button>
                     {/* Only show Find Available for person or benefits tab */}
                     {(activeTab === 'person' || activeTab === 'benefits') && (
                       <Button 
                         type="button" 
                         variant="outline" 
-                        size="sm" 
-                        className="text-xs h-8"
+                        className="text-sm h-8"
                         onClick={() => setShowFindAvailableDialog(true)}
                       >
                         Find Available
                       </Button>
                     )}
-                    <Button type="button" variant="outline" size="sm" className="text-xs h-8 text-red-600 border-red-400 p-2" aria-label="Delete">
+                    <Button type="button" variant="outline" className="text-xs h-8 text-red-600 border-red-400 p-2" aria-label="Delete">
                       <FontAwesomeIcon icon={faTrash} className="w-4 h-4" />
                     </Button>
-                    <Button type="submit" size="sm" className="text-xs h-8 bg-sky-500 hover:bg-sky-600 text-white">Save Appointment</Button>
+                    <Button type="submit" className="text-sm h-8 ">Save Appointment</Button>
                   </div>
                 )}
               </div>
