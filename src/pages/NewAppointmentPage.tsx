@@ -280,7 +280,7 @@ const NewAppointmentPage: React.FC = () => {
         <div className="px-0 pt-4 pb-2">
           <Breadcrumb items={[
             { label: 'Schedule', href: '/my-calendar' },
-            { label: 'New Appointment' }
+            { label: isEditMode ? 'Edit Appointment' : 'New Appointment' }
           ]} />
         </div>
 
