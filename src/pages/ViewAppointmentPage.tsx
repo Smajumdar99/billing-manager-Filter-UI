@@ -16,7 +16,13 @@ import {
   ArrowUpTrayIcon,
   PrinterIcon,
   XCircleIcon,
-  ArrowUpOnSquareStackIcon
+  ArrowUpOnSquareStackIcon,
+  DocumentDuplicateIcon,
+  CreditCardIcon,
+  ChatBubbleLeftRightIcon,
+  ShieldCheckIcon,
+  BanknotesIcon,
+  ClockIcon as UpdateClockIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '../components/atoms/Button';
 import { 
@@ -61,6 +67,20 @@ interface AppointmentData {
   showOnlyMine: boolean;
   type: 'Person' | 'Provider' | 'Group' | 'Benefits';
   patients?: PatientData[]; // Added patients array for group appointments
+  // Individual appointment specific fields
+  copay?: number;
+  insuranceVerified?: boolean;
+  checkInNotes?: string;
+  priorAuthRequired?: boolean;
+  priorAuthStatus?: 'Approved' | 'Pending' | 'Denied' | 'Not Required';
+  priorAuthNumber?: string;
+  // Billing information
+  balanceDue?: number;
+  nonBillableBalance?: number;
+  undistributedAmount?: number;
+  // Audit information
+  lastUpdated?: string;
+  lastUpdatedBy?: string;
 }
 
 // PatientData interface now imported from types
@@ -178,6 +198,9 @@ const ViewAppointmentPage: React.FC = () => {
         printAppointmentSlip: false,
         showOnlyMine: false,
         type: 'Group',
+        // Audit information
+        lastUpdated: '2025-07-03T16:45:00Z',
+        lastUpdatedBy: 'Sarah Wilson, LCSW',
         // Mock patients data for group appointment
         patients: [
           {
@@ -281,7 +304,21 @@ const ViewAppointmentPage: React.FC = () => {
       printAppointmentSlip: false,
       showOnlyMine: false,
       type: 'Person',
-      patients: [] // No patients for individual appointments
+      patients: [], // No patients for individual appointments
+      // Individual appointment specific fields
+      copay: 25.00,
+      insuranceVerified: true,
+      checkInNotes: 'Patient arrived 5 minutes early, completed intake forms',
+      priorAuthRequired: true,
+      priorAuthStatus: 'Approved',
+      priorAuthNumber: 'PA-2025-001234',
+      // Billing information
+      balanceDue: 12206.00,
+      nonBillableBalance: 270.00,
+      undistributedAmount: 0.00,
+      // Audit information
+      lastUpdated: '2025-01-14T15:30:00Z',
+      lastUpdatedBy: 'Emily Rodriguez, LMFT'
     };
   };
 
@@ -321,6 +358,30 @@ const ViewAppointmentPage: React.FC = () => {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
+  // Format last updated timestamp
+  const formatLastUpdated = (timestamp: string) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} minutes ago`;
+    } else if (diffInMinutes < 1440) { // Less than 24 hours
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+  };
+
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -337,6 +398,37 @@ const ViewAppointmentPage: React.FC = () => {
       default:
         return 'text-gray-600 bg-gray-50 border-gray-200';
     }
+  };
+
+  // Handle duplicate event action
+  const handleDuplicateEvent = () => {
+    if (!appointmentData) return;
+    
+    // Navigate to new appointment page with current appointment data pre-filled
+    // Create URL params with current appointment data for duplication
+    const duplicateParams = new URLSearchParams({
+      duplicate: 'true',
+      title: appointmentData.title,
+      provider: appointmentData.provider,
+      patient: appointmentData.patient,
+      appointmentDate: appointmentData.appointmentDate,
+      appointmentStartTime: appointmentData.appointmentStartTime,
+      appointmentEndTime: appointmentData.appointmentEndTime,
+      isAllDay: appointmentData.isAllDay.toString(),
+      duration: appointmentData.duration,
+      encounterType: appointmentData.encounterType,
+      program: appointmentData.program,
+      billingProgram: appointmentData.billingProgram,
+      supervisingProvider: appointmentData.supervisingProvider,
+      status: appointmentData.status,
+      room: appointmentData.room,
+      comments: appointmentData.comments,
+      location: appointmentData.location,
+      isTelehealth: appointmentData.isTelehealth.toString(),
+      type: appointmentData.type
+    });
+    
+    navigate(`/new-appointment?${duplicateParams.toString()}`);
   };
 
 
@@ -430,56 +522,110 @@ const ViewAppointmentPage: React.FC = () => {
                         <TooltipContent side="bottom">Create Telehealth Appointment</TooltipContent>
                       </TooltipRoot>
                       
-                      {/* Contact Attendees */}
-                      <TooltipRoot>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            type="button" 
-                            size="icon" 
-                            variant="ghost" 
-                            aria-label="Contact Attendees" 
-                            onClick={() => console.log('Contact Attendees')}
-                            className="hover:bg-blue-50"
-                          >
-                            <UsersIcon className="w-5 h-5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">Contact Attendees</TooltipContent>
-                      </TooltipRoot>
+                      {/* Contact Attendees - Only show for Group appointments */}
+                      {appointmentData.type === 'Group' && (
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              type="button" 
+                              size="icon" 
+                              variant="ghost" 
+                              aria-label="Contact Attendees" 
+                              onClick={() => console.log('Contact Attendees')}
+                              className="hover:bg-blue-50"
+                            >
+                              <UsersIcon className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Contact Attendees</TooltipContent>
+                        </TooltipRoot>
+                      )}
                       
-                      {/* Add or Remove Patients */}
-                      <TooltipRoot>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            type="button" 
-                            size="icon" 
-                            variant="ghost" 
-                            aria-label="Add or Remove Patients" 
-                            onClick={() => setAddPatientsModalOpen(true)}
-                            className="hover:bg-blue-50"
-                          >
-                            <UserPlusIcon className="w-5 h-5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">Add or Remove Patients</TooltipContent>
-                      </TooltipRoot>
+                      {/* Add or Remove Patients - Only show for Group appointments */}
+                      {appointmentData.type === 'Group' && (
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              type="button" 
+                              size="icon" 
+                              variant="ghost" 
+                              aria-label="Add or Remove Patients" 
+                              onClick={() => setAddPatientsModalOpen(true)}
+                              className="hover:bg-blue-50"
+                            >
+                              <UserPlusIcon className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Add or Remove Patients</TooltipContent>
+                        </TooltipRoot>
+                      )}
                       
-                      {/* Upload Docs */}
-                      <TooltipRoot>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            type="button" 
-                            size="icon" 
-                            variant="ghost" 
-                            aria-label="Upload Docs" 
-                            onClick={() => console.log('Upload Docs')}
-                            className="hover:bg-blue-50"
-                          >
-                            <ArrowUpTrayIcon className="w-5 h-5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">Upload Docs</TooltipContent>
-                      </TooltipRoot>
+                      {/* Upload Docs - Only show for Group appointments */}
+                      {appointmentData.type === 'Group' && (
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              type="button" 
+                              size="icon" 
+                              variant="ghost" 
+                              aria-label="Upload Docs" 
+                              onClick={() => console.log('Upload Docs')}
+                              className="hover:bg-blue-50"
+                            >
+                              <ArrowUpTrayIcon className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Upload Docs</TooltipContent>
+                        </TooltipRoot>
+                      )}
+                      
+                      {/* Prior Authorization - Only show for Individual appointments if required */}
+                      {appointmentData.type === 'Person' && appointmentData.priorAuthRequired && (
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              type="button" 
+                              size="icon" 
+                              variant="ghost" 
+                              aria-label="Prior Authorization" 
+                              onClick={() => console.log('Prior Authorization clicked')}
+                              className={`hover:bg-blue-50 ${
+                                appointmentData.priorAuthStatus === 'Approved' ? 'text-green-600' :
+                                appointmentData.priorAuthStatus === 'Pending' ? 'text-yellow-600' :
+                                appointmentData.priorAuthStatus === 'Denied' ? 'text-red-600' :
+                                'text-gray-600'
+                              }`}
+                            >
+                              <ShieldCheckIcon className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            Prior Authorization: {appointmentData.priorAuthStatus}
+                            {appointmentData.priorAuthNumber && (
+                              <div className="text-xs mt-1">#{appointmentData.priorAuthNumber}</div>
+                            )}
+                          </TooltipContent>
+                        </TooltipRoot>
+                      )}
+                      
+                      {/* Duplicate Event - Only show for Individual appointments */}
+                      {appointmentData.type !== 'Group' && (
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              type="button" 
+                              size="icon" 
+                              variant="ghost" 
+                              aria-label="Duplicate Event" 
+                              onClick={handleDuplicateEvent}
+                              className="hover:bg-green-50"
+                            >
+                              <DocumentDuplicateIcon className="w-5 h-5 text-green-600" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Duplicate Event</TooltipContent>
+                        </TooltipRoot>
+                      )}
                       
                       {/* Print Roster */}
                       <TooltipRoot>
@@ -657,6 +803,128 @@ const ViewAppointmentPage: React.FC = () => {
                 </CardContent>
               </Card>
 
+              {/* Individual Appointment Specific Information */}
+              {appointmentData.type === 'Person' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* CoPay Information */}
+                  <Card className="shadow-none border-gray-200">
+                    <CardHeader className="bg-gray-50 border-b border-gray-200 py-3">
+                      <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <CreditCardIcon className="w-4 h-4" />
+                        CoPay Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">CoPay Amount</span>
+                          <span className="text-lg font-semibold text-gray-900">
+                            ${appointmentData.copay?.toFixed(2) || '0.00'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Insurance Verified</span>
+                          <span className={`flex items-center gap-1 text-sm font-medium ${
+                            appointmentData.insuranceVerified ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            <CheckCircleIcon className="w-4 h-4" />
+                            {appointmentData.insuranceVerified ? 'Verified' : 'Not Verified'}
+                          </span>
+                        </div>
+                        {appointmentData.priorAuthRequired && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Prior Authorization</span>
+                            <div className="flex items-center gap-2">
+                              <ShieldCheckIcon className="w-4 h-4 text-blue-600" />
+                              <span className={`text-sm font-medium ${
+                                appointmentData.priorAuthStatus === 'Approved' ? 'text-green-600' :
+                                appointmentData.priorAuthStatus === 'Pending' ? 'text-yellow-600' :
+                                appointmentData.priorAuthStatus === 'Denied' ? 'text-red-600' :
+                                'text-gray-600'
+                              }`}>
+                                {appointmentData.priorAuthStatus}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {appointmentData.priorAuthNumber && (
+                          <div className="pt-2 border-t border-gray-100">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block">Auth Number</span>
+                            <span className="text-sm text-gray-900 mt-1 block font-mono">{appointmentData.priorAuthNumber}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Check-in Notes */}
+                  <Card className="shadow-none border-gray-200">
+                    <CardHeader className="bg-gray-50 border-b border-gray-200 py-3">
+                      <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                        Check-in Notes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        {appointmentData.checkInNotes ? (
+                          <div>
+                            <p className="text-sm text-gray-900 leading-relaxed">
+                              {appointmentData.checkInNotes}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="text-center py-6">
+                            <ChatBubbleLeftRightIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">No check-in notes available</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                                     </Card>
+
+                   {/* Billing Information */}
+                   <Card className="shadow-none border-gray-200">
+                     <CardHeader className="bg-gray-50 border-b border-gray-200 py-3">
+                       <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                         <BanknotesIcon className="w-4 h-4" />
+                         Billing Information
+                       </CardTitle>
+                     </CardHeader>
+                     <CardContent className="p-4">
+                       <div className="space-y-3">
+                         <div className="flex items-center justify-between">
+                           <span className="text-sm text-gray-600">Balance Due</span>
+                           <span className="text-lg font-semibold text-red-600">
+                             ${appointmentData.balanceDue?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                           </span>
+                         </div>
+                         <div className="flex items-center justify-between">
+                           <span className="text-sm text-gray-600">Non-Billable Balance</span>
+                           <span className="text-sm font-medium text-gray-900">
+                             ${appointmentData.nonBillableBalance?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                           </span>
+                         </div>
+                         <div className="flex items-center justify-between">
+                           <span className="text-sm text-gray-600">Undistributed Amount</span>
+                           <span className="text-sm font-medium text-gray-900">
+                             ${appointmentData.undistributedAmount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                           </span>
+                         </div>
+                         <div className="pt-2 border-t border-gray-100">
+                           <div className="text-xs text-gray-500 space-y-1">
+                             <div>Non-Billable: ${appointmentData.nonBillableBalance?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</div>
+                             <div>Undistributed: ${appointmentData.undistributedAmount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</div>
+                           </div>
+                         </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 </div>
+               )}
+
+
+
               {/* Patients Table (for Group appointments) */}
               {appointmentData.type === 'Group' && appointmentData.patients && appointmentData.patients.length > 0 && (
                 <PatientsTable
@@ -675,6 +943,21 @@ const ViewAppointmentPage: React.FC = () => {
                     setAddPatientsModalOpen(true);
                   }}
                 />
+              )}
+
+              {/* Last Updated Information - Moved to end of page */}
+              {appointmentData.lastUpdated && (
+                <div className="flex items-center justify-center py-3 border-t border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <UpdateClockIcon className="w-3 h-3" />
+                    <span>
+                      Last updated {formatLastUpdated(appointmentData.lastUpdated)}
+                      {appointmentData.lastUpdatedBy && (
+                        <span className="ml-1">by <span className="font-medium text-gray-600">{appointmentData.lastUpdatedBy}</span></span>
+                      )}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
           </div>

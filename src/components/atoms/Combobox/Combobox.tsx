@@ -43,6 +43,7 @@ interface ComboboxProps {
   // NEW: Optionally hide filter tabs (All/Staff/Groups)
   hideFilters?: boolean;
   keepOpenOnSelect?: boolean; // NEW: keep dropdown open after select
+  dropdownDirection?: 'down' | 'up'; // NEW: control dropdown direction
 }
 
 export const Combobox: React.FC<ComboboxProps> = ({
@@ -55,6 +56,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
   renderOption,
   hideFilters = false,
   keepOpenOnSelect = false, // NEW: default false
+  dropdownDirection = 'down', // NEW: default to down
 }) => {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -146,7 +148,10 @@ export const Combobox: React.FC<ComboboxProps> = ({
         <ChevronDownIcon className="h-4 w-4 ml-2 opacity-50" />
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-full min-w-[320px] rounded-md border bg-white shadow-lg max-h-96 overflow-auto">
+        <div className={cn(
+          "absolute z-50 w-full min-w-[320px] rounded-md border bg-white shadow-lg max-h-96 overflow-auto",
+          dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'
+        )}>
           <div className="p-3 bg-white">
             {/* Filter toggle for staff/groups */}
             <div className="flex flex-col gap-1">

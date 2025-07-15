@@ -44,6 +44,8 @@ import EventPopover from '../../atoms/EventPopover/event-popover';
 import { useNavigate } from 'react-router-dom';
 import EventTypeBadge from '../../atoms/EventTypeBadge';
 import { Button } from '../../atoms/Button/button';
+import { TransferDialog } from '../../molecules/TransferDialog';
+import { toast } from '../../atoms/Toast/use-toast';
 
 /**
  * CalendarMainView Component
@@ -278,6 +280,9 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   // State for mobile hamburger menu
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
+  // State for transfer dialog
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  
   // Use external search state if provided, otherwise use internal state
   const currentSearchQuery = searchQuery || internalSearchQuery;
   const handleSearchChange = onSearchChange || setInternalSearchQuery;
@@ -497,8 +502,39 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
 
   // Settings menu handlers
   const handleTransfer = () => {
-    console.log('Transfer clicked');
-    // Implementation here
+    setShowTransferDialog(true);
+  };
+
+  // Handle dialog close - refresh page to ensure clean state
+  const handleTransferDialogClose = () => {
+    setShowTransferDialog(false);
+    // Small delay to ensure dialog closes smoothly before refresh
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  };
+
+  // Handle transfer operation
+  const handleTransferComplete = (eventIds: string[], fromProvider: string, toProvider: string) => {
+    console.log('Transferring events:', { eventIds, fromProvider, toProvider });
+    
+    // Here you would make the actual API call to transfer the events
+    // For now, we'll just show a success message
+    
+    // Close the dialog
+    setShowTransferDialog(false);
+    
+    // Show success toast notification
+    toast({
+      title: "Transfer Successful! ✅",
+      description: `Successfully transferred ${eventIds.length} appointment${eventIds.length !== 1 ? 's' : ''} from ${fromProvider} to ${toProvider}`,
+      variant: 'default'
+    });
+    
+    // Refresh the page to ensure clean state after dialog close
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000); // Give time for user to see the toast
   };
 
   const handlePrint = () => {
@@ -2055,6 +2091,14 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </>
         )}
       </div>
+
+      {/* Transfer Dialog */}
+      <TransferDialog
+        isOpen={showTransferDialog}
+        onClose={handleTransferDialogClose}
+        providers={providersToShow}
+        onTransfer={handleTransferComplete}
+      />
     </div>
   );
 };

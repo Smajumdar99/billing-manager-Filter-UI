@@ -78,7 +78,7 @@ const AppointmentEditActions: React.FC<AppointmentEditActionsProps> = ({ onSave 
           <TooltipContent side="top">Export to Outlook</TooltipContent>
         </TooltipRoot>
         {/* Save Changes button - prominent, at the end */}
-        <Button type="button" size="sm" className="ml-auto bg-sky-500 hover:bg-sky-600 text-white px-4" onClick={onSave}>
+        <Button type="button" size="sm" className="ml-auto text-white px-4" onClick={onSave}>
           Save Changes
         </Button>
       </div>

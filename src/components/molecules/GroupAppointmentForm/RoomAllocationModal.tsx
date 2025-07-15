@@ -5,13 +5,14 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '.
 import { Input } from '../../atoms/Input';
 import { Badge } from '../../atoms/Badge';
 import { Card, CardContent } from '../../atoms/Card';
+import { Switch } from '../../atoms/Switch/switch';
+import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '../../atoms/Tooltip/tooltip';
 import { 
   BuildingOfficeIcon, 
   MapPinIcon, 
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
-  WrenchScrewdriverIcon,
   MagnifyingGlassIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
@@ -24,7 +25,7 @@ interface Room {
   floor: number;
   capacity: number;
   program: string;
-  status: 'available' | 'booked' | 'maintenance';
+  status: 'available' | 'booked'; // Removed 'maintenance' status
   equipment: string[];
   bookedBy?: string;
   bookedTime?: string;
@@ -82,9 +83,8 @@ const mockRooms: Room[] = [
     floor: 2,
     capacity: 2,
     program: 'CBT',
-    status: 'maintenance',
-    equipment: ['Desk setup', 'Computer', 'Printer'],
-    nextAvailable: 'Tomorrow 9:00 AM'
+    status: 'available', // Changed from 'maintenance' to 'available'
+    equipment: ['Desk setup', 'Computer', 'Printer']
   },
   
   // Building B - Specialized Rooms
@@ -197,10 +197,14 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
   const [selectedFloor, setSelectedFloor] = useState('All Floors');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [showBookedRooms, setShowBookedRooms] = useState(false); // New state for showing booked rooms
+  const [rooms, setRooms] = useState<Room[]>(mockRooms); // Local state for rooms that can be modified
+  const [flippedCard, setFlippedCard] = useState<string | null>(null); // For card flip confirmation
+
 
   // Filter rooms based on selected criteria
   const filteredRooms = useMemo(() => {
-    return mockRooms.filter(room => {
+    return rooms.filter(room => {
       const matchesProgram = selectedProgram === 'All Programs' || room.program === selectedProgram;
       const matchesBuilding = selectedBuilding === 'All Buildings' || room.building === selectedBuilding;
       const matchesFloor = selectedFloor === 'All Floors' || room.floor === parseInt(selectedFloor.split(' ')[1]);
@@ -208,9 +212,47 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
         room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         room.id.toLowerCase().includes(searchQuery.toLowerCase());
       
-      return matchesProgram && matchesBuilding && matchesFloor && matchesSearch;
+      // Filter by room status - show available by default, include booked only if switch is on
+      const matchesStatus = room.status === 'available' || (showBookedRooms && room.status === 'booked');
+      
+      return matchesProgram && matchesBuilding && matchesFloor && matchesSearch && matchesStatus;
     });
-  }, [selectedProgram, selectedBuilding, selectedFloor, searchQuery]);
+  }, [selectedProgram, selectedBuilding, selectedFloor, searchQuery, showBookedRooms, rooms]);
+
+  // Show confirmation by flipping the card
+  const showReleaseConfirmation = (room: Room) => {
+    setFlippedCard(room.id);
+  };
+
+  // Release room function
+  const handleReleaseRoom = (roomId: string) => {
+    setRooms(prevRooms => 
+      prevRooms.map(r => 
+        r.id === roomId 
+          ? { 
+              ...r, 
+              status: 'available' as const, 
+              bookedBy: undefined,
+              bookedTime: undefined,
+              nextAvailable: undefined
+            }
+          : r
+      )
+    );
+    
+    // If the released room was selected, clear selection
+    if (selectedRoom?.id === roomId) {
+      setSelectedRoom(null);
+    }
+    
+    // Close confirmation by flipping back
+    setFlippedCard(null);
+  };
+
+  // Cancel release
+  const cancelRelease = () => {
+    setFlippedCard(null);
+  };
 
   // Get status color and icon
   const getStatusDisplay = (room: Room) => {
@@ -227,12 +269,6 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
           icon: <XCircleIcon className="w-4 h-4" />,
           label: 'Booked'
         };
-      case 'maintenance':
-        return {
-          color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-          icon: <WrenchScrewdriverIcon className="w-4 h-4" />,
-          label: 'Maintenance'
-        };
       default:
         return {
           color: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -244,7 +280,12 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
 
   const handleRoomSelect = (room: Room) => {
     if (room.status === 'available') {
-      setSelectedRoom(room);
+      // Toggle functionality - if the room is already selected, unselect it
+      if (selectedRoom?.id === room.id) {
+        setSelectedRoom(null);
+      } else {
+        setSelectedRoom(room);
+      }
     }
   };
 
@@ -256,11 +297,12 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
-        className="sm:max-w-[1200px] lg:max-w-[1400px] p-0 flex flex-col h-[800px] max-h-[90vh] overflow-auto bg-gradient-to-br from-blue-50 to-indigo-100"
-        aria-describedby="room-allocation-dialog-desc"
-      >
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent 
+          className="sm:max-w-[1200px] lg:max-w-[1400px] p-0 flex flex-col h-[800px] max-h-[90vh] overflow-auto bg-gradient-to-br from-blue-50 to-indigo-100"
+          aria-describedby="room-allocation-dialog-desc"
+        >
         {/* Accessible dialog title for screen readers, visually hidden */}
         <DialogTitle className="sr-only">Room Allocation and Booking</DialogTitle>
         {/* Accessible dialog description for screen readers, visually hidden */}
@@ -294,17 +336,13 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
                 <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                 <span>Booked</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                <span>Maintenance</span>
-              </div>
             </div>
           </div>
         </div>
         
         {/* Filters Section */}
         <div className="px-6 py-4 bg-white/60 backdrop-blur-sm border-b border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             {/* Search */}
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -352,93 +390,163 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Show Booked Rooms Toggle */}
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-booked-rooms"
+              checked={showBookedRooms}
+              onCheckedChange={setShowBookedRooms}
+            />
+            <label 
+              htmlFor="show-booked-rooms" 
+              className="text-sm font-medium text-gray-700 cursor-pointer"
+            >
+              Show booked rooms
+            </label>
+          </div>
         </div>
         
         {/* Main Content - Room Grid */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredRooms.map(room => {
               const statusDisplay = getStatusDisplay(room);
               const isSelected = selectedRoom?.id === room.id;
               const isAvailable = room.status === 'available';
+              const isFlipped = flippedCard === room.id;
               
               return (
                 <Card 
                   key={room.id}
                   className={`
-                    cursor-pointer transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1
+                    cursor-pointer transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1
                     ${isSelected ? 'ring-2 ring-blue-500 shadow-lg' : ''}
                     ${isAvailable ? 'hover:shadow-blue-100' : 'opacity-75'}
                     ${!isAvailable ? 'cursor-not-allowed' : ''}
+                    ${isFlipped ? 'scale-105' : ''}
                   `}
-                  onClick={() => handleRoomSelect(room)}
+                  onClick={() => !isFlipped && handleRoomSelect(room)}
                 >
-                  <CardContent className="p-4">
-                    {/* Room Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-sm">{room.name}</h3>
-                        <p className="text-xs text-gray-500 mt-1">{room.id}</p>
-                      </div>
-                      <Badge className={`${statusDisplay.color} border text-xs px-2 py-1 flex items-center gap-1`}>
-                        {statusDisplay.icon}
-                        {statusDisplay.label}
-                      </Badge>
-                    </div>
-                    
-                    {/* Room Details */}
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <BuildingOfficeIcon className="w-3 h-3" />
-                        <span>{room.building}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <MapPinIcon className="w-3 h-3" />
-                        <span>Floor {room.floor} • Capacity: {room.capacity}</span>
-                      </div>
-                      <div className="text-xs">
-                        <Badge variant="outline" className="text-xs px-2 py-0.5">
-                          {room.program}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    {/* Equipment */}
-                    <div className="mb-3">
-                      <p className="text-xs font-medium text-gray-700 mb-1">Equipment:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {room.equipment.slice(0, 2).map(eq => (
-                          <Badge key={eq} variant="secondary" className="text-xs px-1.5 py-0.5">
-                            {eq}
+                  <CardContent className="p-4 relative">
+                    {/* Regular Card Content */}
+                    {!isFlipped && (
+                      <>
+                        {/* Room Header */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-sm">{room.name}</h3>
+                            <p className="text-xs text-gray-500 mt-1">{room.id}</p>
+                          </div>
+                          <Badge className={`${statusDisplay.color} border text-xs px-2 py-1 flex items-center gap-1`}>
+                            {statusDisplay.icon}
+                            {statusDisplay.label}
                           </Badge>
-                        ))}
-                        {room.equipment.length > 2 && (
-                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                            +{room.equipment.length - 2} more
-                          </Badge>
+                        </div>
+                        
+                        {/* Room Details */}
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <BuildingOfficeIcon className="w-3 h-3" />
+                            <span>{room.building}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <MapPinIcon className="w-3 h-3" />
+                            <span>Floor {room.floor} • Capacity: {room.capacity}</span>
+                          </div>
+                          <div className="text-xs">
+                            <Badge variant="outline" className="text-xs px-2 py-0.5">
+                              {room.program}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        {/* Equipment */}
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-gray-700 mb-1">Equipment:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {room.equipment.slice(0, 2).map(eq => (
+                              <Badge key={eq} variant="secondary" className="text-xs px-1.5 py-0.5">
+                                {eq}
+                              </Badge>
+                            ))}
+                            {room.equipment.length > 2 && (
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                                +{room.equipment.length - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Booking Info */}
+                        {room.status === 'booked' && (
+                          <div className="bg-red-50 p-2 rounded text-xs">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="font-medium text-red-800">Booked by: {room.bookedBy}</p>
+                                <p className="text-red-600">{room.bookedTime}</p>
+                                <p className="text-red-600">Next: {room.nextAvailable}</p>
+                              </div>
+                              <TooltipProvider>
+                                <TooltipRoot>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        showReleaseConfirmation(room);
+                                      }}
+                                      className="h-6 px-2 py-1 text-xs border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                                    >
+                                      Release
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Release this room booking</p>
+                                  </TooltipContent>
+                                </TooltipRoot>
+                              </TooltipProvider>
+                            </div>
+                          </div>
                         )}
-                      </div>
-                    </div>
-                    
-                    {/* Booking Info */}
-                    {room.status === 'booked' && (
-                      <div className="bg-red-50 p-2 rounded text-xs">
-                        <p className="font-medium text-red-800">Booked by: {room.bookedBy}</p>
-                        <p className="text-red-600">{room.bookedTime}</p>
-                        <p className="text-red-600">Next: {room.nextAvailable}</p>
-                      </div>
+                      </>
                     )}
-                    
-                    {room.status === 'maintenance' && (
-                      <div className="bg-yellow-50 p-2 rounded text-xs">
-                        <p className="font-medium text-yellow-800">Under Maintenance</p>
-                        <p className="text-yellow-600">Available: {room.nextAvailable}</p>
-                      </div>
-                    )}
-                    
-                    {isSelected && isAvailable && (
-                      <div className="bg-blue-50 p-2 rounded text-xs mt-2">
-                        <p className="font-medium text-blue-800">✓ Selected for booking</p>
+
+                    {/* Flipped Card Content - Confirmation */}
+                    {isFlipped && (
+                      <div className="min-h-[200px] flex flex-col items-center justify-center text-center">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                          <CheckCircleIcon className="w-6 h-6 text-yellow-600" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Release Room?</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Are you sure you want to release {room.name}? This will make the room available for booking.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cancelRelease();
+                            }}
+                            className="px-3 py-1 text-xs"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReleaseRoom(room.id);
+                            }}
+                            className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700"
+                          >
+                            Release Room
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -479,7 +587,7 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
                 variant="default" 
                 onClick={handleBookRoom}
                 disabled={!selectedRoom}
-                className="px-6 h-9"
+                className={`px-6 h-9 ${!selectedRoom ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed' : ''}`}
               >
                 <CalendarIcon className="w-4 h-4 mr-2" />
                 Book Room
@@ -489,6 +597,9 @@ const RoomAllocationModal: React.FC<RoomAllocationModalProps> = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    
+
+    </>
   );
 };
 

@@ -9,6 +9,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void
   title: string
   message: string
+  confirmButtonText?: string
 }
 
 export const ConfirmDialog: FC<ConfirmDialogProps> = ({
@@ -16,11 +17,12 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
   onClose,
   onConfirm,
   title,
-  message
+  message,
+  confirmButtonText = "Confirm"
 }) => {
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-[9999]" onClose={onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -30,7 +32,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/25" />
+          <div className="fixed inset-0 bg-black/25 z-[9999]" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -44,7 +46,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white p-6 text-left align-middle shadow-xl transition-all">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white p-6 text-left align-middle shadow-xl transition-all z-[9999] relative">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100">
                     <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
@@ -63,7 +65,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
                     Cancel
                   </Button>
                   <Button variant="default" onClick={onConfirm}>
-                    Reset Layout
+                    {confirmButtonText}
                   </Button>
                 </div>
               </Dialog.Panel>
