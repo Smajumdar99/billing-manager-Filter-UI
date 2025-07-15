@@ -25,7 +25,8 @@ import {
   Squares2X2Icon,
   QueueListIcon,
   ViewColumnsIcon,
-  Bars3Icon
+  Bars3Icon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select';
@@ -1600,9 +1601,198 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
         </div>
       </div>
       
+      {/* Mobile Search Overlay - Only visible on mobile when search is clicked */}
+      {showSearchOverlay && (
+        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowSearchOverlay(false)}>
+          <div className="bg-white h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-800">Search Appointments</h3>
+                <button
+                  onClick={() => setShowSearchOverlay(false)}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4">
+              {/* Mobile Search Input */}
+              <div className="mb-6">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Search appointments, providers, patients..."
+                    value={currentSearchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Advanced Search Options */}
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Advanced Filters</h4>
+                  
+                  {/* Service Type */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
+                    <Select
+                      value={advancedFilters.serviceType}
+                      onValueChange={(value) => setAdvancedFilters({...advancedFilters, serviceType: value})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Any Service Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Any Service Type">Any Service Type</SelectItem>
+                        <SelectItem value="Individual Therapy">Individual Therapy</SelectItem>
+                        <SelectItem value="Group Therapy">Group Therapy</SelectItem>
+                        <SelectItem value="Assessment">Assessment</SelectItem>
+                        <SelectItem value="Consultation">Consultation</SelectItem>
+                        <SelectItem value="Follow-up">Follow-up</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Program */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Program</label>
+                    <Select
+                      value={advancedFilters.program}
+                      onValueChange={(value) => setAdvancedFilters({...advancedFilters, program: value})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All Programs" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All Programs">All Programs</SelectItem>
+                        <SelectItem value="Outpatient">Outpatient</SelectItem>
+                        <SelectItem value="Intensive Outpatient">Intensive Outpatient</SelectItem>
+                        <SelectItem value="Partial Hospitalization">Partial Hospitalization</SelectItem>
+                        <SelectItem value="Residential">Residential</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Status */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <Select
+                      value={advancedFilters.status}
+                      onValueChange={(value) => setAdvancedFilters({...advancedFilters, status: value})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All Statuses">All Statuses</SelectItem>
+                        <SelectItem value="Scheduled">Scheduled</SelectItem>
+                        <SelectItem value="Confirmed">Confirmed</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="Cancelled">Cancelled</SelectItem>
+                        <SelectItem value="No Show">No Show</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Provider */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Provider</label>
+                    <Select
+                      value={advancedFilters.provider}
+                      onValueChange={(value) => setAdvancedFilters({...advancedFilters, provider: value})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All Providers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All Providers">All Providers</SelectItem>
+                        <SelectItem value="Dr. Sarah Johnson">Dr. Sarah Johnson</SelectItem>
+                        <SelectItem value="Dr. Michael Chen">Dr. Michael Chen</SelectItem>
+                        <SelectItem value="Dr. Emily Rodriguez">Dr. Emily Rodriguez</SelectItem>
+                        <SelectItem value="Dr. David Kim">Dr. David Kim</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                {/* Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">From</label>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={advancedFilters.dateFrom}
+                        onChange={(e) => setAdvancedFilters({...advancedFilters, dateFrom: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">To</label>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={advancedFilters.dateTo}
+                        onChange={(e) => setAdvancedFilters({...advancedFilters, dateTo: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="sticky bottom-0 bg-white pt-6 mt-6 border-t border-gray-200">
+                <div className="space-y-3">
+                  <Button
+                    variant="default"
+                    size="lg"
+                    className="w-full"
+                    onClick={() => {
+                      // Apply filters logic here
+                      setShowSearchOverlay(false);
+                    }}
+                  >
+                    Apply Search & Filters
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full"
+                    onClick={() => {
+                      setAdvancedFilters({
+                        serviceType: 'Any Service Type',
+                        dateFrom: '',
+                        dateTo: '',
+                        program: 'All Programs',
+                        status: 'All Statuses',
+                        provider: 'All Providers'
+                      });
+                      handleSearchChange('');
+                    }}
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Menu Overlay - Only visible on mobile when hamburger is clicked */}
       {showMobileMenu && (
-        <div className="md:hidden absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 z-50" onClick={() => setShowMobileMenu(false)}>
+        <div className="md:hidden absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 z-40" onClick={() => setShowMobileMenu(false)}>
           <div className="bg-white w-64 h-full shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -2091,6 +2281,15 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </>
         )}
       </div>
+
+      {/* Mobile Floating Action Button - New Appointment */}
+      <button
+        onClick={() => navigate('/new-appointment')}
+        className="md:hidden fixed bottom-20 right-4 w-12 h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-30 active:scale-95"
+        aria-label="New Appointment"
+      >
+        <PlusIcon className="w-5 h-5" />
+      </button>
 
       {/* Transfer Dialog */}
       <TransferDialog
