@@ -22,12 +22,15 @@ import {
   PhoneIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
-  Squares2X2Icon,
   QueueListIcon,
   ViewColumnsIcon,
   Bars3Icon,
-  PlusIcon
+  PlusIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBed } from '@fortawesome/free-solid-svg-icons';
+import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/atoms/Tooltip/tooltip';
 import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select';
 import {
@@ -45,6 +48,7 @@ import EventPopover from '../../atoms/EventPopover/event-popover';
 import { useNavigate } from 'react-router-dom';
 import EventTypeBadge from '../../atoms/EventTypeBadge';
 import { Button } from '../../atoms/Button/button';
+import { Switch } from '../../atoms/Switch';
 import { TransferDialog } from '../../molecules/TransferDialog';
 import { toast } from '../../atoms/Toast/use-toast';
 
@@ -101,6 +105,7 @@ interface CalendarMainViewProps {
   availablePatients?: { id: string; value: string; label: string; status: string }[];
   activeTab: 'provider' | 'room' | 'patient';
   onTabChange: (tab: 'provider' | 'room' | 'patient') => void;
+  onMyCalendarToggle?: (isMyCalendar: boolean) => void;
 }
 
 type ColorScheme = {
@@ -249,10 +254,20 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   selectedPatients = [],
   availablePatients = [],
   activeTab,
-  onTabChange
+  onTabChange,
+  onMyCalendarToggle
 }) => {
   // State for internal search functionality if no external handler provided
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  
+  // State for My Calendar toggle - determines if viewing user's personal calendar
+  const [isMyCalendar, setIsMyCalendar] = useState(false);
+  
+  // State for agenda date range - used when view is 'agenda'
+  const [agendaDateRange, setAgendaDateRange] = useState({
+    startDate: new Date(),
+    endDate: addDays(new Date(), 7) // Default to 7 days from today
+  });
   
   // State for tab functionality - Provider selected by default
   // const [activeTab, setActiveTab] = useState<'provider' | 'room' | 'patient'>('provider');
@@ -460,9 +475,24 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     return true;
   });
 
+  // Filter events based on My Calendar toggle
+  // When My Calendar is ON, show only events for the logged-in user (Dr. Sarah Wilson)
+  // When My Calendar is OFF, show all events
+  const myCalendarFilteredEvents = isMyCalendar 
+    ? filteredEvents.filter(event => {
+        // Filter to show only events where the current user is the supervising provider
+        // Check if the event title contains the user's name or if it's their appointment type
+        const isUserEvent = event.title.toLowerCase().includes('sarah') || 
+                           event.title.toLowerCase().includes('wilson') ||
+                           (event as any).supervisingProvider === 'Dr. Sarah Wilson' ||
+                           (event as any).personName === 'Sarah Wilson';
+        return isUserEvent;
+      })
+    : filteredEvents;
+
   // Filter all-day events
-  const allDayEvents = filteredEvents.filter(event => event.isAllDay);
-  const timeEvents = filteredEvents.filter(event => !event.isAllDay);
+  const allDayEvents = myCalendarFilteredEvents.filter(event => event.isAllDay);
+  const timeEvents = myCalendarFilteredEvents.filter(event => !event.isAllDay);
 
   // State for dropdown visibility
   const filterDropdownRef = useRef<HTMLDivElement>(null);
@@ -496,9 +526,32 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
         return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
       case 'month':
         return format(selectedDate, 'MMMM yyyy');
+      case 'agenda':
+        return `${format(agendaDateRange.startDate, 'MMM d')} - ${format(agendaDateRange.endDate, 'MMM d, yyyy')}`;
       default:
         return format(selectedDate, 'MMMM d, yyyy');
     }
+  };
+
+  // Date range handlers for agenda view
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStartDate = new Date(e.target.value);
+    setAgendaDateRange(prev => ({
+      ...prev,
+      startDate: newStartDate,
+      // Ensure end date is not before start date
+      endDate: newStartDate > prev.endDate ? addDays(newStartDate, 1) : prev.endDate
+    }));
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEndDate = new Date(e.target.value);
+    setAgendaDateRange(prev => ({
+      ...prev,
+      endDate: newEndDate,
+      // Ensure start date is not after end date
+      startDate: newEndDate < prev.startDate ? subDays(newEndDate, 1) : prev.startDate
+    }));
   };
 
   // Settings menu handlers
@@ -587,20 +640,76 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   // Action buttons renderer
   const ActionButtons: React.FC<{ data: AgendaEventType }> = ({ data }) => {
     return (
-      <div className="flex items-center space-x-2">
-        <button className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50">
-          <EyeIcon className="w-4 h-4" />
-        </button>
-        <button className="p-1 text-gray-400 hover:text-green-600 rounded-full hover:bg-green-50">
-          <PencilIcon className="w-4 h-4" />
-        </button>
-        <button className="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50">
-          <TrashIcon className="w-4 h-4" />
-        </button>
-        <button className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-50">
-          <EllipsisHorizontalIcon className="w-4 h-4" />
-        </button>
-      </div>
+      <TooltipProvider>
+        <div className="flex items-center space-x-2">
+          {/* View appointment details */}
+          <TooltipRoot>
+            <TooltipTrigger asChild>
+              <button className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50">
+                <EyeIcon className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>View Details</p>
+            </TooltipContent>
+          </TooltipRoot>
+          
+          {/* Edit appointment */}
+          <TooltipRoot>
+            <TooltipTrigger asChild>
+              <button className="p-1 text-gray-400 hover:text-green-600 rounded-full hover:bg-green-50">
+                <PencilIcon className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Edit Appointment</p>
+            </TooltipContent>
+          </TooltipRoot>
+          
+          {/* Allocate Room */}
+          <TooltipRoot>
+            <TooltipTrigger asChild>
+              <button 
+                className="p-1 text-gray-400 hover:text-purple-600 rounded-full hover:bg-purple-50"
+                onClick={() => {
+                  // Handle room allocation logic here
+                  console.log('Allocating room for appointment:', data.id, data.title);
+                  // You can add navigation to room allocation page or open a modal
+                }}
+              >
+                <FontAwesomeIcon icon={faBed} className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Allocate Room</p>
+            </TooltipContent>
+          </TooltipRoot>
+          
+          {/* Delete appointment */}
+          <TooltipRoot>
+            <TooltipTrigger asChild>
+              <button className="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50">
+                <TrashIcon className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Delete Appointment</p>
+            </TooltipContent>
+          </TooltipRoot>
+          
+          {/* More actions */}
+          <TooltipRoot>
+            <TooltipTrigger asChild>
+              <button className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-50">
+                <EllipsisHorizontalIcon className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>More Actions</p>
+            </TooltipContent>
+          </TooltipRoot>
+        </div>
+      </TooltipProvider>
     );
   };
 
@@ -609,8 +718,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     {
       id: '1',
       title: 'Initial Assessment - Depression',
-      startTime: new Date(2024, 2, 20, 9, 0).toISOString(),
-      endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      startTime: new Date(2025, 6, 21, 9, 0).toISOString(), // Today - July 21, 2025
+      endTime: new Date(2025, 6, 21, 10, 30).toISOString(),
       facility: 'Main Campus',
       program: 'Adult Mental Health',
       appointmentType: 'Initial Assessment',
@@ -623,9 +732,9 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     },
     {
       id: '2',
-      title: 'Medication Management',
-      startTime: new Date(2024, 2, 20, 10, 0).toISOString(),
-      endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      title: 'Medication Management - Dr. Sarah Wilson',
+      startTime: new Date(2025, 6, 21, 10, 0).toISOString(), // Today
+      endTime: new Date(2025, 6, 21, 10, 30).toISOString(),
       facility: 'Main Campus',
       program: 'Adult Mental Health',
       appointmentType: 'Medication Review',
@@ -639,8 +748,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     {
       id: '3',
       title: 'Substance Use Assessment',
-      startTime: new Date(2024, 2, 20, 11, 0).toISOString(),
-      endTime: new Date(2024, 2, 20, 12, 30).toISOString(),
+      startTime: new Date(2025, 6, 22, 11, 0).toISOString(), // Tomorrow - July 22, 2025
+      endTime: new Date(2025, 6, 22, 12, 30).toISOString(),
       facility: 'North Center',
       program: 'Substance Use',
       appointmentType: 'Initial Assessment',
@@ -654,8 +763,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     {
       id: '4',
       title: 'Group Therapy - Anxiety Management',
-      startTime: new Date(2024, 2, 20, 14, 0).toISOString(),
-      endTime: new Date(2024, 2, 20, 15, 30).toISOString(),
+      startTime: new Date(2025, 6, 22, 14, 0).toISOString(), // Tomorrow
+      endTime: new Date(2025, 6, 22, 15, 30).toISOString(),
       facility: 'West Wing',
       program: 'Adult Mental Health',
       appointmentType: 'Group Therapy',
@@ -668,9 +777,9 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     },
     {
       id: '5',
-      title: 'Crisis Intervention',
-      startTime: new Date(2024, 2, 20, 9, 30).toISOString(),
-      endTime: new Date(2024, 2, 20, 10, 30).toISOString(),
+      title: 'Crisis Intervention - Sarah Wilson',
+      startTime: new Date(2025, 6, 23, 9, 30).toISOString(), // July 23, 2025
+      endTime: new Date(2025, 6, 23, 10, 30).toISOString(),
       facility: 'Emergency Unit',
       program: 'Crisis Services',
       appointmentType: 'Crisis Intervention',
@@ -684,8 +793,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     {
       id: '6',
       title: 'Telehealth - Depression Follow-up',
-      startTime: new Date(2024, 2, 20, 13, 0).toISOString(),
-      endTime: new Date(2024, 2, 20, 14, 0).toISOString(),
+      startTime: new Date(2025, 6, 23, 13, 0).toISOString(), // July 23, 2025
+      endTime: new Date(2025, 6, 23, 14, 0).toISOString(),
       facility: 'Virtual Care',
       program: 'Adult Mental Health',
       appointmentType: 'Telehealth',
@@ -699,8 +808,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     {
       id: '7',
       title: 'MAT Program Intake',
-      startTime: new Date(2024, 2, 20, 15, 0).toISOString(),
-      endTime: new Date(2024, 2, 20, 16, 30).toISOString(),
+      startTime: new Date(2025, 6, 24, 15, 0).toISOString(), // July 24, 2025
+      endTime: new Date(2025, 6, 24, 16, 30).toISOString(),
       facility: 'South Center',
       program: 'MAT Program',
       appointmentType: 'Initial Assessment',
@@ -713,9 +822,9 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     },
     {
       id: '8',
-      title: 'Walk-in Assessment',
-      startTime: new Date(2024, 2, 20, 10, 45).toISOString(),
-      endTime: new Date(2024, 2, 20, 11, 45).toISOString(),
+      title: 'Walk-in Assessment - Dr. Sarah Wilson',
+      startTime: new Date(2025, 6, 25, 10, 45).toISOString(), // July 25, 2025
+      endTime: new Date(2025, 6, 25, 11, 45).toISOString(),
       facility: 'Walk-in Clinic',
       program: 'Crisis Services',
       appointmentType: 'Crisis Intervention',
@@ -729,8 +838,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     {
       id: '9',
       title: 'Dual Diagnosis Follow-up',
-      startTime: new Date(2024, 2, 20, 13, 30).toISOString(),
-      endTime: new Date(2024, 2, 20, 14, 30).toISOString(),
+      startTime: new Date(2025, 6, 26, 13, 30).toISOString(), // July 26, 2025
+      endTime: new Date(2025, 6, 26, 14, 30).toISOString(),
       facility: 'Main Campus',
       program: 'Dual Diagnosis',
       appointmentType: 'Follow-up',
@@ -743,9 +852,9 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     },
     {
       id: '10',
-      title: 'IOP Group Session',
-      startTime: new Date(2024, 2, 20, 9, 0).toISOString(),
-      endTime: new Date(2024, 2, 20, 12, 0).toISOString(),
+      title: 'IOP Group Session - Sarah Wilson',
+      startTime: new Date(2025, 6, 27, 9, 0).toISOString(), // July 27, 2025
+      endTime: new Date(2025, 6, 27, 12, 0).toISOString(),
       facility: 'IOP Center',
       program: 'IOP',
       appointmentType: 'Group Therapy',
@@ -834,9 +943,22 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   ];
 
   // Use mockAgendaData instead of transforming events
-  // Filter agenda data based on search query and filter options
+  // Filter agenda data based on search query, filter options, and date range
   const agendaData = mockAgendaData.filter(appointment => {
-    // Apply search filter first
+    // Apply date range filter for agenda view
+    if (view === 'agenda') {
+      const appointmentDate = new Date(appointment.startTime);
+      const startOfDay = new Date(agendaDateRange.startDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(agendaDateRange.endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      if (appointmentDate < startOfDay || appointmentDate > endOfDay) {
+        return false;
+      }
+    }
+    
+    // Apply search filter
     if (currentSearchQuery) {
       const searchLower = currentSearchQuery.toLowerCase();
       const matchesSearch = (
@@ -883,6 +1005,18 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       
       return matchesTypeFilter;
     }
+    
+    // Apply My Calendar filter if enabled
+    if (isMyCalendar) {
+      const isUserAppointment = appointment.title.toLowerCase().includes('sarah') || 
+                               appointment.title.toLowerCase().includes('wilson') ||
+                               appointment.person.toLowerCase().includes('sarah') ||
+                               appointment.person.toLowerCase().includes('wilson') ||
+                               (appointment as any).supervisingProvider === 'Dr. Sarah Wilson';
+      if (!isUserAppointment) {
+        return false;
+      }
+    }
 
     return true;
   });
@@ -899,6 +1033,15 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   const handleEditEvent = (event: Event) => {
     // Navigate to Edit Appointment page for all event types
     navigate(`/edit-appointment/${event.id}`);
+  };
+
+  // Handler for My Calendar toggle - switches between personal and other calendars
+  const handleMyCalendarToggle = (checked: boolean) => {
+    setIsMyCalendar(checked);
+    // Call parent callback to update calendar data
+    if (onMyCalendarToggle) {
+      onMyCalendarToggle(checked);
+    }
   };
 
   // Patients to show (either from props or default)
@@ -958,10 +1101,33 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
             )}
             
             <div className="flex items-center pr-3">
-              {/* Date display */}
-              <h2 className="text-lg md:text-xl font-semibold text-gray-800">
-                {getHeaderDate()}
-              </h2>
+              {/* Date display - show date range inputs for agenda view */}
+              {view === 'agenda' ? (
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
+                    <label className="text-sm font-medium text-gray-600">From:</label>
+                    <input
+                      type="date"
+                      value={format(agendaDateRange.startDate, 'yyyy-MM-dd')}
+                      onChange={handleStartDateChange}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <label className="text-sm font-medium text-gray-600">To:</label>
+                    <input
+                      type="date"
+                      value={format(agendaDateRange.endDate, 'yyyy-MM-dd')}
+                      onChange={handleEndDateChange}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                  {getHeaderDate()}
+                </h2>
+              )}
               
               {/* Show only the relevant button based on current view */}
               <div className="ml-3">
@@ -1227,7 +1393,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                       )}
                       {hasActiveFilters() && view !== 'agenda' && (
                         <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">
-                          {filteredEvents.length}
+                          {myCalendarFilteredEvents.length}
                         </span>
                       )}
                     </div>
@@ -1446,6 +1612,18 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 <span>Export to Outlook</span>
               </DropdownMenuItem>
               
+              <DropdownMenuItem className="flex items-center justify-between px-2 py-2" onClick={(e) => e.preventDefault()}>
+                <div className="flex items-center">
+                  <CalendarIcon className="w-4 h-4 mr-2" />
+                  <span>My calendar</span>
+                </div>
+                <Switch 
+                  checked={isMyCalendar}
+                  onCheckedChange={handleMyCalendarToggle}
+                  className="ml-2"
+                />
+              </DropdownMenuItem>
+              
               <DropdownMenuSeparator />
               
               <DropdownMenu>
@@ -1454,7 +1632,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center">
                         {providerLayoutMode === 'tabs' ? 
-                          <Squares2X2Icon className="w-4 h-4 mr-2" /> : 
+                          <Bars3Icon className="w-4 h-4 mr-2" /> : 
                           providerLayoutMode === 'vertical' ?
                           <QueueListIcon className="w-4 h-4 mr-2" /> :
                           <ViewColumnsIcon className="w-4 h-4 mr-2" />
@@ -1471,7 +1649,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                     className="flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2">
-                      <Squares2X2Icon className="w-4 h-4" />
+                      <Bars3Icon className="w-4 h-4" />
                       <span>Horizontal Tabs</span>
                     </div>
                     {providerLayoutMode === 'tabs' && <CheckIcon className="w-4 h-4 text-green-600" />}
@@ -1993,7 +2171,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       {displayProviders.length > 0 && effectiveLayoutMode === 'tabs' && (
         <div className="border-b border-gray-200 bg-gray-50/50">
           <div className="px-6 py-2">
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-between">
               {/* Provider tabs */}
               <div className="flex space-x-1 overflow-x-auto">
                 {displayProviders.map((provider) => (
@@ -2017,6 +2195,75 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                   </button>
                 ))}
               </div>
+              
+              {/* Export Button with Dropdown */}
+              {view === 'agenda' && (
+                <DropdownMenu>
+                  <TooltipProvider>
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <button className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors">
+                            <ArrowUpOnSquareStackIcon className="w-4 h-4 mr-1.5" />
+                            Export
+                            <ChevronRightIcon className="w-3 h-3 ml-1 rotate-90" />
+                          </button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Export agenda data</p>
+                      </TooltipContent>
+                    </TooltipRoot>
+                  </TooltipProvider>
+                  
+                  <DropdownMenuContent align="end" className="w-48">
+                    {/* Export as CSV */}
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        console.log('Exporting as CSV:', agendaData.length, 'appointments');
+                        // Add CSV export logic here
+                        // Example: exportToCSV(agendaData);
+                      }}
+                      className="flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                      Export as CSV
+                    </DropdownMenuItem>
+                    
+                    {/* Export as PDF */}
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        console.log('Exporting as PDF:', agendaData.length, 'appointments');
+                        // Add PDF export logic here
+                        // Example: exportToPDF(agendaData);
+                      }}
+                      className="flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-2 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                      Export as PDF
+                    </DropdownMenuItem>
+                    
+                    {/* Export as Excel */}
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        console.log('Exporting as Excel:', agendaData.length, 'appointments');
+                        // Add Excel export logic here
+                        // Example: exportToExcel(agendaData);
+                      }}
+                      className="flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                      Export as Excel
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         </div>
@@ -2186,14 +2433,14 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                   ) : view === 'week' ? (
                     <WeekView 
                       selectedDate={selectedDate} 
-                      events={filteredEvents}
+                      events={myCalendarFilteredEvents}
                       timeSlots={timeSlots}
                       onEditEvent={handleEditEvent}
                     />
                   ) : (
                     <MonthView 
                       selectedDate={selectedDate} 
-                      events={filteredEvents}
+                      events={myCalendarFilteredEvents}
                       onEditEvent={handleEditEvent}
                     />
                   )}
@@ -2266,7 +2513,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
               <div className="h-full w-full overflow-hidden">
                 <WeekView 
                   selectedDate={selectedDate} 
-                  events={filteredEvents}
+                  events={myCalendarFilteredEvents}
                   timeSlots={timeSlots}
                   onEditEvent={handleEditEvent}
                 />
@@ -2274,7 +2521,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
             ) : (
               <MonthView 
                 selectedDate={selectedDate} 
-                events={filteredEvents}
+                events={myCalendarFilteredEvents}
                 onEditEvent={handleEditEvent}
               />
             )}

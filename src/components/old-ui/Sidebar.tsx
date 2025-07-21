@@ -4,7 +4,7 @@ import {
   PencilSquareIcon, BeakerIcon as LabIcon, ArrowTrendingUpIcon, 
   DocumentPlusIcon, ClipboardIcon, ClipboardDocumentListIcon, 
   Square3Stack3DIcon as MedicationIcon, DocumentCheckIcon, AcademicCapIcon, 
-  CheckCircleIcon, ExclamationCircleIcon, EyeIcon, UserGroupIcon as GroupIcon,
+  CheckCircleIcon, ExclamationCircleIcon, UserGroupIcon as GroupIcon,
   FolderIcon, DocumentDuplicateIcon, PresentationChartBarIcon,
   ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
@@ -162,8 +162,8 @@ const defaultSidebarItems = [
   { icon: <DocumentCheckIcon />, label: "RecordMAR Orders/Vitals" },
   { icon: <AcademicCapIcon />, label: "Patient Education" },
   { icon: <CheckCircleIcon />, label: "Batch Eligibility Checking" },
-  { icon: <ExclamationCircleIcon />, label: "New Incident" },
-  { icon: <EyeIcon />, label: "View Incidents" },
+  { icon: <ExclamationCircleIcon />, label: "Incidents" },
+  { icon: <ClipboardDocumentListIcon />, label: "Interdisciplinary Treatment Plan" },
   { icon: <GroupIcon />, label: "Patient Monitoring Rounds" },
   { icon: <DocumentTextIcon />, label: "Patient Forms" },
   { icon: <FolderIcon />, label: "Form Cabinet" },

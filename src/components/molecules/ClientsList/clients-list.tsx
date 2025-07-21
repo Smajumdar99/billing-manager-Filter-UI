@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/atoms/Button';
+import PrescriptionModal from '@/components/molecules/PrescriptionModal/prescription-modal';
 import { Input } from '@/components/atoms/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select';
 import { DataTable } from '@/components/organisms/DataTable';
@@ -12,7 +13,7 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   CalendarIcon,
-  ChevronRightIcon,
+
   PlusIcon,
   Squares2X2Icon,
   TableCellsIcon,
@@ -25,6 +26,7 @@ import {
   BeakerIcon,
   CubeIcon,
   EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   XMarkIcon,
   AdjustmentsHorizontalIcon,
   CheckIcon
@@ -613,59 +615,35 @@ const getStatusBadgeStyles = (status: string) => {
   }
 };
 
-// Patient Card Component for mobile view
-const PatientCard: React.FC<{ patient: any; onSelect: (patient: any) => void }> = ({ patient, onSelect }) => {
-  const age = calculateAge(patient.dateOfBirth);
-  
-  return (
-    <div 
-      className="bg-white rounded-lg border border-gray-100 p-4 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-      onClick={() => onSelect(patient)}
-    >
-      {/* Header */}
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex items-center">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-            <UserIcon className="h-5 w-5 text-blue-600" />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-900">{patient.name}</h3>
-            <p className="text-xs text-gray-500">{patient.gender}, {age} years old</p>
-          </div>
-        </div>
-        <div className="flex items-center">
-          <span className={cn('px-2 py-1 text-xs font-medium rounded-full border', getStatusBadgeStyles(patient.status))}>
-            {patient.status}
-          </span>
-          <ChevronRightIcon className="h-4 w-4 text-gray-400 ml-2" />
-        </div>
-      </div>
-      
-      {/* Contact Info */}
-      <div className="space-y-2 text-xs text-gray-600 mb-3">
-        <div className="flex items-center">
-          <PhoneIcon className="h-3.5 w-3.5 mr-2 text-gray-400" />
-          {patient.mobilePhone || patient.homePhone}
-        </div>
-        <div className="flex items-center">
-          <EnvelopeIcon className="h-3.5 w-3.5 mr-2 text-gray-400" />
-          {patient.email}
-        </div>
-      </div>
-      
-      {/* Last Encounter */}
-      <div className="flex items-center text-xs text-gray-500">
-        <CalendarIcon className="h-3.5 w-3.5 mr-1" />
-        Last encounter: {new Date(patient.lastEncounter).toLocaleDateString()}
-      </div>
-    </div>
-  );
-};
+
 
 // Modern Grid Card Component
-const ClientGridCard: React.FC<{ patient: any; onSelect: (patient: any) => void }> = ({ patient, onSelect }) => {
+const ClientGridCard: React.FC<{
+  patient: any;
+  onSelect: (patient: any) => void;
+  onPrescribeClick: () => void;
+}> = ({ patient, onSelect, onPrescribeClick }) => {
   const age = calculateAge(patient.dateOfBirth);
   const [imageError, setImageError] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
   
   // Generate initials as fallback
   const initials = patient.name
@@ -678,6 +656,12 @@ const ClientGridCard: React.FC<{ patient: any; onSelect: (patient: any) => void 
   // Action handlers
   const handleAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation(); // Prevent card click
+    
+    if (action === 'Prescribe') {
+      onPrescribeClick();
+      return;
+    }
+    
     console.log(`${action} action for patient:`, patient.name);
     // Add your action logic here
   };
@@ -687,9 +671,9 @@ const ClientGridCard: React.FC<{ patient: any; onSelect: (patient: any) => void 
       className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group hover:border-blue-200 relative overflow-hidden"
       onClick={() => onSelect(patient)}
     >
-      {/* Header with Avatar and Status */}
+      {/* Header with Avatar, Status, and Actions Menu */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center">
+        <div className="flex items-center flex-1">
           {patient.profilePicture && !imageError ? (
             <img
               src={patient.profilePicture}
@@ -711,9 +695,226 @@ const ClientGridCard: React.FC<{ patient: any; onSelect: (patient: any) => void 
             </p>
           </div>
         </div>
-        <span className={cn('px-3 py-1 text-xs font-medium rounded-full border', getStatusBadgeStyles(patient.status))}>
-          {patient.status}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={cn('px-3 py-1 text-xs font-medium rounded-full border', getStatusBadgeStyles(patient.status))}>
+            {patient.status}
+          </span>
+          
+          {/* Desktop: Three-dot menu in header */}
+          <div className="hidden sm:block relative" ref={menuRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="Patient actions"
+            >
+              <EllipsisVerticalIcon className="h-5 w-5 text-gray-500" />
+            </button>
+            
+            {/* Desktop Dropdown Menu */}
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Documents');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <DocumentTextIcon className="h-4 w-4 text-gray-500" />
+                  Documents
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Chart');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <ChartBarIcon className="h-4 w-4 text-gray-500" />
+                  Chart
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Add Encounter');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <PlusIcon className="h-4 w-4 text-gray-500" />
+                  Add Encounter
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Prescribe');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <BeakerIcon className="h-4 w-4 text-gray-500" />
+                  Prescribe
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Diagnosis');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <CubeIcon className="h-4 w-4 text-gray-500" />
+                  Diagnosis
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'ABA Tool');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <CubeIcon className="h-4 w-4 text-gray-500" />
+                  ABA Tool
+                </button>
+                
+                <div className="border-t border-gray-100 my-1" />
+                
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Edit');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <PencilIcon className="h-4 w-4 text-gray-500" />
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Delete');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors touch-manipulation"
+                >
+                  <TrashIcon className="h-4 w-4 text-red-500" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: Bottom Action Bar on Hover */}
+      <div className="hidden sm:block absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent p-3 pt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+          {/* Main Actions */}
+          <button
+            onClick={(e) => handleAction(e, 'Documents')}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm min-w-0 flex-shrink-0"
+          >
+            <DocumentTextIcon className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Docs</span>
+          </button>
+          <button
+            onClick={(e) => handleAction(e, 'Chart')}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm min-w-0 flex-shrink-0"
+          >
+            <ChartBarIcon className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Chart</span>
+          </button>
+          <button
+            onClick={(e) => handleAction(e, 'Add Encounter')}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm min-w-0 flex-shrink-0"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Add</span>
+          </button>
+          <button
+            onClick={(e) => handleAction(e, 'Prescribe')}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors shadow-sm min-w-0 flex-shrink-0"
+          >
+            <BeakerIcon className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Rx</span>
+          </button>
+          <button
+            onClick={(e) => handleAction(e, 'Edit')}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm min-w-0 flex-shrink-0"
+          >
+            <PencilIcon className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Edit</span>
+          </button>
+          
+          {/* Overflow Menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm min-w-0 flex-shrink-0"
+              aria-label="More actions"
+            >
+              <EllipsisVerticalIcon className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">More</span>
+            </button>
+            
+            {/* Overflow Dropdown Menu */}
+            {isMenuOpen && (
+              <div className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                <button
+                  onClick={(e) => {
+                    handleAction(e, 'Diagnosis');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <CubeIcon className="h-4 w-4 text-gray-500" />
+                  Diagnosis
+                </button>
+                <button
+                  onClick={(e) => {
+                    handleAction(e, 'ABA Tool');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <CubeIcon className="h-4 w-4 text-gray-500" />
+                  ABA Tool
+                </button>
+                
+                <div className="border-t border-gray-100 my-1" />
+                
+                <button
+                  onClick={(e) => {
+                    handleAction(e, 'Delete');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <TrashIcon className="h-4 w-4 text-red-500" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Patient Info Grid */}
@@ -773,130 +974,203 @@ const ClientGridCard: React.FC<{ patient: any; onSelect: (patient: any) => void 
         )}
       </div>
 
-      {/* Action Bar - Shows on hover */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 transform translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-in-out">
-        <div className="flex items-center justify-between gap-1">
+      {/* Mobile: Scrollable Bottom Action Bar - Always Visible */}
+      <div className="sm:hidden mt-4 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+          {/* Primary Actions - Always Visible */}
           <button
             onClick={(e) => handleAction(e, 'Documents')}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            title="Documents"
+            className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation flex-shrink-0 min-w-[60px]"
           >
-            <DocumentTextIcon className="h-4 w-4 text-gray-600" />
-            <span className="text-xs text-gray-600">Docs</span>
+            <DocumentTextIcon className="h-4 w-4 text-gray-500" />
+            <span className="text-xs text-gray-600 font-medium">Docs</span>
           </button>
-          
           <button
             onClick={(e) => handleAction(e, 'Chart')}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            title="Chart"
+            className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation flex-shrink-0 min-w-[60px]"
           >
-            <ChartBarIcon className="h-4 w-4 text-gray-600" />
-            <span className="text-xs text-gray-600">Chart</span>
+            <ChartBarIcon className="h-4 w-4 text-gray-500" />
+            <span className="text-xs text-gray-600 font-medium">Chart</span>
           </button>
-          
           <button
             onClick={(e) => handleAction(e, 'Add Encounter')}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            title="Add Encounter"
+            className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation flex-shrink-0 min-w-[60px]"
           >
-            <PlusIcon className="h-4 w-4 text-gray-600" />
-            <span className="text-xs text-gray-600">Enc</span>
+            <PlusIcon className="h-4 w-4 text-gray-500" />
+            <span className="text-xs text-gray-600 font-medium">Add</span>
           </button>
-          
           <button
             onClick={(e) => handleAction(e, 'Prescribe')}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            title="Prescribe"
+            className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation flex-shrink-0 min-w-[60px]"
           >
-            <BeakerIcon className="h-4 w-4 text-gray-600" />
-            <span className="text-xs text-gray-600">Rx</span>
+            <BeakerIcon className="h-4 w-4 text-gray-500" />
+            <span className="text-xs text-gray-600 font-medium">Rx</span>
           </button>
-          
-          <button
-            onClick={(e) => handleAction(e, 'Diagnosis')}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            title="Diagnosis"
-          >
-            <CubeIcon className="h-4 w-4 text-gray-600" />
-            <span className="text-xs text-gray-600">Dx</span>
-          </button>
-          
-          <button
-            onClick={(e) => handleAction(e, 'ABA Tool')}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            title="ABA Tool"
-          >
-            <CubeIcon className="h-4 w-4 text-gray-600" />
-            <span className="text-xs text-gray-600">ABA</span>
-          </button>
-          
           <button
             onClick={(e) => handleAction(e, 'Edit')}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            title="Edit"
+            className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation flex-shrink-0 min-w-[60px]"
           >
-            <PencilIcon className="h-4 w-4 text-gray-600" />
-            <span className="text-xs text-gray-600">Edit</span>
+            <PencilIcon className="h-4 w-4 text-gray-500" />
+            <span className="text-xs text-gray-600 font-medium">Edit</span>
           </button>
           
-          <button
-            onClick={(e) => handleAction(e, 'Delete')}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-red-50 transition-colors"
-            title="Delete"
-          >
-            <TrashIcon className="h-4 w-4 text-red-600" />
-            <span className="text-xs text-red-600">Del</span>
-          </button>
+          {/* More Menu for Additional Actions */}
+          <div className="relative flex-shrink-0" ref={menuRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation min-w-[60px]"
+            >
+              <EllipsisHorizontalIcon className="h-4 w-4 text-gray-500" />
+              <span className="text-xs text-gray-600 font-medium">More</span>
+            </button>
+            
+            {/* More Actions Dropdown */}
+            {isMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Diagnosis');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <CubeIcon className="h-4 w-4 text-gray-500" />
+                  Diagnosis
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'ABA Tool');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                >
+                  <CubeIcon className="h-4 w-4 text-gray-500" />
+                  ABA Tool
+                </button>
+                
+                <div className="border-t border-gray-100 my-1" />
+                
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAction(e, 'Delete');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors touch-manipulation"
+                >
+                  <TrashIcon className="h-4 w-4 text-red-500" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
     </div>
   );
 };
 
 // Table Actions Dropdown Component
-const TableActionsDropdown: React.FC<{ patient: any }> = ({ patient }) => {
+const TableActionsDropdown: React.FC<{ 
+  patient: any;
+  onPrescribeClick: () => void;
+}> = ({ patient, onPrescribeClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
-  const handleAction = (action: string) => {
+  const handleAction = (action: string, event?: React.MouseEvent) => {
+    console.log(`🔥 TableActionsDropdown: ${action} action clicked for patient:`, patient.name);
+    console.log('🔥 Event details:', event?.type, event?.target);
+    
+    // Prevent event bubbling to AG Grid
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    if (action === 'Prescribe') {
+      console.log('🔥 TableActionsDropdown: About to call onPrescribeClick for patient:', patient.name);
+      console.log('🔥 onPrescribeClick function:', typeof onPrescribeClick, onPrescribeClick);
+      
+      try {
+        onPrescribeClick();
+        console.log('🔥 TableActionsDropdown: onPrescribeClick called successfully');
+      } catch (error) {
+        console.error('🔥 Error calling onPrescribeClick:', error);
+      }
+      
+      setIsOpen(false);
+      return;
+    }
+    
     console.log(`${action} action for patient:`, patient.name);
     setIsOpen(false);
     // Add your action logic here
   };
 
-  const toggleDropdown = () => {
+  const toggleDropdown = (event?: React.MouseEvent) => {
+    console.log('🔥 TableActionsDropdown: Toggle dropdown clicked, current isOpen:', isOpen);
+    
+    // Prevent AG Grid from interfering
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    // Calculate position when opening
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.right - 192 + window.scrollX // 192px = w-48
+        top: rect.bottom + window.scrollY + 4, // 4px gap
+        left: rect.right - 192 + window.scrollX // 192px = dropdown width
       });
+      console.log('🔥 Dropdown position calculated:', { top: rect.bottom + window.scrollY + 4, left: rect.right - 192 + window.scrollX });
     }
+    
     setIsOpen(!isOpen);
+    console.log('🔥 Dropdown isOpen set to:', !isOpen);
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        // Check if click is inside dropdown
+        const dropdownElement = document.getElementById(`dropdown-${patient.id}`);
+        if (dropdownElement && !dropdownElement.contains(event.target as Node)) {
+          console.log('🔥 Clicking outside dropdown, closing');
+          setIsOpen(false);
+        }
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      console.log('🔥 Added click outside listener');
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, patient.id]);
 
   return (
     <>
       <button
         ref={buttonRef}
-        onClick={toggleDropdown}
+        onClick={(e) => {
+          console.log('🔥 Three-dot button clicked');
+          toggleDropdown(e);
+        }}
         className="p-1 rounded-full hover:bg-gray-100 transition-colors"
         title="Actions"
       >
@@ -905,78 +1179,114 @@ const TableActionsDropdown: React.FC<{ patient: any }> = ({ patient }) => {
 
       {isOpen && createPortal(
         <div 
-          className="fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]"
+          id={`dropdown-${patient.id}`}
           style={{
+            position: 'fixed',
             top: position.top,
-            left: position.left
+            left: position.left,
+            width: '192px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            border: '1px solid #e5e7eb',
+            zIndex: 999999, // Very high z-index
+            padding: '4px 0',
+            display: 'block',
+            visibility: 'visible'
           }}
         >
+          <div style={{ padding: '8px 0' }}>
             <button
-              onClick={() => handleAction('Documents')}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              onClick={(e) => {
+                console.log('Documents clicked');
+                handleAction('Documents', e);
+              }}
             >
-              <DocumentTextIcon className="h-4 w-4" />
+              <DocumentTextIcon className="h-4 w-4 text-gray-500" />
               Documents
             </button>
             
             <button
-              onClick={() => handleAction('Chart')}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              onClick={(e) => {
+                console.log('Chart clicked');
+                handleAction('Chart', e);
+              }}
             >
-              <ChartBarIcon className="h-4 w-4" />
+              <ChartBarIcon className="h-4 w-4 text-gray-500" />
               Chart
             </button>
             
             <button
-              onClick={() => handleAction('Add Encounter')}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              onClick={(e) => {
+                console.log('Add Encounter clicked');
+                handleAction('Add Encounter', e);
+              }}
             >
-              <PlusIcon className="h-4 w-4" />
+              <PlusIcon className="h-4 w-4 text-gray-500" />
               Add Encounter
             </button>
             
             <button
-              onClick={() => handleAction('Prescribe')}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 active:bg-blue-100 transition-colors font-medium"
+              onClick={(e) => {
+                console.log('Prescribe clicked');
+                handleAction('Prescribe', e);
+              }}
             >
-              <BeakerIcon className="h-4 w-4" />
+              <BeakerIcon className="h-4 w-4 text-blue-600" />
               Prescribe
             </button>
             
             <button
-              onClick={() => handleAction('Diagnosis')}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              onClick={(e) => {
+                console.log('Diagnosis clicked');
+                handleAction('Diagnosis', e);
+              }}
             >
-              <CubeIcon className="h-4 w-4" />
+              <CubeIcon className="h-4 w-4 text-gray-500" />
               Diagnosis
             </button>
             
             <button
-              onClick={() => handleAction('ABA Tool')}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              onClick={(e) => {
+                console.log('ABA Tool clicked');
+                handleAction('ABA Tool', e);
+              }}
             >
-              <CubeIcon className="h-4 w-4" />
+              <CubeIcon className="h-4 w-4 text-gray-500" />
               ABA Tool
+            </button>
+            
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              onClick={(e) => {
+                console.log('Edit clicked');
+                handleAction('Edit', e);
+              }}
+            >
+              <PencilIcon className="h-4 w-4 text-gray-500" />
+              Edit
             </button>
             
             <div className="border-t border-gray-100 my-1" />
             
             <button
-              onClick={() => handleAction('Edit')}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
+              onClick={(e) => {
+                console.log('Delete clicked');
+                handleAction('Delete', e);
+              }}
             >
-              <PencilIcon className="h-4 w-4" />
-              Edit
-            </button>
-            
-            <button
-              onClick={() => handleAction('Delete')}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-            >
-              <TrashIcon className="h-4 w-4" />
+              <TrashIcon className="h-4 w-4 text-red-500" />
               Delete
             </button>
-          </div>,
+          </div>
+        </div>,
         document.body
       )}
     </>
@@ -1198,6 +1508,8 @@ const AdvancedSearchModal: React.FC<{
     document.body
   );
 };
+
+
 
 // Skeleton Loading Components
 const TableRowSkeleton: React.FC = () => (
@@ -1456,8 +1768,14 @@ const ClientsList: React.FC<ClientsListProps> = ({
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 640px)');
   const navigate = useNavigate();
+
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('Modal state changed - isPrescriptionModalOpen:', isPrescriptionModalOpen, 'selectedPatient:', selectedPatient?.name);
+  }, [isPrescriptionModalOpen, selectedPatient]);
 
   // Filter patients based on search query and scope
   const filteredPatients = mockPatients.filter(patient => {
@@ -1761,7 +2079,16 @@ const ClientsList: React.FC<ClientsListProps> = ({
       pinned: 'right',
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center py-2">
-          <TableActionsDropdown patient={params.data} />
+          <TableActionsDropdown 
+            patient={params.data} 
+            onPrescribeClick={() => {
+              console.log('Actions Column: onPrescribeClick called for patient:', params.data.name);
+              console.log('Actions Column: Setting selectedPatient to:', params.data);
+              setSelectedPatient(params.data);
+              console.log('Actions Column: Setting isPrescriptionModalOpen to true');
+              setIsPrescriptionModalOpen(true);
+            }}
+          />
         </div>
       )
     }
@@ -1782,8 +2109,32 @@ const ClientsList: React.FC<ClientsListProps> = ({
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 flex-shrink-0">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           {/* Search and Action Buttons */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex w-full sm:w-auto gap-2">
+          <div className="flex items-center justify-between gap-4">
+            {/* Mobile: Filter Icon + Search Bar */}
+            <div className="flex items-center gap-2 flex-1 sm:hidden">
+              <button
+                onClick={() => setIsAdvancedSearchOpen(true)}
+                className="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
+                aria-label="Filter patients"
+              >
+                <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
+              </button>
+              
+              {/* Mobile Search Input */}
+              <div className="relative flex-1">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search patients..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 h-10"
+                />
+              </div>
+            </div>
+
+            {/* Desktop: Full Search Controls */}
+            <div className="hidden sm:flex w-full sm:w-auto gap-2">
               {/* Search Scope Dropdown */}
               <Select value={searchScope} onValueChange={setSearchScope}>
                 <SelectTrigger className="w-48">
@@ -1820,31 +2171,31 @@ const ClientsList: React.FC<ClientsListProps> = ({
             </div>
             
             <div className="flex items-center gap-3">
-              {/* View Toggle - Hidden on mobile */}
+              {/* View Toggle - Desktop only */}
               <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('table')}
                   className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                    'flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
                     viewMode === 'table'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   )}
                 >
                   <TableCellsIcon className="h-4 w-4" />
-                  Table
+                  <span className="hidden sm:inline">Table</span>
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
                   className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                    'flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
                     viewMode === 'grid'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   )}
                 >
                   <Squares2X2Icon className="h-4 w-4" />
-                  Grid
+                  <span className="hidden sm:inline">Grid</span>
                 </button>
               </div>
               
@@ -1912,21 +2263,31 @@ const ClientsList: React.FC<ClientsListProps> = ({
                       key={patient.id}
                       patient={patient}
                       onSelect={handlePatientSelect}
+                      onPrescribeClick={() => {
+                        setSelectedPatient(patient);
+                        setIsPrescriptionModalOpen(true);
+                      }}
                     />
                   ))}
                 </div>
               )}
             </div>
             
-            {/* Mobile View - Always Cards */}
-            <div className="sm:hidden space-y-3">
-              {filteredPatients.map((patient) => (
-                <PatientCard 
-                  key={patient.id} 
-                  patient={patient}
-                  onSelect={handlePatientSelect}
-                />
-              ))}
+            {/* Mobile View - Always Grid Cards with three-dot menu */}
+            <div className="sm:hidden">
+              <div className="grid grid-cols-1 gap-4">
+                {filteredPatients.map((patient) => (
+                  <ClientGridCard
+                    key={patient.id}
+                    patient={patient}
+                    onSelect={handlePatientSelect}
+                    onPrescribeClick={() => {
+                      // Navigate to prescription page on mobile
+                      navigate(`/prescription?patient=${encodeURIComponent(patient.name)}`);
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </>
         ) : (
@@ -1956,6 +2317,16 @@ const ClientsList: React.FC<ClientsListProps> = ({
         isOpen={isAdvancedSearchOpen}
         onClose={() => setIsAdvancedSearchOpen(false)}
         onSearch={handleAdvancedSearch}
+      />
+      
+      {/* Prescription Modal */}
+      <PrescriptionModal
+        isOpen={isPrescriptionModalOpen}
+        onClose={() => {
+          console.log('PrescriptionModal: onClose called');
+          setIsPrescriptionModalOpen(false);
+        }}
+        patientName={selectedPatient?.name}
       />
     </div>
   );

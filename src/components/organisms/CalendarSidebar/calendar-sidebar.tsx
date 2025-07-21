@@ -28,6 +28,9 @@ interface CalendarSidebarProps {
   // Add patients selection props
   selectedPatients?: string[];
   onPatientSelectionChange?: (patients: string[]) => void;
+  // Add rooms selection props
+  selectedRooms?: string[];
+  onRoomSelectionChange?: (rooms: string[]) => void;
   // Add activeTab prop
   activeTab?: 'provider' | 'patient' | 'room';
 }
@@ -91,6 +94,22 @@ const patientOptions = [
   { id: '4', value: 'maria_garcia', label: 'Maria Garcia', status: 'active' },
 ];
 
+// Sample room data for behavioral health clinics
+const roomOptions = [
+  { id: '1', value: 'room_101', label: 'Room 101 - Individual Therapy', status: 'active', capacity: 2 },
+  { id: '2', value: 'room_102', label: 'Room 102 - Individual Therapy', status: 'active', capacity: 2 },
+  { id: '3', value: 'room_103', label: 'Room 103 - Group Therapy', status: 'active', capacity: 12 },
+  { id: '4', value: 'room_104', label: 'Room 104 - Family Therapy', status: 'active', capacity: 6 },
+  { id: '5', value: 'room_105', label: 'Room 105 - Assessment', status: 'active', capacity: 3 },
+  { id: '6', value: 'room_201', label: 'Room 201 - Individual Therapy', status: 'active', capacity: 2 },
+  { id: '7', value: 'room_202', label: 'Room 202 - Consultation', status: 'active', capacity: 4 },
+  { id: '8', value: 'room_203', label: 'Room 203 - Group Therapy', status: 'active', capacity: 15 },
+  { id: '9', value: 'room_204', label: 'Room 204 - Crisis Intervention', status: 'active', capacity: 3 },
+  { id: '10', value: 'room_301', label: 'Room 301 - Conference Room', status: 'active', capacity: 20 },
+  { id: '11', value: 'room_basement', label: 'Basement Room - Storage', status: 'inactive', capacity: 0 },
+  { id: '12', value: 'room_temp', label: 'Temporary Room - Overflow', status: 'inactive', capacity: 2 },
+];
+
 
 export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   currentDate,
@@ -102,6 +121,8 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   onProviderSelectionChange,
   selectedPatients: externalSelectedPatients = [],
   onPatientSelectionChange,
+  selectedRooms: externalSelectedRooms = [],
+  onRoomSelectionChange,
   activeTab
 }) => {
   // Sidebar collapse state
@@ -114,6 +135,8 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   const [selectedProviders, setSelectedProviders] = useState<string[]>(externalSelectedProviders);
   // Patients filter state
   const [selectedPatients, setSelectedPatients] = useState<string[]>(externalSelectedPatients);
+  // Rooms filter state
+  const [selectedRooms, setSelectedRooms] = useState<string[]>(externalSelectedRooms);
 
 
   
@@ -134,6 +157,9 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   
   // Add state for patient search
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  
+  // Add state for room search
+  const [roomSearchTerm, setRoomSearchTerm] = useState('');
   
   // Ref for filter menu
   const filterMenuRef = useRef<HTMLDivElement>(null);
@@ -160,6 +186,17 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
       onPatientSelectionChange(selectedPatients);
     }
   }, [selectedPatients, onPatientSelectionChange]);
+
+  // Sync external room selection
+  useEffect(() => {
+    setSelectedRooms(externalSelectedRooms);
+  }, [externalSelectedRooms]);
+  // Notify parent when room selection changes
+  useEffect(() => {
+    if (onRoomSelectionChange) {
+      onRoomSelectionChange(selectedRooms);
+    }
+  }, [selectedRooms, onRoomSelectionChange]);
 
   // Close filter menu when clicking outside
   useEffect(() => {
@@ -214,6 +251,15 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     );
   };
 
+  // Handle room selection
+  const handleRoomToggle = (roomId: string) => {
+    setSelectedRooms(prev =>
+      prev.includes(roomId)
+        ? prev.filter(id => id !== roomId)
+        : [...prev, roomId]
+    );
+  };
+
   // Filter providers based on search term, status, and client count
   const filteredProviders = providerOptions.slice(1).filter(provider => {
     const matchesSearch = provider.label.toLowerCase().includes(providerSearchTerm.toLowerCase());
@@ -241,6 +287,14 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   const filteredPatients = patientOptions.filter(patient =>
     patient.label.toLowerCase().includes(patientSearchTerm.toLowerCase())
   );
+
+  // Filter rooms based on search term and status
+  const filteredRooms = roomOptions.filter(room => {
+    const matchesSearch = room.label.toLowerCase().includes(roomSearchTerm.toLowerCase());
+    // Only show active rooms by default
+    const matchesStatus = room.status === 'active';
+    return matchesSearch && matchesStatus;
+  });
 
   // Handle select all providers
   const handleSelectAllProviders = () => {
@@ -357,6 +411,28 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     }
   };
 
+  // Handle select all rooms
+  const handleSelectAllRooms = () => {
+    const availableRooms = filteredRooms.map(room => room.value);
+    const allSelected = availableRooms.every(id => selectedRooms.includes(id));
+    
+    if (allSelected) {
+      // Deselect all filtered rooms
+      setSelectedRooms(prev => prev.filter(id => !availableRooms.includes(id)));
+    } else {
+      // Select all filtered rooms
+      setSelectedRooms(prev => {
+        const newSelection = [...prev];
+        availableRooms.forEach(id => {
+          if (!newSelection.includes(id)) {
+            newSelection.push(id);
+          }
+        });
+        return newSelection;
+      });
+    }
+  };
+
   // Check if all filtered patients are selected
   const allFilteredPatientsSelected = filteredPatients.length > 0 && 
     filteredPatients.every(patient => selectedPatients.includes(patient.value));
@@ -364,6 +440,15 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   // Check if some filtered patients are selected
   const someFilteredPatientsSelected = filteredPatients.some(patient => 
     selectedPatients.includes(patient.value)
+  );
+
+  // Check if all filtered rooms are selected
+  const allFilteredRoomsSelected = filteredRooms.length > 0 && 
+    filteredRooms.every(room => selectedRooms.includes(room.value));
+  
+  // Check if some filtered rooms are selected
+  const someFilteredRoomsSelected = filteredRooms.some(room => 
+    selectedRooms.includes(room.value)
   );
 
   // Generate days for the mini calendar
@@ -836,6 +921,68 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                 </div>
               ) : (
                 <div className="text-xs text-gray-500 py-4 text-center">No patients found</div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Rooms Section - Only show when not collapsed and activeTab is room */}
+        {!isCollapsed && activeTab === 'room' && (
+          <div className="px-4 mb-3 relative">
+            {/* Title */}
+            <div className="mb-2">
+              <h3 className="text-xs font-semibold text-gray-700">Rooms</h3>
+            </div>
+            {/* Search input for rooms */}
+            <div className="mb-2">
+              <input
+                type="text"
+                placeholder="Search rooms..."
+                value={roomSearchTerm}
+                onChange={(e) => setRoomSearchTerm(e.target.value)}
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              />
+            </div>
+            {/* Rooms table */}
+            <div className="border border-gray-200 rounded-md overflow-hidden bg-white/60 backdrop-blur-sm">
+              {filteredRooms.length > 0 ? (
+                <div className="max-h-32 overflow-y-auto smart-scrollbar dropdown-scroll">
+                  {/* Table header */}
+                  <div className="bg-gray-50/80 border-b border-gray-200 px-2 py-1 flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredRoomsSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someFilteredRoomsSelected && !allFilteredRoomsSelected;
+                      }}
+                      onChange={handleSelectAllRooms}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1"
+                    />
+                    <span className="text-xs font-medium text-gray-600 flex-1">Room</span>
+                    <span className="text-xs font-medium text-gray-600">Capacity</span>
+                  </div>
+                  {/* Table body */}
+                  <div>
+                    {filteredRooms.map((room) => (
+                      <div key={room.id} className={`flex items-center space-x-2 px-2 py-1.5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60 transition-colors ${selectedRooms.includes(room.value) ? 'bg-blue-50/80 border-blue-200/50' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={selectedRooms.includes(room.value)}
+                          onChange={() => handleRoomToggle(room.value)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1"
+                        />
+                        <span className="text-xs flex-1 text-gray-700">
+                          {room.label}
+                        </span>
+                        <span className="text-xs text-gray-500 w-12 text-center">
+                          {room.capacity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-500 py-4 text-center">No rooms found</div>
               )}
             </div>
           </div>

@@ -457,6 +457,11 @@ const TaskHub: React.FC = () => {
     }
     return blocks;
   }, [taskBlocks, customBlocks, filterCriteria, assignedToMeBlock]);
+
+  // Calculate total notification count for Inbox badge
+  const totalNotificationCount = useMemo(() => {
+    return taskBlocks.reduce((total, block) => total + block.count, 0);
+  }, [taskBlocks]);
   
   // Filter and sort handlers
   const handleFilterChange = (criteria: string) => {
@@ -909,6 +914,7 @@ const TaskHub: React.FC = () => {
       <MainNavigationBar 
         activeItem="Inbox"
         onNavigate={handleMainNavigation}
+        notificationCount={totalNotificationCount}
       />
       
       <div className="flex flex-1 overflow-hidden">

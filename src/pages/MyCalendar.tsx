@@ -90,6 +90,17 @@ const MyCalendar: React.FC = () => {
     // Implementation would go here
   };
   
+  // Handle My Calendar toggle - resets to user's default providers when enabled
+  const handleMyCalendarToggle = (isMyCalendar: boolean) => {
+    if (isMyCalendar) {
+      // Reset to user's default provider (first provider) when switching to "My Calendar"
+      setSelectedProviders(['sarah_wilson']); // Default to logged-in user's provider
+      console.log('Switched to My Calendar - showing user\'s personal calendar');
+    } else {
+      console.log('Switched away from My Calendar - user can select other providers');
+    }
+  };
+  
   // Sample events data with comprehensive information
   const sampleEvents: CalendarEvent[] = [
     {
@@ -303,6 +314,7 @@ const MyCalendar: React.FC = () => {
             availablePatients={availablePatients}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            onMyCalendarToggle={handleMyCalendarToggle}
           />
         </div>
       </div>

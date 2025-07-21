@@ -1,5 +1,6 @@
-import React, { FC, useState, useEffect } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import { 
   MagnifyingGlassIcon, BellIcon, QuestionMarkCircleIcon, EnvelopeIcon, Cog6ToothIcon,
   HomeIcon, ClipboardDocumentIcon, UserGroupIcon, ClockIcon, CalendarDaysIcon, 
@@ -7,10 +8,10 @@ import {
   ChartPieIcon, DocumentTextIcon, EnvelopeOpenIcon, DocumentCheckIcon, PencilSquareIcon,
   BeakerIcon as LabIcon, ArrowTrendingUpIcon, DocumentPlusIcon, ClipboardIcon,
   ClipboardDocumentListIcon, Square3Stack3DIcon as MedicationIcon, AcademicCapIcon, CheckCircleIcon,
-  ExclamationCircleIcon, EyeIcon, UserGroupIcon as GroupIcon, FolderIcon,
+  UserGroupIcon as GroupIcon, FolderIcon,
   DocumentDuplicateIcon, PresentationChartBarIcon, PencilIcon, TrashIcon,
   ChatBubbleLeftRightIcon, GlobeAltIcon, ChevronDownIcon, ChevronRightIcon,
-  XMarkIcon, PrinterIcon, ArrowDownTrayIcon, PlusIcon
+  XMarkIcon, PrinterIcon, ArrowDownTrayIcon, PlusIcon, EllipsisVerticalIcon, CubeIcon
 } from '@heroicons/react/24/outline'
 import { TopNavigationBar, MainNavigationBar, Sidebar } from '../components/old-ui'
 import PastEncountersManager from '../components/organisms/PastEncountersManager'
@@ -19,6 +20,11 @@ import { Button } from '@/components/atoms/Button'
 import { CompactMetrics } from '@/components/molecules/CompactMetrics'
 import PatientFormsManager from '../components/organisms/PatientFormsManager'
 import TimelinePage from './TimelinePage'
+
+import IncidentsPage from './IncidentsPage'
+import PrescriptionModal from '../components/molecules/PrescriptionModal/prescription-modal'
+import NewIncidentPage from '../components/organisms/NewIncident/NewIncidentPage'
+import InterdisciplinaryTreatmentPlanPage from '../components/organisms/InterdisciplinaryTreatmentPlan/InterdisciplinaryTreatmentPlanPage'
 
 // Types for encounter statistics
 interface EncounterStats {
@@ -36,6 +42,13 @@ const OldUI: FC = () => {
   const [patientData, setPatientData] = useState<any | null>(null)
   const [activeTab, setActiveTab] = useState('Clients')
   const [encounterStats, setEncounterStats] = useState<EncounterStats | null>(null)
+  
+  // Prescription modal state
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false)
+  
+  // Incident modal state
+
+  
   const navigate = useNavigate();
 
   // Load patient from sessionStorage on component mount
@@ -99,6 +112,7 @@ const OldUI: FC = () => {
     // Add current section context with more descriptive labels
     if (selectedMenu && selectedMenu !== 'Patient Forms') {
       let sectionLabel = selectedMenu;
+      let sectionHref = undefined;
       
       // Make section labels more user-friendly
       switch (selectedMenu) {
@@ -114,13 +128,21 @@ const OldUI: FC = () => {
         case 'Message Patient':
           sectionLabel = 'Messages';
           break;
+        case 'New Incident':
+          // Add Incidents as clickable breadcrumb item first
+          items.push({ 
+            label: 'Incidents',
+            href: '#incidents'
+          });
+          sectionLabel = 'New Incident';
+          break;
         default:
           sectionLabel = selectedMenu;
       }
       
       items.push({ 
         label: sectionLabel,
-        href: undefined // Current section, no link
+        href: sectionHref // Current section, no link unless specified
       });
     }
 
@@ -143,6 +165,152 @@ const OldUI: FC = () => {
     console.log('Exporting encounters for patient:', selectedPatient?.id);
     // Add export logic here
   };
+
+  // Patient Actions Dropdown Component
+  const PatientActionsDropdown: React.FC<{ patient: any }> = ({ patient }) => {
+    const [isOpen, setIsOpen] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+    const buttonRef = useRef<HTMLButtonElement>(null)
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setIsOpen(false)
+        }
+      }
+
+      if (isOpen) {
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }, [isOpen])
+
+    const handleAction = (action: string, event?: React.MouseEvent) => {
+      console.log(`🔥 PatientActionsDropdown: ${action} action clicked for patient:`, patient.name)
+      if (event) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      if (action === 'Prescribe') {
+        setIsPrescriptionModalOpen(true)
+        setIsOpen(false)
+        return
+      }
+      // Handle other actions here
+      setIsOpen(false)
+    }
+
+    const getDropdownPosition = () => {
+      if (!buttonRef.current) return { top: 0, left: 0 }
+      const rect = buttonRef.current.getBoundingClientRect()
+      return {
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.right + window.scrollX - 200 // Align right edge
+      }
+    }
+
+    const dropdownMenu = isOpen ? (
+      <div
+        ref={dropdownRef}
+        className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px]"
+        style={{
+          ...getDropdownPosition(),
+          zIndex: 999999
+        }}
+      >
+        {/* Documents */}
+        <button
+          onClick={(e) => handleAction('Documents', e)}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <DocumentTextIcon className="h-4 w-4 text-gray-500" />
+          Documents
+        </button>
+
+        {/* Chart */}
+        <button
+          onClick={(e) => handleAction('Chart', e)}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <ChartBarIcon className="h-4 w-4 text-gray-500" />
+          Chart
+        </button>
+
+        {/* Add Encounter */}
+        <button
+          onClick={(e) => handleAction('Add Encounter', e)}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <PlusIcon className="h-4 w-4 text-gray-500" />
+          Add Encounter
+        </button>
+
+        {/* Prescribe - Highlighted */}
+        <button
+          onClick={(e) => handleAction('Prescribe', e)}
+          className="w-full px-4 py-2 text-left text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-3 font-medium"
+        >
+          <BeakerIcon className="h-4 w-4 text-blue-600" />
+          Prescribe
+        </button>
+
+        {/* Diagnosis */}
+        <button
+          onClick={(e) => handleAction('Diagnosis', e)}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <CubeIcon className="h-4 w-4 text-gray-500" />
+          Diagnosis
+        </button>
+
+        {/* ABA Tool */}
+        <button
+          onClick={(e) => handleAction('ABA Tool', e)}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <CubeIcon className="h-4 w-4 text-gray-500" />
+          ABA Tool
+        </button>
+
+        {/* Edit */}
+        <button
+          onClick={(e) => handleAction('Edit', e)}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <PencilIcon className="h-4 w-4 text-gray-500" />
+          Edit
+        </button>
+
+        {/* Delete */}
+        <button
+          onClick={(e) => handleAction('Delete', e)}
+          className="w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 flex items-center gap-3"
+        >
+          <TrashIcon className="h-4 w-4 text-red-600" />
+          Delete
+        </button>
+      </div>
+    ) : null
+
+    return (
+      <div className="relative">
+        <button
+          ref={buttonRef}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setIsOpen(!isOpen)
+          }}
+          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Patient Actions"
+        >
+          <EllipsisVerticalIcon className="h-5 w-5" />
+        </button>
+        {createPortal(dropdownMenu, document.body)}
+      </div>
+    )
+  }
 
   const renderContent = () => {
     // Add debug logs
@@ -186,8 +354,46 @@ const OldUI: FC = () => {
       );
     }
     
+    // Show New Incident form content
+    if (selectedMenu === 'New Incident') {
+      console.log('Rendering New Incident form');
+      return (
+        <div className="h-full overflow-auto">
+          <NewIncidentPage 
+            onClose={() => {
+              console.log('New Incident form closed, navigating back to Incidents');
+              setSelectedMenu('Incidents');
+            }}
+          />
+        </div>
+      );
+    }
+    
+    // Show Incidents content - Full incident management page
+    if (selectedMenu === 'Incidents') {
+      console.log('Rendering Incidents page');
+      return (
+        <IncidentsPage />
+      );
+    }
+    
+    // Show Interdisciplinary Treatment Plan content
+    if (selectedMenu === 'Interdisciplinary Treatment Plan') {
+      console.log('Rendering Interdisciplinary Treatment Plan page');
+      return (
+        <div className="h-full overflow-auto">
+          <InterdisciplinaryTreatmentPlanPage 
+            onBack={() => {
+              console.log('Interdisciplinary Treatment Plan closed, navigating back to dashboard');
+              setSelectedMenu('Patient Forms');
+            }}
+          />
+        </div>
+      );
+    }
+    
     // Default fallback for other menu items
-    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline') {
+    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline' && selectedMenu !== 'New Incident' && selectedMenu !== 'Interdisciplinary Treatment Plan') {
       return (
         <div className="h-full flex flex-col items-center justify-center text-center p-6">
           <DocumentTextIcon className="w-12 h-12 text-gray-400 mb-4" />
@@ -201,19 +407,22 @@ const OldUI: FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-white">
-      {/* Top Navigation Bar */}
-      <TopNavigationBar 
-        hospitalName="Mayank Hospitals"
-        userAvatarUrl="https://ui-avatars.com/api/?name=Darlene+Robertson"
-        onSearch={(searchTerm) => console.log('Search:', searchTerm)}
-        patient={patientData}
-        onNewEncounter={handleNewEncounter}
-        onViewChart={() => console.log('View chart for patient:', patientData?.name)}
-      />
+    <div className="flex flex-col min-h-screen bg-white">
+      {/* Top Navigation Bar - Sticky */}
+      <div className="sticky top-0 z-50">
+        <TopNavigationBar 
+          hospitalName="Mayank Hospitals"
+          userAvatarUrl="https://ui-avatars.com/api/?name=Darlene+Robertson"
+          onSearch={(searchTerm) => console.log('Search:', searchTerm)}
+          patient={patientData}
+          onNewEncounter={handleNewEncounter}
+          onViewChart={() => console.log('View chart for patient:', patientData?.name)}
+        />
+      </div>
 
-      {/* Main Navigation */}
-      <MainNavigationBar 
+      {/* Main Navigation - Sticky */}
+      <div className="sticky top-[68px] z-40">
+        <MainNavigationBar 
         activeItem={activeTab}
         onNavigate={(itemName) => {
           console.log('Navigate to:', itemName);
@@ -238,32 +447,85 @@ const OldUI: FC = () => {
           // Other navigation will be handled by the MainNavigationBar component
         }}
       />
+      </div>
 
       {/* Content Area */}
-      <div className="flex flex-1">
-        {/* Sidebar - Only show when on Clients tab */}
+      <div className="flex flex-1 min-h-0">
+        {/* Sidebar - Only show when on Clients tab - Sticky */}
         {activeTab === 'Clients' && (
-          <Sidebar 
-            activeItem={selectedMenu}
-            onMenuSelect={(itemLabel) => setSelectedMenu(itemLabel)} 
-            onSearch={(searchTerm) => console.log('Search sidebar:', searchTerm)}
-          />
+          <div className="sticky top-[68px] h-[calc(100vh-68px)] z-30">
+            <Sidebar 
+              activeItem={selectedMenu}
+              onMenuSelect={(itemLabel) => setSelectedMenu(itemLabel)} 
+              onSearch={(searchTerm) => console.log('Search sidebar:', searchTerm)}
+            />
+          </div>
         )}
 
         {/* Main Content */}
-        <div className={`flex-1 ${selectedMenu === 'Past Encounters' ? 'bg-gray-50 overflow-hidden' : 'bg-gray-50 overflow-y-auto'}`}>
+        <div className={`flex-1 bg-gray-50 ${selectedMenu === 'Past Encounters' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {/* Breadcrumb Navigation - Only show when on Clients tab */}
           {activeTab === 'Clients' && (
             <div className="bg-white border-b border-gray-200 px-6 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-6">
-                  <Breadcrumb items={getBreadcrumbItems()} />
+                  <div className="flex items-center gap-3">
+                    <Breadcrumb 
+                      items={getBreadcrumbItems()} 
+                      onNavigate={(href) => {
+                        if (href === '#incidents') {
+                          setSelectedMenu('Incidents');
+                        }
+                      }}
+                    />
+                    {/* Draft Badge for New Incident */}
+                    {selectedMenu === 'New Incident' && (
+                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium text-sm">
+                        Draft
+                      </span>
+                    )}
+                  </div>
                   
                   {/* Compact Metrics for Past Encounters */}
                   {selectedMenu === 'Past Encounters' && encounterStats && (
                     <div className="border-l border-gray-200 pl-6">
                       <CompactMetrics stats={encounterStats} />
                     </div>
+                  )}
+                </div>
+                
+                {/* Right Side Actions */}
+                <div className="flex items-center gap-3">
+                  {/* New Incident Button for Incidents page */}
+                  {selectedMenu === 'Incidents' && (
+                    <Button
+                      onClick={() => {
+                        console.log('New Incident button clicked, switching to New Incident menu');
+                        setSelectedMenu('New Incident');
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      New Incident
+                    </Button>
+                  )}
+                  
+                  {/* New Plan Button for Interdisciplinary Treatment Plan page */}
+                  {selectedMenu === 'Interdisciplinary Treatment Plan' && (
+                    <Button
+                      onClick={() => {
+                        console.log('New Plan button clicked');
+                        // TODO: Implement new plan modal or navigation
+                      }}
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      New Plan
+                    </Button>
+                  )}
+                  
+                  {/* Patient Actions Dropdown - Show when patient is selected */}
+                  {patientData && selectedMenu !== 'Past Encounters' && (
+                    <PatientActionsDropdown patient={patientData} />
                   )}
                 </div>
                 
@@ -315,6 +577,18 @@ const OldUI: FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Prescription Modal */}
+      <PrescriptionModal
+        isOpen={isPrescriptionModalOpen}
+        onClose={() => {
+          console.log('PrescriptionModal: onClose called from OldUI')
+          setIsPrescriptionModalOpen(false)
+        }}
+        patientName={patientData?.name}
+      />
+      
+
     </div>
   )
 }

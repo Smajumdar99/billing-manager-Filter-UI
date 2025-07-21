@@ -74,6 +74,7 @@
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",
+    "react-countup": "^6.5.3",
     "react-day-picker": "^9.6.4",
     "react-dom": "^18.2.0",
     "react-grid-layout": "^1.5.0",

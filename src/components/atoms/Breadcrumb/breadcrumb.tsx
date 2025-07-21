@@ -11,9 +11,10 @@ export interface BreadcrumbItem {
 interface BreadcrumbProps {
   items: BreadcrumbItem[]
   className?: string
+  onNavigate?: (href: string) => void
 }
 
-export const Breadcrumb: FC<BreadcrumbProps> = ({ items, className }) => {
+export const Breadcrumb: FC<BreadcrumbProps> = ({ items, className, onNavigate }) => {
   return (
     <nav 
       aria-label="Breadcrumb"
@@ -30,12 +31,21 @@ export const Breadcrumb: FC<BreadcrumbProps> = ({ items, className }) => {
         <div key={index} className="flex items-center">
           <ChevronRightIcon className="h-4 w-4" />
           {item.href ? (
-            <Link
-              to={item.href}
-              className="overflow-hidden text-sm font-medium text-muted-foreground hover:text-foreground ml-1"
-            >
-              {item.label}
-            </Link>
+            item.href.startsWith('#') && onNavigate ? (
+              <button
+                onClick={() => onNavigate(item.href!)}
+                className="overflow-hidden text-sm font-medium text-muted-foreground hover:text-foreground ml-1 bg-transparent border-none cursor-pointer"
+              >
+                {item.label}
+              </button>
+            ) : (
+              <Link
+                to={item.href}
+                className="overflow-hidden text-sm font-medium text-muted-foreground hover:text-foreground ml-1"
+              >
+                {item.label}
+              </Link>
+            )
           ) : (
             <span className="text-sm font-medium ml-1">{item.label}</span>
           )}

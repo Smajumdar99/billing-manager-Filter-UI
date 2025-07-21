@@ -1,11 +1,71 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import CountUp from 'react-countup';
 import { 
   HomeIcon, ClipboardDocumentIcon, ClockIcon, CalendarDaysIcon, 
   UsersIcon, BeakerIcon, BanknotesIcon, ChartBarIcon, 
   Cog8ToothIcon, InboxIcon, UserGroupIcon, EllipsisHorizontalIcon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
+
+// Animated counter component for notification badge using react-countup
+const AnimatedCounter: React.FC<{ value: number; className?: string }> = ({ value, className = '' }) => {
+  const [shouldPulse, setShouldPulse] = useState(true);
+  const [startValue, setStartValue] = useState(0);
+  const [animationKey, setAnimationKey] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  
+  useEffect(() => {
+    // When value changes, update start value and trigger new animation
+    if (value !== startValue) {
+      setStartValue(value > startValue ? startValue : 0); // Start from previous or 0
+      setAnimationKey(prev => prev + 1); // Force re-render with new key
+      setIsAnimating(true);
+      setShouldPulse(true); // Reset pulse when number changes
+      
+      // Stop animation state after duration
+      const timer = setTimeout(() => {
+        setIsAnimating(false);
+        setStartValue(value); // Update start value after animation
+      }, 1500); // Match CountUp duration
+      
+      return () => clearTimeout(timer);
+    }
+  }, [value, startValue]);
+  
+  // Stop pulse animation after 3 seconds
+  useEffect(() => {
+    if (shouldPulse) {
+      const timer = setTimeout(() => {
+        setShouldPulse(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldPulse]);
+  
+  const pulseClass = shouldPulse ? 'animate-pulse' : '';
+  const scaleClass = isAnimating ? 'scale-110' : 'scale-100';
+  
+  // Handle display for numbers over 99
+  if (value > 99) {
+    return (
+      <span className={`${className} ${pulseClass} ${scaleClass} transition-all duration-300 font-mono`}>
+        99+
+      </span>
+    );
+  }
+  
+  return (
+    <CountUp
+      key={animationKey} // Force re-render when value changes
+      start={Math.max(0, value - 10)} // Start from a lower number for visible animation
+      end={value}
+      duration={1.2}
+      className={`${className} ${pulseClass} ${scaleClass} transition-all duration-300 font-mono`}
+    />
+  );
+};
 
 /**
  * MainNavigationBar Component
@@ -19,6 +79,7 @@ import {
 interface MainNavigationBarProps {
   activeItem?: string;
   onNavigate?: (itemName: string) => boolean | void;
+  notificationCount?: number;
 }
 
 // Navigation item configuration with routes
@@ -40,6 +101,7 @@ const navItems = [
 const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
   activeItem = 'Clients',
   onNavigate,
+  notificationCount = 0,
 }) => {
   const navigate = useNavigate();
   const navRef = useRef<HTMLDivElement>(null);
@@ -102,7 +164,7 @@ const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
     <Link 
       key={item.name}
       to={item.route}
-      className={`flex items-center gap-2 px-3 py-2 mx-2 my-1 text-sm font-semibold transition-all duration-200 rounded-md whitespace-nowrap ${
+      className={`flex items-center gap-2 px-3 py-2 mx-2 my-1 text-sm font-semibold transition-all duration-200 rounded-md whitespace-nowrap relative ${
         activeItem === item.name 
           ? 'text-white bg-white/20 shadow-sm backdrop-blur-sm border border-white/30'
           : 'text-primary-foreground hover:text-white hover:bg-white/10 hover:backdrop-blur-sm'
@@ -117,6 +179,12 @@ const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
     >
       {item.icon}
       {item.name}
+      {/* Notification badge for Inbox */}
+      {item.name === 'Inbox' && notificationCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center hover:scale-110">
+          <AnimatedCounter value={notificationCount} />
+        </span>
+      )}
     </Link>
   );
 
@@ -137,11 +205,12 @@ const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
               const buttonLabel = activeOverflowItem ? activeOverflowItem.name : 'More';
               const buttonIcon = activeOverflowItem ? activeOverflowItem.icon : <EllipsisHorizontalIcon className="h-5 w-5" />;
               const isActiveInOverflow = !!activeOverflowItem;
+              const hasInboxInOverflow = overflowItems.some(item => item.name === 'Inbox');
               
               return (
                 <button
                   onClick={() => setShowOverflowMenu(!showOverflowMenu)}
-                  className={`flex items-center gap-2 px-3 py-2 mx-2 my-1 text-sm font-semibold transition-all duration-200 rounded-md whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-2 mx-2 my-1 text-sm font-semibold transition-all duration-200 rounded-md whitespace-nowrap relative ${
                     showOverflowMenu || isActiveInOverflow
                       ? 'text-white bg-white/20 shadow-sm backdrop-blur-sm border border-white/30'
                       : 'text-primary-foreground hover:text-white hover:bg-white/10 hover:backdrop-blur-sm'
@@ -152,6 +221,12 @@ const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
                   <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${
                     showOverflowMenu ? 'rotate-180' : ''
                   }`} />
+                  {/* Notification badge when Inbox is in overflow */}
+                  {hasInboxInOverflow && notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      <AnimatedCounter value={notificationCount} />
+                    </span>
+                  )}
                 </button>
               );
             })()}
@@ -163,7 +238,7 @@ const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
                   <Link
                     key={item.name}
                     to={item.route}
-                    className={`flex items-center gap-3 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    className={`flex items-center gap-3 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap relative ${
                       activeItem === item.name
                         ? 'text-blue-700 bg-blue-50'
                         : 'text-gray-700 hover:text-blue-700 hover:bg-gray-50'
@@ -178,6 +253,12 @@ const MainNavigationBar: React.FC<MainNavigationBarProps> = ({
                   >
                     {item.icon}
                     {item.name}
+                    {/* Notification badge for Inbox in overflow menu */}
+                    {item.name === 'Inbox' && notificationCount > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        <AnimatedCounter value={notificationCount} />
+                      </span>
+                    )}
                   </Link>
                 ))}
               </div>

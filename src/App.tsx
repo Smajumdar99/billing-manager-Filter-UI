@@ -30,6 +30,8 @@ import ClientsPage from './pages/ClientsPage'
 import { TaskProvider } from '@/context/TaskContext'
 import NewAppointmentPage from './pages/NewAppointmentPage'
 import ViewAppointmentPage from './pages/ViewAppointmentPage'
+import PrescriptionPage from './pages/PrescriptionPage'
+import NewIncidentPage from './pages/NewIncidentPage'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -190,6 +192,22 @@ const AppRoutes = () => {
       <Route path="/new-appointment" element={<NewAppointmentPage />} />
       <Route path="/edit-appointment/:appointmentId" element={<NewAppointmentPage />} />
       <Route path="/view-appointment/:appointmentId" element={<ViewAppointmentPage />} />
+      <Route 
+        path="/new-incident" 
+        element={
+          <ProtectedRoute>
+            <NewIncidentPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/prescription" 
+        element={
+          <ProtectedRoute>
+            <PrescriptionPage />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<ComingSoonPage />} />
     </Routes>
   )
