@@ -22,6 +22,7 @@ import { Button } from '@/components/atoms/Button'
 
 interface IncidentFormData {
   incidentType: string
+  category: string
   severity: string
   dateTime: string
   location: string
@@ -40,6 +41,7 @@ const NewIncidentPage: React.FC = () => {
   
   const [formData, setFormData] = useState<IncidentFormData>({
     incidentType: '',
+    category: 'Clinical',
     severity: 'Low',
     dateTime: '',
     location: '',
@@ -149,12 +151,54 @@ const NewIncidentPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <DocumentTextIcon className="h-5 w-5 text-gray-500" />
+            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
               Basic Information
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Category Selection */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Category *
+                </label>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="clinical"
+                      name="category"
+                      value="Clinical"
+                      checked={formData.category === 'Clinical'}
+                      onChange={(e) => handleInputChange('category', e.target.value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      required
+                    />
+                    <label htmlFor="clinical" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                      Clinical
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="non-clinical"
+                      name="category"
+                      value="Non-clinical"
+                      checked={formData.category === 'Non-clinical'}
+                      onChange={(e) => handleInputChange('category', e.target.value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      required
+                    />
+                    <label htmlFor="non-clinical" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                      Non-clinical
+                    </label>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Clinical incidents involve patient care, medication, or treatment. Non-clinical incidents involve facilities, equipment, or administrative issues.
+                </p>
+              </div>
+
               {/* Incident Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

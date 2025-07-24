@@ -514,8 +514,8 @@ const OldUI: FC = () => {
                   {selectedMenu === 'Interdisciplinary Treatment Plan' && (
                     <Button
                       onClick={() => {
-                        console.log('New Plan button clicked');
-                        // TODO: Implement new plan modal or navigation
+                        console.log('New Plan button clicked - navigating to wizard');
+                        navigate('/new-treatment-plan');
                       }}
                     >
                       <PlusIcon className="h-4 w-4" />

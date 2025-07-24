@@ -521,6 +521,7 @@ const BodyDiagramAnnotation: React.FC<BodyDiagramProps> = ({ annotations, onChan
 
 interface IncidentFormData {
   // Basic Information (Image 1)
+  category: 'Clinical' | 'Non-clinical'
   programName: string
   subjectName: string
   address: string
@@ -608,6 +609,7 @@ const NewIncidentPage: React.FC<NewIncidentPageProps> = ({ onClose }) => {
   
   const [formData, setFormData] = useState<IncidentFormData>({
     // Basic Information (Image 1)
+    category: 'Clinical',
     programName: '',
     subjectName: '',
     address: '',
@@ -741,6 +743,22 @@ const NewIncidentPage: React.FC<NewIncidentPageProps> = ({ onClose }) => {
 
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category: <span className="text-red-500">*</span>
+                </Label>
+                <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="-- Select Category --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Clinical">Clinical</SelectItem>
+                    <SelectItem value="Non-clinical">Non-clinical</SelectItem>
+                  </SelectContent>
+                </Select>
+             
+              </div>
+              
               <div>
                 <Label className="block text-sm font-medium text-gray-700 mb-1">
                   Program Name:

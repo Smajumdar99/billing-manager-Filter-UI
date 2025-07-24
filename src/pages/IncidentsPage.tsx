@@ -39,6 +39,7 @@ interface Incident {
   patientId?: string;
   patientName?: string;
   incidentType: string;
+  category: 'Clinical' | 'Non-clinical';
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
   status: 'Open' | 'Under Investigation' | 'Resolved' | 'Closed';
   reportedDate: string;
@@ -70,6 +71,7 @@ const mockIncidents: Incident[] = [
     patientId: 'P001',
     patientName: 'John Smith',
     incidentType: 'Patient Fall',
+    category: 'Clinical',
     severity: 'Medium',
     status: 'Under Investigation',
     reportedDate: '2024-01-15',
@@ -94,6 +96,7 @@ const mockIncidents: Incident[] = [
     patientId: 'P002',
     patientName: 'Emily Davis',
     incidentType: 'Medication Error',
+    category: 'Clinical',
     severity: 'High',
     status: 'Open',
     reportedDate: '2024-01-16',
@@ -114,6 +117,7 @@ const mockIncidents: Incident[] = [
     id: '3',
     incidentNumber: 'INC-2024-003',
     incidentType: 'Equipment Failure',
+    category: 'Non-clinical',
     severity: 'Critical',
     status: 'Resolved',
     reportedDate: '2024-01-14',
@@ -179,7 +183,7 @@ const IncidentsPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedFacility, setSelectedFacility] = useState<string[]>([]);
   const [showOpenOnly, setShowOpenOnly] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Helper function to check if any filters are applied
@@ -200,7 +204,7 @@ const IncidentsPage: React.FC = () => {
       headerName: 'Incident #',
       field: 'incidentNumber',
       width: 130,
-      pinned: 'left',
+      pinned: 'left' as const,
       cellRenderer: (params: any) => (
         <span className="font-mono text-sm text-blue-600">
           {params.value}
@@ -222,6 +226,25 @@ const IncidentsPage: React.FC = () => {
       headerName: 'Type',
       field: 'incidentType',
       width: 160
+    },
+    {
+      headerName: 'Category',
+      field: 'category',
+      width: 120,
+      cellRenderer: (params: any) => {
+        const categoryColors = {
+          'Clinical': 'bg-blue-50 text-blue-700 border-blue-200',
+          'Non-clinical': 'bg-gray-50 text-gray-700 border-gray-200'
+        };
+        return (
+          <Badge 
+            variant="outline" 
+            className={categoryColors[params.value as keyof typeof categoryColors] || 'bg-gray-50 text-gray-700 border-gray-200'}
+          >
+            {params.value}
+          </Badge>
+        );
+      }
     },
     {
       headerName: 'Severity',
@@ -424,7 +447,15 @@ const IncidentsPage: React.FC = () => {
         </Badge>
       </div>
       
-      <h3 className="font-medium text-gray-900 mb-2">{incident.incidentType}</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-medium text-gray-900">{incident.incidentType}</h3>
+        <Badge 
+          variant="outline" 
+          className={incident.category === 'Clinical' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-700 border-gray-200'}
+        >
+          {incident.category}
+        </Badge>
+      </div>
       
       {incident.patientName && (
         <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
