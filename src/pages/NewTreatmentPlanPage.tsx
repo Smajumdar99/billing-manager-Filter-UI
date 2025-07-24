@@ -389,8 +389,8 @@ const NewTreatmentPlanPage: React.FC = () => {
           {/* Wizard Content */}
           <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
 
-      {/* Progress Bar - Compact - Sticky */}
-      <div className="sticky top-[116px] z-30 bg-white border-b border-gray-200">
+      {/* Progress Bar - Compact */}
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-3">
             <div className="flex items-center justify-between space-x-2">
@@ -402,7 +402,7 @@ const NewTreatmentPlanPage: React.FC = () => {
                       step.id < currentStep
                         ? 'bg-green-500 text-white'
                         : step.id === currentStep
-                        ? 'bg-blue-500 text-white'
+                        ? 'bg-primary text-white'
                         : 'bg-gray-200 text-gray-400 hover:bg-gray-300'
                     }`}
                   >
@@ -417,7 +417,7 @@ const NewTreatmentPlanPage: React.FC = () => {
                   <div className="ml-2 flex-1">
                     <p className={`text-xs font-medium truncate ${
                       step.id < currentStep ? 'text-green-600' :
-                      step.id === currentStep ? 'text-blue-600' : 'text-gray-400'
+                      step.id === currentStep ? 'text-primary' : 'text-gray-400'
                     }`}>
                       {step.title}
                     </p>
