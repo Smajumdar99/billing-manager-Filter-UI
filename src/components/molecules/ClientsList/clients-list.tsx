@@ -1849,6 +1849,9 @@ const ClientsList: React.FC<ClientsListProps> = ({
       levelOfCare: patient.levelOfCare
     }));
     
+    // Store the desired menu tab to navigate directly to Client Summary Chart
+    sessionStorage.setItem('selectedMenu', 'Client Summary Chart');
+    
     // Navigate to the old UI with the selected patient
     navigate('/old-ui');
     

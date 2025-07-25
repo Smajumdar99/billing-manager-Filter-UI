@@ -20,11 +20,66 @@ import { Button } from '@/components/atoms/Button'
 import { CompactMetrics } from '@/components/molecules/CompactMetrics'
 import PatientFormsManager from '../components/organisms/PatientFormsManager'
 import TimelinePage from './TimelinePage'
-
+import ClientSummaryChartPage from './ClientSummaryChartPage'
 import IncidentsPage from './IncidentsPage'
 import PrescriptionModal from '../components/molecules/PrescriptionModal/prescription-modal'
 import NewIncidentPage from '../components/organisms/NewIncident/NewIncidentPage'
 import InterdisciplinaryTreatmentPlanPage from '../components/organisms/InterdisciplinaryTreatmentPlan/InterdisciplinaryTreatmentPlanPage'
+
+// Widget configuration for dashboard
+interface WidgetConfig {
+  id: string
+  type: string
+  title: string
+  component: React.ComponentType<any>
+  defaultSize: { w: number; h: number }
+}
+
+// Available widgets for the dashboard
+const availableWidgets: WidgetConfig[] = [
+  {
+    id: 'notification-center',
+    type: 'notification_center',
+    title: 'Notifications',
+    component: () => null, // Placeholder - actual component imported in ClientSummaryChartPage
+    defaultSize: { w: 6, h: 8 }
+  },
+  {
+    id: 'functional-status',
+    type: 'functional_status',
+    title: 'Functional Status',
+    component: () => null, // Placeholder
+    defaultSize: { w: 6, h: 8 }
+  },
+  {
+    id: 'diagnosis',
+    type: 'diagnosis',
+    title: 'Diagnosis',
+    component: () => null, // Placeholder
+    defaultSize: { w: 6, h: 8 }
+  },
+  {
+    id: 'demographics',
+    type: 'demographics',
+    title: 'Demographics',
+    component: () => null, // Placeholder
+    defaultSize: { w: 6, h: 8 }
+  },
+  {
+    id: 'insurance',
+    type: 'insurance',
+    title: 'Insurance',
+    component: () => null, // Placeholder - actual component imported in ClientSummaryChartPage
+    defaultSize: { w: 6, h: 8 }
+  },
+  {
+    id: 'medications',
+    type: 'medications',
+    title: 'Medications',
+    component: () => null, // Placeholder - actual component imported in ClientSummaryChartPage
+    defaultSize: { w: 6, h: 8 }
+  }
+]
 
 // Types for encounter statistics
 interface EncounterStats {
@@ -47,13 +102,47 @@ const OldUI: FC = () => {
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false)
   
   // Incident modal state
-
+  const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false)
+  
+  // Dashboard controls state for Client Summary Chart
+  const [dashboardEditMode, setDashboardEditMode] = useState(false)
+  const [dashboardShowWidgetSelector, setDashboardShowWidgetSelector] = useState(false)
+  
+  // Active widgets state for dashboard
+  const [activeWidgets, setActiveWidgets] = useState<string[]>([
+    'notification-center',
+    'functional-status', 
+    'diagnosis',
+    'demographics',
+    'insurance',
+    'medications'
+  ])
+  
+  // Widget management functions
+  const addWidget = (widgetId: string) => {
+    if (!activeWidgets.includes(widgetId)) {
+      setActiveWidgets([...activeWidgets, widgetId])
+    }
+  }
+  
+  const removeWidget = (widgetId: string) => {
+    setActiveWidgets(activeWidgets.filter(id => id !== widgetId))
+  }
   
   const navigate = useNavigate();
 
   // Load patient from sessionStorage on component mount
   useEffect(() => {
     const savedPatient = sessionStorage.getItem('selectedPatient');
+    const savedMenu = sessionStorage.getItem('selectedMenu');
+    
+    // Set the selected menu if it exists in sessionStorage
+    if (savedMenu) {
+      setSelectedMenu(savedMenu);
+      // Clear the saved menu after using it to avoid persistent navigation
+      sessionStorage.removeItem('selectedMenu');
+    }
+    
     if (savedPatient) {
       try {
         const patient = JSON.parse(savedPatient);
@@ -392,8 +481,21 @@ const OldUI: FC = () => {
       );
     }
     
+    // Show Client Summary Chart content
+    if (selectedMenu === 'Client Summary Chart') {
+      console.log('Rendering Client Summary Chart page');
+      return (
+        <ClientSummaryChartPage 
+          externalEditMode={dashboardEditMode}
+          externalActiveWidgets={activeWidgets}
+          externalAddWidget={addWidget}
+          externalRemoveWidget={removeWidget}
+        />
+      );
+    }
+    
     // Default fallback for other menu items
-    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline' && selectedMenu !== 'New Incident' && selectedMenu !== 'Interdisciplinary Treatment Plan') {
+    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline' && selectedMenu !== 'New Incident' && selectedMenu !== 'Interdisciplinary Treatment Plan' && selectedMenu !== 'Client Summary Chart') {
       return (
         <div className="h-full flex flex-col items-center justify-center text-center p-6">
           <DocumentTextIcon className="w-12 h-12 text-gray-400 mb-4" />
@@ -408,8 +510,8 @@ const OldUI: FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* Top Navigation Bar - Sticky */}
-      <div className="sticky top-0 z-50">
+      {/* Top Navigation Bar - Non-sticky */}
+      <div className="">
         <TopNavigationBar 
           hospitalName="Mayank Hospitals"
           userAvatarUrl="https://ui-avatars.com/api/?name=Darlene+Robertson"
@@ -420,8 +522,8 @@ const OldUI: FC = () => {
         />
       </div>
 
-      {/* Main Navigation - Sticky */}
-      <div className="sticky top-[68px] z-40">
+      {/* Main Navigation - Non-sticky */}
+      <div className="">
         <MainNavigationBar 
         activeItem={activeTab}
         onNavigate={(itemName) => {
@@ -451,9 +553,9 @@ const OldUI: FC = () => {
 
       {/* Content Area */}
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar - Only show when on Clients tab - Sticky */}
+        {/* Sidebar - Only show when on Clients tab - Non-sticky */}
         {activeTab === 'Clients' && (
-          <div className="sticky top-[68px] h-[calc(100vh-68px)] z-30">
+          <div className="">
             <Sidebar 
               activeItem={selectedMenu}
               onMenuSelect={(itemLabel) => setSelectedMenu(itemLabel)} 
@@ -521,6 +623,85 @@ const OldUI: FC = () => {
                       <PlusIcon className="h-4 w-4" />
                       New Plan
                     </Button>
+                  )}
+                  
+                  {/* Dashboard Controls for Client Summary Chart */}
+                  {selectedMenu === 'Client Summary Chart' && (
+                    <div className="relative flex items-center gap-3">
+                      <div className="relative">
+                        <Button
+                          onClick={() => setDashboardShowWidgetSelector(!dashboardShowWidgetSelector)}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                        >
+                          <PlusIcon className="w-4 h-4" />
+                          Add Widget
+                        </Button>
+                        
+                        {/* Widget Selector Dropdown */}
+                        {dashboardShowWidgetSelector && (
+                          <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-lg border border-gray-200 shadow-lg w-80">
+                            <div className="p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-sm font-medium text-gray-900">Manage Widgets</h3>
+                                <button
+                                  onClick={() => setDashboardShowWidgetSelector(false)}
+                                  className="text-gray-400 hover:text-gray-600 p-1"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                              <div className="space-y-2 max-h-64 overflow-y-auto">
+                                {availableWidgets.map(widget => {
+                                  const isActive = activeWidgets.includes(widget.id)
+                                  return (
+                                    <div
+                                      key={widget.id}
+                                      className="flex items-center justify-between p-2 rounded-lg border border-gray-100 hover:bg-gray-50"
+                                    >
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm text-gray-900">{widget.title}</div>
+                                        <div className="text-xs text-gray-500">
+                                          {isActive ? 'Currently active' : 'Available to add'}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {isActive ? (
+                                          <button
+                                            onClick={() => removeWidget(widget.id)}
+                                            className="px-2 py-1 text-xs bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
+                                          >
+                                            Remove
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={() => addWidget(widget.id)}
+                                            className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                                          >
+                                            Add
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button
+                        onClick={() => setDashboardEditMode(!dashboardEditMode)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                          dashboardEditMode 
+                            ? 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'
+                            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Cog6ToothIcon className="w-4 h-4" />
+                        {dashboardEditMode ? 'Exit Edit' : 'Edit Layout'}
+                      </Button>
+                    </div>
                   )}
                   
                   {/* Patient Actions Dropdown - Show when patient is selected */}
