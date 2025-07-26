@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { TagIcon, ExclamationTriangleIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { TagIcon, ExclamationTriangleIcon, PlusIcon, XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { Input } from '@/components/atoms/Input';
 import { Button } from '@/components/atoms/Button';
 import { Badge } from '@/components/atoms/Badge';
 import { Select } from '@/components/atoms/Select/select';
+import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/atoms/Tooltip/tooltip';
+import AddConditionDialog from '@/components/molecules/AddConditionDialog/AddConditionDialog';
 import { TreatmentPlanFormData } from '../../../pages/NewTreatmentPlanPage';
 
 /**
@@ -26,27 +28,17 @@ interface GoalsObjectivesProblemsStepProps {
   updateFormData: (data: Partial<TreatmentPlanFormData>) => void;
 }
 
-// Mock conditions data (ICD codes)
-const mockConditions = [
-  { code: 'ICD10:F99', description: 'Mental disorder, not otherwise specified' },
-  { code: 'ICD10:F10.980', description: 'Alcohol use, unspecified with alcohol-induced anxiety disorder' },
-  { code: 'ICD10:F84.0', description: 'Autistic disorder' },
-  { code: 'ICD10:F90.9', description: 'Attention-deficit hyperactivity disorder, unspecified type' },
-  { code: 'ICD10:F32.9', description: 'Major depressive disorder, single episode, unspecified' },
-  { code: 'ICD10:F41.1', description: 'Generalized anxiety disorder' }
-];
+
 
 const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = ({
   formData,
   updateFormData
 }) => {
-  const [newConditionCode, setNewConditionCode] = useState('');
-  const [newConditionDescription, setNewConditionDescription] = useState('');
   const [newProblemTitle, setNewProblemTitle] = useState('');
   const [newProblemDescription, setNewProblemDescription] = useState('');
   const [newProblemPriority, setNewProblemPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
-  const [editingCondition, setEditingCondition] = useState<string | null>(null);
-  const [editingProblem, setEditingProblem] = useState<string | null>(null);
+  const [isAddConditionDialogOpen, setIsAddConditionDialogOpen] = useState(false);
+  const [editingConditionData, setEditingConditionData] = useState<any>(null);
 
   // Handle recovery goal change
   const handleRecoveryGoalChange = (value: string) => {
@@ -54,22 +46,6 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
   };
 
   // Condition management
-  const addCondition = () => {
-    if (newConditionCode.trim() && newConditionDescription.trim()) {
-      const newCondition = {
-        id: Date.now().toString(),
-        code: newConditionCode.trim(),
-        description: newConditionDescription.trim()
-      };
-      
-      updateFormData({
-        conditions: [...formData.conditions, newCondition]
-      });
-      
-      setNewConditionCode('');
-      setNewConditionDescription('');
-    }
-  };
 
   const addPredefinedCondition = (condition: { code: string; description: string }) => {
     const newCondition = {
@@ -83,17 +59,18 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
     });
   };
 
-  const updateCondition = (id: string, code: string, description: string) => {
-    const updatedConditions = formData.conditions.map(condition =>
-      condition.id === id ? { ...condition, code, description } : condition
-    );
-    
-    updateFormData({ conditions: updatedConditions });
-    setEditingCondition(null);
-  };
-
   const deleteCondition = (id: string) => {
     const updatedConditions = formData.conditions.filter(condition => condition.id !== id);
+    updateFormData({ conditions: updatedConditions });
+  };
+
+  // Defer condition - marks condition as deferred for later review
+  const deferCondition = (id: string) => {
+    const updatedConditions = formData.conditions.map(condition =>
+      condition.id === id 
+        ? { ...condition, deferred: true, deferredDate: new Date().toISOString() } 
+        : condition
+    );
     updateFormData({ conditions: updatedConditions });
   };
 
@@ -115,15 +92,6 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
       setNewProblemDescription('');
       setNewProblemPriority('Medium');
     }
-  };
-
-  const updateProblem = (id: string, title: string, description: string, priority: 'High' | 'Medium' | 'Low') => {
-    const updatedProblems = formData.problems.map(problem =>
-      problem.id === id ? { ...problem, title, description, priority } : problem
-    );
-    
-    updateFormData({ problems: updatedProblems });
-    setEditingProblem(null);
   };
 
   const deleteProblem = (id: string) => {
@@ -178,104 +146,121 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
             Conditions
           </h3>
           
-          {/* Add New Condition */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Condition</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <div>
-                <Input
-                  type="text"
-                  placeholder="ICD Code (e.g., ICD10:F99)"
-                  value={newConditionCode}
-                  onChange={(e) => setNewConditionCode(e.target.value)}
-                />
-              </div>
-              <div>
-                <Input
-                  type="text"
-                  placeholder="Condition description"
-                  value={newConditionDescription}
-                  onChange={(e) => setNewConditionDescription(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button
-              onClick={addCondition}
-              disabled={!newConditionCode.trim() || !newConditionDescription.trim()}
-              size="sm"
-            >
-              <PlusIcon className="w-4 h-4 mr-1" />
-              Add Condition
-            </Button>
-          </div>
-
-          {/* Predefined Conditions */}
-          <div className="mb-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Quick Add Common Conditions</h4>
-            <div className="flex flex-wrap gap-2">
-              {mockConditions.map((condition) => (
-                <button
-                  key={condition.code}
-                  onClick={() => addPredefinedCondition(condition)}
-                  className="text-xs px-3 py-1 bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors"
-                  disabled={formData.conditions.some(c => c.code === condition.code)}
-                >
-                  {condition.code}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Current Conditions */}
           <div className="space-y-3">
-            {formData.conditions.map((condition) => (
-              <div key={condition.id} className="bg-white rounded-lg border border-gray-200 p-4">
-                {editingCondition === condition.id ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input
-                        type="text"
-                        defaultValue={condition.code}
-                        onBlur={(e) => updateCondition(condition.id, e.target.value, condition.description)}
-                      />
-                      <Input
-                        type="text"
-                        defaultValue={condition.description}
-                        onBlur={(e) => updateCondition(condition.id, condition.code, e.target.value)}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => setEditingCondition(null)}>Save</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingCondition(null)}>Cancel</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
+            {formData.conditions.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ExclamationTriangleIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No Conditions Added</h4>
+                <p className="text-gray-600 mb-4">Add medical conditions to this treatment plan using ICD codes.</p>
+                <TooltipProvider>
+                  <TooltipRoot>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setIsAddConditionDialogOpen(true)}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <PlusIcon className="w-4 h-4 mr-1" />
+                        Add Your First Condition
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Open dialog to add medical conditions</p>
+                    </TooltipContent>
+                  </TooltipRoot>
+                </TooltipProvider>
+              </div>
+            ) : (
+              formData.conditions.map((condition) => (
+              <div key={condition.id} className="bg-zinc-50 rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm text-gray-900">{condition.code}</div>
                       <div className="text-sm text-gray-600">{condition.description}</div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditingCondition(condition.id)}
-                      >
-                        <PencilIcon className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => deleteCondition(condition.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <TrashIcon className="w-3 h-3" />
-                      </Button>
+                    <div className="flex gap-1">
+                      <TooltipProvider>
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => {
+                                setEditingConditionData(condition);
+                                setIsAddConditionDialogOpen(true);
+                              }}
+                              className="p-1 rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit condition</p>
+                          </TooltipContent>
+                        </TooltipRoot>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => deferCondition(condition.id)}
+                              className="p-1 rounded hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors"
+                            >
+                              <ClockIcon className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Defer condition</p>
+                          </TooltipContent>
+                        </TooltipRoot>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => deleteCondition(condition.id)}
+                              className="p-1 rounded hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Delete condition</p>
+                          </TooltipContent>
+                        </TooltipRoot>
+                      </TooltipProvider>
                     </div>
-                  </div>
-                )}
+                </div>
               </div>
-            ))}
+              ))
+            )}
+            
+            {/* Add Condition Button - shown when conditions exist */}
+            {formData.conditions.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <TooltipProvider>
+                  <TooltipRoot>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setIsAddConditionDialogOpen(true)}
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <PlusIcon className="w-4 h-4 mr-2" />
+                        Add Another Condition
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add a new medical condition</p>
+                    </TooltipContent>
+                  </TooltipRoot>
+                </TooltipProvider>
+              </div>
+            )}
           </div>
         </div>
 
@@ -333,7 +318,7 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
           {/* Current Problems */}
           <div className="space-y-3">
             {formData.problems.map((problem) => (
-              <div key={problem.id} className="bg-white rounded-lg border border-gray-200 p-4">
+              <div key={problem.id} className="bg-zinc-50 rounded-lg border border-gray-200 p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -367,8 +352,19 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
           </div>
         </div>
 
-
       </div>
+
+      {/* Add Condition Dialog */}
+      <AddConditionDialog
+        open={isAddConditionDialogOpen}
+        onClose={() => {
+          setIsAddConditionDialogOpen(false);
+          setEditingConditionData(null);
+        }}
+        onAddCondition={addPredefinedCondition}
+        existingConditions={formData.conditions}
+        editingCondition={editingConditionData}
+      />
     </div>
   );
 };
