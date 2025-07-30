@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TagIcon, ExclamationTriangleIcon, PlusIcon, XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { TagIcon, ExclamationTriangleIcon, PlusIcon, XMarkIcon, ClockIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { Input } from '@/components/atoms/Input';
 import { Button } from '@/components/atoms/Button';
@@ -108,10 +108,45 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
     }
   };
 
+  // Mock active diagnoses data - in real app this would come from patient data
+  const activePatientDiagnoses = [
+    { code: 'F84.0', description: 'Autistic disorder', dateAdded: '2024-01-15', status: 'Active' },
+    { code: 'F90.9', description: 'Attention-deficit hyperactivity disorder, unspecified type', dateAdded: '2024-01-10', status: 'Active' },
+    { code: 'F80.9', description: 'Developmental disorder of speech and language, unspecified', dateAdded: '2023-12-20', status: 'Active' }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Form Content */}
       <div className="max-w-4xl mx-auto space-y-8">
+        
+        {/* Active Diagnosis Section - Informational Only */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center">
+            <HeartIcon className="w-4 h-4 text-blue-600 mr-2" />
+            Active Diagnoses
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {activePatientDiagnoses.map((diagnosis, index) => (
+              <div key={index} className="bg-white rounded-md border border-blue-200 p-3">
+                <div className="flex items-start justify-between mb-1">
+                  <span className="text-sm font-medium text-blue-900">{diagnosis.code}</span>
+                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                    {diagnosis.status}
+                  </Badge>
+                </div>
+                <p className="text-xs text-blue-700 leading-relaxed mb-2">{diagnosis.description}</p>
+                <p className="text-xs text-blue-600">Added: {new Date(diagnosis.dateAdded).toLocaleDateString()}</p>
+              </div>
+            ))}
+          </div>
+          
+          <p className="text-xs text-blue-600 mt-3 italic">
+            These are the patient's current active diagnoses. Treatment goals and objectives should align with these conditions.
+          </p>
+        </div>
+        
         {/* Recovery Goal Section */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">

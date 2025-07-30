@@ -10,14 +10,13 @@ import { TreatmentPlanFormData } from '../../../pages/NewTreatmentPlanPage';
 /**
  * DischargeAgreementsStep Component
  * 
- * Step 6 of the New Treatment Plan wizard.
- * Handles discharge planning and patient agreements.
+ * Step 5 of the New Treatment Plan wizard.
+ * Handles discharge planning and criteria definition.
  * 
  * Features:
  * - Discharge criteria definition
- * - Patient/family agreements
  * - Treatment plan review schedule
- * - Final validation and summary
+ * - Discharge planning summary
  * - Apple-style clean design
  */
 

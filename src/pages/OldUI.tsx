@@ -612,17 +612,31 @@ const OldUI: FC = () => {
                     </Button>
                   )}
                   
-                  {/* New Plan Button for Interdisciplinary Treatment Plan page */}
+                  {/* Plan Settings and New Plan Buttons for Interdisciplinary Treatment Plan page */}
                   {selectedMenu === 'Interdisciplinary Treatment Plan' && (
-                    <Button
-                      onClick={() => {
-                        console.log('New Plan button clicked - navigating to wizard');
-                        navigate('/new-treatment-plan');
-                      }}
-                    >
-                      <PlusIcon className="h-4 w-4" />
-                      New Plan
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          console.log('Plan Settings button clicked');
+                          // TODO: Implement plan settings functionality
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Cog6ToothIcon className="h-4 w-4" />
+                        Plan Settings
+                      </Button>
+                      
+                      <Button
+                        onClick={() => {
+                          console.log('New Plan button clicked - navigating to wizard');
+                          navigate('/new-treatment-plan');
+                        }}
+                      >
+                        <PlusIcon className="h-4 w-4" />
+                        New Plan
+                      </Button>
+                    </>
                   )}
                   
                   {/* Dashboard Controls for Client Summary Chart */}
