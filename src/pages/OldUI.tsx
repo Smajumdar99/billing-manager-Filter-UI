@@ -25,6 +25,8 @@ import IncidentsPage from './IncidentsPage'
 import PrescriptionModal from '../components/molecules/PrescriptionModal/prescription-modal'
 import NewIncidentPage from '../components/organisms/NewIncident/NewIncidentPage'
 import InterdisciplinaryTreatmentPlanPage from '../components/organisms/InterdisciplinaryTreatmentPlan/InterdisciplinaryTreatmentPlanPage'
+import { useOngoingPlanCheck } from '../hooks/useOngoingPlanCheck'
+import { ConfirmDialog } from '../components/molecules/ConfirmDialog/confirm-dialog'
 
 // Widget configuration for dashboard
 interface WidgetConfig {
@@ -106,6 +108,29 @@ const OldUI: FC = () => {
   
   // Dashboard controls state for Client Summary Chart
   const [dashboardEditMode, setDashboardEditMode] = useState(false)
+  
+  // Ongoing plan check hook for New Plan warning
+  const {
+    showOngoingPlanWarning,
+    ongoingPlans,
+    handleNewPlanWithCheck,
+    handleConfirmNewPlan,
+    handleCancelNewPlan
+  } = useOngoingPlanCheck()
+  
+  // Mock treatment plans for ongoing plan check
+  // In a real app, this would come from a global state or API
+  const mockTreatmentPlans = [
+    {
+      id: '2',
+      planNumber: 'TP-2024-002',
+      patientName: 'Emily Davis',
+      endDate: undefined, // No end date - ongoing/active
+      isActive: true,
+      isCompleted: false
+    }
+    // Add other plans as needed
+  ]
   const [dashboardShowWidgetSelector, setDashboardShowWidgetSelector] = useState(false)
   
   // Active widgets state for dashboard
@@ -629,8 +654,12 @@ const OldUI: FC = () => {
                       
                       <Button
                         onClick={() => {
-                          console.log('New Plan button clicked - navigating to wizard');
-                          navigate('/new-treatment-plan');
+                          console.log('New Plan button clicked - checking for ongoing plans');
+                          // Check for ongoing plans before navigating
+                          handleNewPlanWithCheck(mockTreatmentPlans, () => {
+                            console.log('Proceeding to new plan creation');
+                            navigate('/new-treatment-plan');
+                          });
                         }}
                       >
                         <PlusIcon className="h-4 w-4" />
@@ -783,6 +812,15 @@ const OldUI: FC = () => {
         patientName={patientData?.name}
       />
       
+      {/* Ongoing Plan Warning Dialog */}
+      <ConfirmDialog
+        isOpen={showOngoingPlanWarning}
+        onClose={handleCancelNewPlan}
+        onConfirm={handleConfirmNewPlan}
+        title="Ongoing Plans Detected"
+        message={`You have ${ongoingPlans.length} ongoing treatment plan${ongoingPlans.length > 1 ? 's' : ''} without end dates. Creating a new plan while existing plans are ongoing may cause conflicts. Would you like to proceed anyway?`}
+        confirmButtonText="Proceed"
+      />
 
     </div>
   )
