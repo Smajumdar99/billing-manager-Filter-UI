@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, Bars3Icon, XMarkIcon, CheckIcon, UserIcon, ClipboardDocumentListIcon, CalendarDaysIcon, BeakerIcon, DocumentTextIcon, PrinterIcon, Cog6ToothIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
+
 import { Button } from '@/components/atoms/Button';
 import { TopNavigationBar, MainNavigationBar, Sidebar } from '../components/old-ui';
 import { Breadcrumb, BreadcrumbItem } from '@/components/atoms/Breadcrumb';
@@ -12,6 +12,9 @@ import GoalsObjectivesProblemsStep from '../components/organisms/NewTreatmentPla
 import StrengthsWeaknessesStep from '../components/organisms/NewTreatmentPlan/StrengthsWeaknessesStep';
 import DischargeAgreementsStep from '../components/organisms/NewTreatmentPlan/DischargeAgreementsStep';
 import SignaturesStep from '../components/organisms/NewTreatmentPlan/SignaturesStep';
+
+// Import print components
+import { TreatmentPlanPrintDialog } from '../components/organisms/TreatmentPlanPrint';
 
 /**
  * NewTreatmentPlanPage Component
@@ -59,9 +62,20 @@ export interface TreatmentPlanFormData {
   }>;
   problems: Array<{
     id: string;
+    coding: string;
     title: string;
-    description: string;
+    details: string;
+    relatedTo: string;
+    beginDate: string;
+    endDate: string;
+    accessPrograms: string;
+    occurrence: string;
+    outcome: string;
+    comments: string;
+    provider: string;
     priority: 'High' | 'Medium' | 'Low';
+    // Legacy fields for backward compatibility
+    description?: string;
   }>;
   
   // Step 3: Strengths & Weaknesses
@@ -79,22 +93,50 @@ export interface TreatmentPlanFormData {
     impactLevel: 'High' | 'Medium' | 'Low';
   }>;
   
-  // Step 6: Discharge & Agreements
-  dischargeCriteria: string[];
-  reviewFrequency: string;
-  nextReviewDate: string;
-  patientAgreements: {
-    [key: string]: {
-      agreed: boolean;
-      agreedDate: string;
-      agreedBy: string;
-    };
-  };
+  // Plan Notes for Strengths & Weaknesses
+  planNotes: string;
+  
+  // Step 5: Discharge Planning
+  initialDischargePlan: string[];
+  initialDischargeCriteria: string[];
+  customDischargePlan: string;
+  customDischargeCriteria: string;
+  otherNotableItems: string;
   
   // Step 7: Signatures
   agreed: boolean;
   agreedDate: string;
   agreedBy: string;
+  
+  // Patient Agreements
+  patientAgreements: {
+    adhereToRecommendations: boolean;
+    agreeWithServicesTypes: boolean;
+    receivedCopyOfPlan: boolean;
+    textForAgreement: boolean;
+  };
+  
+  // Plan Agreements
+  planAgreements: {
+    agreeToFollowPlan: boolean;
+  };
+  
+  // Signature Sections
+  signatures: {
+    personSignature: {
+      signed: boolean;
+      signedBy: string;
+      signedDate: string;
+      signatureData?: string; // Base64 image data
+    };
+    careTeamSignatures: Array<{
+      id: string;
+      providerName: string;
+      title: string;
+      signed: boolean;
+      signedDate: string;
+    }>;
+  };
 }
 
 // Step configuration - 5 steps (removed ProvidersSignaturesStep)
@@ -137,6 +179,7 @@ const NewTreatmentPlanPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isPatientHistoryOpen, setIsPatientHistoryOpen] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   
   // Mock patient history data
   const patientHistory = {
@@ -222,17 +265,51 @@ const NewTreatmentPlanPage: React.FC = () => {
     // Step 3: Strengths & Weaknesses
     strengths: [],
     weaknesses: [],
+    planNotes: '',
     
-    // Step 4: Discharge Planning
-    dischargeCriteria: [],
-    reviewFrequency: '',
-    nextReviewDate: '',
-    patientAgreements: {},
+    // Step 5: Discharge Planning
+    initialDischargePlan: [],
+    initialDischargeCriteria: [],
+    customDischargePlan: '',
+    customDischargeCriteria: '',
+    otherNotableItems: '',
     
     // Step 5: Signatures
     agreed: false,
     agreedDate: '',
-    agreedBy: ''
+    agreedBy: '',
+    
+    // Patient Agreements
+    patientAgreements: {
+      adhereToRecommendations: false,
+      agreeWithServicesTypes: false,
+      receivedCopyOfPlan: false,
+      textForAgreement: false
+    },
+    
+    // Plan Agreements
+    planAgreements: {
+      agreeToFollowPlan: false
+    },
+    
+    // Signature Sections
+    signatures: {
+      personSignature: {
+        signed: false,
+        signedBy: '',
+        signedDate: '',
+        signatureData: ''
+      },
+      careTeamSignatures: [
+        {
+          id: '1',
+          providerName: 'Physician',
+          title: '1Bright',
+          signed: false,
+          signedDate: ''
+        }
+      ]
+    }
   });
 
   // Auto-save functionality (saves every 30 seconds)
@@ -468,10 +545,7 @@ const NewTreatmentPlanPage: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      console.log('Print treatment plan');
-                      // TODO: Implement print functionality
-                    }}
+                    onClick={() => setIsPrintDialogOpen(true)}
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
                     title="Print treatment plan"
                   >
@@ -617,23 +691,24 @@ const NewTreatmentPlanPage: React.FC = () => {
                                     {currentStep} of {steps.length}
                                   </span>
                                 </div>
-                                <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
-                                  {steps.find(step => step.id === currentStep)?.description || 'Complete this step to continue.'}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            {/* Compact Progress Bar */}
-                            <div className="ml-10">
-                              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                <div 
-                                  className="bg-primary h-1.5 rounded-full transition-all duration-300 ease-in-out"
-                                  style={{ width: `${(currentStep / steps.length) * 100}%` }}
-                                ></div>
-                              </div>
-                              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>Progress</span>
-                                <span>{Math.round((currentStep / steps.length) * 100)}% complete</span>
+                                <div className="flex items-center justify-between mt-0.5 gap-4">
+                                  <p className="text-xs sm:text-sm text-gray-600 flex-1">
+                                    {steps.find(step => step.id === currentStep)?.description || 'Complete this step to continue.'}
+                                  </p>
+                                  {/* Inline Progress Bar */}
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-xs text-gray-500">Progress</span>
+                                    <div className="w-24 bg-gray-200 rounded-full h-1.5">
+                                      <div 
+                                        className="bg-primary h-1.5 rounded-full transition-all duration-300 ease-in-out"
+                                        style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                                      ></div>
+                                    </div>
+                                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                                      {Math.round((currentStep / steps.length) * 100)}% complete
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -683,7 +758,6 @@ const NewTreatmentPlanPage: React.FC = () => {
                             <Button
                               onClick={handleSubmit}
                               disabled={isSubmitting}
-                              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto h-11 sm:h-auto"
                             >
                               {isSubmitting ? 'Creating Plan...' : 'Create Treatment Plan'}
                             </Button>
@@ -923,6 +997,26 @@ const NewTreatmentPlanPage: React.FC = () => {
           </div>
         </>
       )}
+      
+      {/* Print Dialog */}
+      <TreatmentPlanPrintDialog
+        isOpen={isPrintDialogOpen}
+        onClose={() => setIsPrintDialogOpen(false)}
+        formData={formData}
+        patientInfo={{
+          name: patientHistory.demographics.name,
+          dob: patientHistory.demographics.dob,
+          mrn: patientHistory.demographics.mrn,
+          address: undefined, // Add if available
+          phone: undefined // Add if available
+        }}
+        facilityInfo={{
+          name: 'DrCloud EHR Healthcare',
+          address: '123 Healthcare Drive, Medical City, MC 12345',
+          phone: '(555) 123-4567',
+          logo: undefined // Add facility logo if available
+        }}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TagIcon, ExclamationTriangleIcon, PlusIcon, XMarkIcon, ClockIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { TagIcon, ExclamationTriangleIcon, PlusIcon, XMarkIcon, ClockIcon, HeartIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { Input } from '@/components/atoms/Input';
 import { Button } from '@/components/atoms/Button';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/atoms/Badge';
 import { Select } from '@/components/atoms/Select/select';
 import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/atoms/Tooltip/tooltip';
 import AddConditionDialog from '@/components/molecules/AddConditionDialog/AddConditionDialog';
+import AddProblemDialog from '@/components/molecules/AddProblemDialog/AddProblemDialog';
 import { TreatmentPlanFormData } from '../../../pages/NewTreatmentPlanPage';
 
 /**
@@ -34,11 +35,11 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
   formData,
   updateFormData
 }) => {
-  const [newProblemTitle, setNewProblemTitle] = useState('');
-  const [newProblemDescription, setNewProblemDescription] = useState('');
-  const [newProblemPriority, setNewProblemPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
   const [isAddConditionDialogOpen, setIsAddConditionDialogOpen] = useState(false);
   const [editingConditionData, setEditingConditionData] = useState<any>(null);
+  const [isAddProblemDialogOpen, setIsAddProblemDialogOpen] = useState(false);
+  const [editingProblemData, setEditingProblemData] = useState<any>(null);
+  const [isActiveDiagnosesExpanded, setIsActiveDiagnosesExpanded] = useState(true);
 
   // Handle recovery goal change
   const handleRecoveryGoalChange = (value: string) => {
@@ -75,28 +76,30 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
   };
 
   // Problem management
-  const addProblem = () => {
-    if (newProblemTitle.trim() && newProblemDescription.trim()) {
-      const newProblem = {
-        id: Date.now().toString(),
-        title: newProblemTitle.trim(),
-        description: newProblemDescription.trim(),
-        priority: newProblemPriority
-      };
-      
+  const addProblem = (problem: any) => {
+    const existingProblemIndex = formData.problems.findIndex(p => p.id === problem.id);
+    
+    if (existingProblemIndex >= 0) {
+      // Update existing problem
+      const updatedProblems = [...formData.problems];
+      updatedProblems[existingProblemIndex] = problem;
+      updateFormData({ problems: updatedProblems });
+    } else {
+      // Add new problem
       updateFormData({
-        problems: [...formData.problems, newProblem]
+        problems: [...formData.problems, problem]
       });
-      
-      setNewProblemTitle('');
-      setNewProblemDescription('');
-      setNewProblemPriority('Medium');
     }
   };
 
   const deleteProblem = (id: string) => {
     const updatedProblems = formData.problems.filter(problem => problem.id !== id);
     updateFormData({ problems: updatedProblems });
+  };
+
+  const editProblem = (problem: any) => {
+    setEditingProblemData(problem);
+    setIsAddProblemDialogOpen(true);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -122,55 +125,96 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
         
         {/* Active Diagnosis Section - Informational Only */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center">
-            <HeartIcon className="w-4 h-4 text-blue-600 mr-2" />
-            Active Diagnoses
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {activePatientDiagnoses.map((diagnosis, index) => (
-              <div key={index} className="bg-white rounded-md border border-blue-200 p-3">
-                <div className="flex items-start justify-between mb-1">
-                  <span className="text-sm font-medium text-blue-900">{diagnosis.code}</span>
-                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                    {diagnosis.status}
-                  </Badge>
-                </div>
-                <p className="text-xs text-blue-700 leading-relaxed mb-2">{diagnosis.description}</p>
-                <p className="text-xs text-blue-600">Added: {new Date(diagnosis.dateAdded).toLocaleDateString()}</p>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-blue-900 flex items-center">
+              <HeartIcon className="w-4 h-4 text-blue-600 mr-2" />
+              Active Diagnoses
+            </h3>
+            <button
+              onClick={() => setIsActiveDiagnosesExpanded(!isActiveDiagnosesExpanded)}
+              className="flex items-center gap-1 text-xs text-blue-700 hover:text-blue-900 transition-colors"
+            >
+              <span>{isActiveDiagnosesExpanded ? 'Collapse' : 'Expand'}</span>
+              <ChevronDownIcon 
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  isActiveDiagnosesExpanded ? 'rotate-180' : ''
+                }`} 
+              />
+            </button>
           </div>
           
+          {/* Active Diagnoses Table - Collapsible */}
+          {isActiveDiagnosesExpanded && (
+          <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-blue-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                    ICD Code
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                    Date Added
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-blue-100">
+                {activePatientDiagnoses.map((diagnosis, index) => (
+                  <tr key={index} className="hover:bg-blue-25 transition-colors">
+                    <td className="px-4 py-3 text-sm font-medium text-blue-900">
+                      {diagnosis.code}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-blue-700">
+                      {diagnosis.description}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                        {diagnosis.status}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-blue-600">
+                      {new Date(diagnosis.dateAdded).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          )}
+          
+          {/* Always show the explanatory text */}
           <p className="text-xs text-blue-600 mt-3 italic">
             These are the patient's current active diagnoses. Treatment goals and objectives should align with these conditions.
           </p>
         </div>
         
-        {/* Recovery Goal Section */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <TagIcon className="w-5 h-5 text-gray-600 mr-2" />
+        {/* Recovery Goal Section - Compact */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
+            <TagIcon className="w-4 h-4 text-gray-600 mr-2" />
             Recovery Goal/Person-Family Vision
           </h3>
           
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="recoveryGoal" className="block text-sm font-medium text-gray-700 mb-2">
-                Describe the overall recovery goal and vision for this treatment plan
-              </label>
-              <textarea
-                id="recoveryGoal"
-                rows={6}
-                value={formData.recoveryGoal}
-                onChange={(e) => handleRecoveryGoalChange(e.target.value)}
-                placeholder="Enter the recovery goal and person-family vision. Describe what success looks like for this treatment plan and the desired outcomes for the patient and their family..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                This should be a comprehensive description of the treatment goals and expected outcomes
-              </p>
-            </div>
+          <div>
+            <label htmlFor="recoveryGoal" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Describe the overall recovery goal and vision for this treatment plan
+            </label>
+            <textarea
+              id="recoveryGoal"
+              rows={4}
+              value={formData.recoveryGoal}
+              onChange={(e) => handleRecoveryGoalChange(e.target.value)}
+              placeholder="Enter the recovery goal and person-family vision. Describe what success looks like for this treatment plan and the desired outcomes for the patient and their family..."
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-none"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This should be a comprehensive description of the treatment goals and expected outcomes
+            </p>
           </div>
         </div>
 
@@ -195,10 +239,9 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
                     <TooltipTrigger asChild>
                       <Button
                         onClick={() => setIsAddConditionDialogOpen(true)}
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="gap-2"
                       >
-                        <PlusIcon className="w-4 h-4 mr-1" />
+                        <PlusIcon className="w-4 h-4" />
                         Add Your First Condition
                       </Button>
                     </TooltipTrigger>
@@ -302,91 +345,115 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
         {/* Problems Section */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <ExclamationTriangleIcon className="w-5 h-5 text-gray-600 mr-2" />
-            Problems
-          </h3>
-          
-          {/* Add New Problem */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Problem</h4>
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-2">
-                  <Input
-                    type="text"
-                    placeholder="Problem title"
-                    value={newProblemTitle}
-                    onChange={(e) => setNewProblemTitle(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Select
-                    value={newProblemPriority}
-                    onValueChange={(value) => setNewProblemPriority(value as 'High' | 'Medium' | 'Low')}
-                  >
-                    <option value="High">High Priority</option>
-                    <option value="Medium">Medium Priority</option>
-                    <option value="Low">Low Priority</option>
-                  </Select>
-                </div>
+          <ExclamationTriangleIcon className="w-5 h-5 text-gray-600 mr-2" />
+          Problems
+        </h3>
+        
+        {/* Problems List or Empty State */}
+        <div className="space-y-3">
+          {formData.problems.length === 0 ? (
+            /* Empty State */
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ExclamationTriangleIcon className="w-8 h-8 text-gray-400" />
               </div>
-              <div>
-                <textarea
-                  rows={3}
-                  placeholder="Problem description and details"
-                  value={newProblemDescription}
-                  onChange={(e) => setNewProblemDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-none"
-                />
-              </div>
-              <Button
-                onClick={addProblem}
-                disabled={!newProblemTitle.trim() || !newProblemDescription.trim()}
-                size="sm"
-              >
-                <PlusIcon className="w-4 h-4 mr-1" />
-                Add Problem
-              </Button>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">No Problems Added</h4>
+              <p className="text-gray-600 mb-4">Add problems that need to be addressed in this treatment plan. Problems help identify specific areas requiring intervention.</p>
+              <TooltipProvider>
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setIsAddProblemDialogOpen(true)}
+                      className="gap-2"
+                    >
+                      <PlusIcon className="w-4 h-4" />
+                      Add Your First Problem
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Open dialog to add problems</p>
+                  </TooltipContent>
+                </TooltipRoot>
+              </TooltipProvider>
             </div>
-          </div>
-
-          {/* Current Problems */}
-          <div className="space-y-3">
-            {formData.problems.map((problem) => (
-              <div key={problem.id} className="bg-zinc-50 rounded-lg border border-gray-200 p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-gray-900">{problem.title}</h4>
-                      <Badge variant="secondary" className={getPriorityColor(problem.priority)}>
-                        {problem.priority}
-                      </Badge>
+          ) : (
+            /* Problems List */
+            <>
+              {formData.problems.map((problem) => (
+                <div key={problem.id} className="bg-zinc-50 rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-sm text-gray-900">{problem.title}</div>
+                      <div className="text-sm text-gray-600">{problem.details}</div>
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                        <span>Related: {problem.relatedTo}</span>
+                        <span>Outcome: {problem.outcome}</span>
+                        <Badge variant="secondary" className={`${getPriorityColor(problem.priority)} ml-2`}>
+                          {problem.priority}
+                        </Badge>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600">{problem.description}</p>
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingProblem(problem.id)}
-                    >
-                      <PencilIcon className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteProblem(problem.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <TrashIcon className="w-3 h-3" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <TooltipProvider>
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => editProblem(problem)}
+                              className="p-1 rounded hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit problem</p>
+                          </TooltipContent>
+                        </TooltipRoot>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => deleteProblem(problem.id)}
+                              className="p-1 rounded hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Delete problem</p>
+                          </TooltipContent>
+                        </TooltipRoot>
+                      </TooltipProvider>
+                    </div>
                   </div>
                 </div>
+              ))}
+              
+              {/* Add Problem Button - shown when problems exist */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <TooltipProvider>
+                  <TooltipRoot>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setIsAddProblemDialogOpen(true)}
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <PlusIcon className="w-4 h-4 mr-2" />
+                        Add Another Problem
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add a new problem</p>
+                    </TooltipContent>
+                  </TooltipRoot>
+                </TooltipProvider>
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
-
       </div>
 
       {/* Add Condition Dialog */}
@@ -400,6 +467,19 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
         existingConditions={formData.conditions}
         editingCondition={editingConditionData}
       />
+
+      {/* Add Problem Dialog */}
+      <AddProblemDialog
+        open={isAddProblemDialogOpen}
+        onClose={() => {
+          setIsAddProblemDialogOpen(false);
+          setEditingProblemData(null);
+        }}
+        onAddProblem={addProblem}
+        existingProblems={formData.problems}
+        editingProblem={editingProblemData}
+      />
+      </div>
     </div>
   );
 };

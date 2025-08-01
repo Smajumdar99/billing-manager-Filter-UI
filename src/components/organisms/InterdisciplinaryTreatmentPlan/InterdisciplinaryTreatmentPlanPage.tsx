@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { GridOptions } from 'ag-grid-community';
-import { MagnifyingGlassIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ArrowPathIcon, XMarkIcon, PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { PlusIcon } from '@heroicons/react/24/solid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -530,9 +530,15 @@ const allPriorityOptions = [
 interface InterdisciplinaryTreatmentPlanPageProps {
   onBack?: () => void;
   onNewPlan?: () => void; // Callback for when user wants to create a new plan
+  treatmentPlansData?: any[]; // Treatment plans data from parent
+  onTreatmentPlansChange?: (plans: any[]) => void; // Callback to update parent state
 }
 
-const InterdisciplinaryTreatmentPlanPage: React.FC<InterdisciplinaryTreatmentPlanPageProps> = ({ onNewPlan }) => {
+const InterdisciplinaryTreatmentPlanPage: React.FC<InterdisciplinaryTreatmentPlanPageProps> = ({ 
+  onNewPlan, 
+  treatmentPlansData, 
+  onTreatmentPlansChange 
+}) => {
   // State for filters and search
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
@@ -542,6 +548,31 @@ const InterdisciplinaryTreatmentPlanPage: React.FC<InterdisciplinaryTreatmentPla
   const [showSettingsChanges, setShowSettingsChanges] = useState(false);
   const [includeCompletedPlans, setIncludeCompletedPlans] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Editable end date state
+  const [editingEndDate, setEditingEndDate] = useState<{planId: string, value: string} | null>(null);
+  
+  // Initialize treatment plans from props or use mock data
+  const [treatmentPlans, setTreatmentPlans] = useState(
+    treatmentPlansData && treatmentPlansData.length > 0 ? treatmentPlansData : mockTreatmentPlans
+  );
+  
+  // Sync parent data with full mock data on mount
+  React.useEffect(() => {
+    if (onTreatmentPlansChange && (!treatmentPlansData || treatmentPlansData.length <= 1)) {
+      // Parent has minimal data, sync with full mock data
+      onTreatmentPlansChange(mockTreatmentPlans);
+      setTreatmentPlans(mockTreatmentPlans);
+    }
+  }, [onTreatmentPlansChange, treatmentPlansData]);
+  
+  // Update parent state when treatment plans change
+  const updateTreatmentPlans = (newPlans: any[]) => {
+    setTreatmentPlans(newPlans);
+    if (onTreatmentPlansChange) {
+      onTreatmentPlansChange(newPlans);
+    }
+  };
   
   // Use custom hook for ongoing plan check
   const {
@@ -652,14 +683,57 @@ const InterdisciplinaryTreatmentPlanPage: React.FC<InterdisciplinaryTreatmentPla
       headerName: 'End Date',
       field: 'endDate',
       flex: 1,
-      minWidth: 120,
-      cellRenderer: (_params: any) => (
-        <div className="py-2">
-          <div className="text-sm text-gray-900">
-            {_params.data.endDate ? new Date(_params.data.endDate).toLocaleDateString() : 'Ongoing'}
+      minWidth: 160,
+      cellRenderer: (_params: any) => {
+        const plan = _params.data;
+        const isEditing = editingEndDate?.planId === plan.id;
+        
+        if (isEditing) {
+          return (
+            <div className="py-2 flex items-center gap-2">
+              <Input
+                type="date"
+                value={editingEndDate?.value || ''}
+                onChange={(e) => handleEndDateChange(e.target.value)}
+                className="text-xs h-7 w-28"
+                autoFocus
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSaveEndDate}
+                className="p-1 h-7 w-7"
+              >
+                <CheckIcon className="w-3 h-3 text-green-600" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCancelEditEndDate}
+                className="p-1 h-7 w-7"
+              >
+                <XMarkIcon className="w-3 h-3 text-red-600" />
+              </Button>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="py-2 flex items-center justify-between group">
+            <div className="text-sm text-gray-900">
+              {plan.endDate ? new Date(plan.endDate).toLocaleDateString() : 'Ongoing'}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleStartEditEndDate(plan.id, plan.endDate)}
+              className="opacity-0 group-hover:opacity-100 p-1 h-6 w-6 transition-opacity"
+            >
+              <PencilIcon className="w-3 h-3 text-gray-500" />
+            </Button>
           </div>
-        </div>
-      )
+        );
+      }
     },
     {
       headerName: 'Status',
@@ -872,7 +946,7 @@ const InterdisciplinaryTreatmentPlanPage: React.FC<InterdisciplinaryTreatmentPla
 
   // Filter treatment plans based on search and filters
   const filteredTreatmentPlans = useMemo(() => {
-    let filtered = mockTreatmentPlans;
+    let filtered = treatmentPlans;
 
     // Search filter
     if (searchTerm) {
@@ -913,7 +987,7 @@ const InterdisciplinaryTreatmentPlanPage: React.FC<InterdisciplinaryTreatmentPla
     }
 
     return filtered;
-  }, [searchTerm, selectedPrograms, selectedPlanTypes, selectedPriorities, includeInactivePlans, includeCompletedPlans]);
+  }, [treatmentPlans, searchTerm, selectedPrograms, selectedPlanTypes, selectedPriorities, includeInactivePlans, includeCompletedPlans]);
 
   // Check if any filters are active (different from default state)
   const hasActiveFilters = searchTerm || selectedPrograms.length > 0 || selectedPlanTypes.length > 0 || 
@@ -950,6 +1024,42 @@ const InterdisciplinaryTreatmentPlanPage: React.FC<InterdisciplinaryTreatmentPla
 
   // Note: New Plan button warning logic is now handled by the parent component (OldUI.tsx)
   // The real "New Plan" button in the UI calls the warning logic before navigation
+
+  // Handle end date editing
+  const handleStartEditEndDate = (planId: string, currentEndDate?: string) => {
+    const dateValue = currentEndDate ? new Date(currentEndDate).toISOString().split('T')[0] : '';
+    setEditingEndDate({ planId, value: dateValue });
+  };
+
+  const handleSaveEndDate = () => {
+    if (!editingEndDate) return;
+    
+    const updatedPlans = treatmentPlans.map(plan => {
+      if (plan.id === editingEndDate.planId) {
+        const newEndDate = editingEndDate.value || undefined;
+        return {
+          ...plan,
+          endDate: newEndDate,
+          isActive: newEndDate ? isPlanActive(newEndDate) : isPlanActive(undefined)
+        };
+      }
+      return plan;
+    });
+    
+    updateTreatmentPlans(updatedPlans);
+    setEditingEndDate(null);
+    console.log('End date updated for plan:', editingEndDate.planId, 'New date:', editingEndDate.value);
+  };
+
+  const handleCancelEditEndDate = () => {
+    setEditingEndDate(null);
+  };
+
+  const handleEndDateChange = (value: string) => {
+    if (editingEndDate) {
+      setEditingEndDate({ ...editingEndDate, value });
+    }
+  };
 
 
 
@@ -1171,7 +1281,7 @@ const InterdisciplinaryTreatmentPlanPage: React.FC<InterdisciplinaryTreatmentPla
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">
-                {filteredTreatmentPlans.length} of {mockTreatmentPlans.length} plans
+                {filteredTreatmentPlans.length} of {treatmentPlans.length} plans
               </span>
               {hasActiveFilters && (
                 <Button variant="outline" size="sm" onClick={clearAllFilters}>

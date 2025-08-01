@@ -118,19 +118,39 @@ const OldUI: FC = () => {
     handleCancelNewPlan
   } = useOngoingPlanCheck()
   
-  // Mock treatment plans for ongoing plan check
+  // Treatment plans state - shared between parent and child components
   // In a real app, this would come from a global state or API
-  const mockTreatmentPlans = [
+  const [treatmentPlansData, setTreatmentPlansData] = useState([
     {
       id: '2',
       planNumber: 'TP-2024-002',
+      patientId: 'P002',
       patientName: 'Emily Davis',
+      planTitle: 'Social Skills Development Program',
+      programs: ['Social Skills Training', 'Group Therapy'],
+      startDate: '2024-01-20',
       endDate: undefined, // No end date - ongoing/active
       isActive: true,
-      isCompleted: false
+      visits: 18,
+      createdDate: '2024-01-18',
+      createdBy: 'Dr. Amanda Rodriguez',
+      supervisorReview: {
+        status: 'In Review',
+        reviewDate: '2024-01-22',
+        reviewer: 'Dr. Michael Wilson',
+        comments: 'Pending final review'
+      },
+      objectives: 6,
+      measures: 9,
+      isCompleted: false,
+      lastModified: '2024-01-25',
+      assignedTherapists: ['Amanda Rodriguez', 'Lisa Park'],
+      planType: 'Group',
+      priority: 'Medium',
+      tags: ['social-skills', 'group-therapy', 'communication']
     }
-    // Add other plans as needed
-  ]
+    // This will be populated with full data when the child component initializes
+  ])
   const [dashboardShowWidgetSelector, setDashboardShowWidgetSelector] = useState(false)
   
   // Active widgets state for dashboard
@@ -501,6 +521,8 @@ const OldUI: FC = () => {
               console.log('Interdisciplinary Treatment Plan closed, navigating back to dashboard');
               setSelectedMenu('Patient Forms');
             }}
+            treatmentPlansData={treatmentPlansData}
+            onTreatmentPlansChange={setTreatmentPlansData}
           />
         </div>
       );
@@ -656,7 +678,7 @@ const OldUI: FC = () => {
                         onClick={() => {
                           console.log('New Plan button clicked - checking for ongoing plans');
                           // Check for ongoing plans before navigating
-                          handleNewPlanWithCheck(mockTreatmentPlans, () => {
+                          handleNewPlanWithCheck(treatmentPlansData, () => {
                             console.log('Proceeding to new plan creation');
                             navigate('/new-treatment-plan');
                           });
