@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Badge } from '@/components/atoms/Badge';
-import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { cn } from '@/lib/utils';
 import { DataTable } from '@/components/organisms/DataTable';
@@ -10,29 +9,34 @@ import {
   ClockIcon,
   UserIcon,
   DocumentTextIcon,
-  BuildingOffice2Icon,
   CurrencyDollarIcon,
   ShieldCheckIcon,
   ExclamationTriangleIcon,
   ExclamationCircleIcon,
-  ArrowTopRightOnSquareIcon
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faDownload } from '@fortawesome/free-solid-svg-icons';
 import {
-  Menubar,
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarLabel
-} from '@/components/ui/menubar';
-import {
-  TooltipRoot,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
+  TooltipProvider
 } from '@/components/atoms/Tooltip/tooltip';
+import { Combobox, ComboboxOption } from '@/components/atoms/Combobox/Combobox';
+import { RadioGroup, RadioGroupItem } from '@/components/atoms/RadioGroup/radio-group';
+import { Tabs } from '@/components/atoms/Tabs';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+
+// Document interface for the document view
+interface Document {
+  id: string;
+  date: string;
+  name: string;
+  category: string;
+  program: string;
+  billTo: string;
+  size: string;
+  type: string;
+  uploadedBy: string;
+}
 
 // Encounter interface for the table
 interface Encounter {
@@ -55,7 +59,150 @@ interface Encounter {
   };
   isUnbilled?: boolean;
   unbilledReason?: string;
+  // Billing-specific fields
+  billingNote?: string;
+  code?: string;
+  charge?: number;
+  paid?: number;
+  adjustment?: number;
+  balance?: number;
 }
+
+// Document categories from the provided list
+const documentCategories = [
+  'Incidents',
+  'Incoming Call Documents',
+  'Insurance Documents',
+  'Lab Report',
+  'Legal Documents',
+  'Manual Intake forms',
+  'Mid America Lab',
+  'Patient ID card',
+  'Patient Information',
+  'Patient Photograph',
+  'Portal Documents',
+  'Referrals',
+  'Reports',
+  'Reports from CDI',
+  'Reports from Other',
+  'Scanned Assessment Paperwork',
+  'Session notes from EHR',
+  'Venous'
+];
+
+// Mock document data
+const mockDocuments: Document[] = [
+  {
+    id: 'DOC001',
+    date: '01/23/2025',
+    name: 'Q17534831DS.png (Client Photograph) (Enc # 0)',
+    category: 'Patient Photograph',
+    program: '',
+    billTo: '',
+    size: '2.1 MB',
+    type: 'PNG',
+    uploadedBy: 'Admin User'
+  },
+  {
+    id: 'DOC002',
+    date: '01/19/2025',
+    name: 'Q.png (Portal Documents) (Enc # 0)',
+    category: 'Portal Documents',
+    program: '',
+    billTo: '',
+    size: '1.8 MB',
+    type: 'PNG',
+    uploadedBy: 'Patient Portal'
+  },
+  {
+    id: 'DOC003',
+    date: '01/19/2025',
+    name: 'patient_Doc1744-00721.png (Client Photograph) (Enc # 0)',
+    category: 'Patient Photograph',
+    program: '',
+    billTo: '',
+    size: '3.2 MB',
+    type: 'PNG',
+    uploadedBy: 'Clinical Staff'
+  },
+  {
+    id: 'DOC004',
+    date: '01/07/2025',
+    name: 'Screenshot_2025_04_07-162004.png (Client ID card) (Enc # 0)',
+    category: 'Patient ID card',
+    program: '',
+    billTo: '',
+    size: '1.5 MB',
+    type: 'PNG',
+    uploadedBy: 'Registration'
+  },
+  {
+    id: 'DOC005',
+    date: '01/25/2025',
+    name: 'Document: 1a.Communication_Documentation_etc (Lab Report) (Enc # 0)',
+    category: 'Lab Report',
+    program: 'A-METH',
+    billTo: '',
+    size: '856 KB',
+    type: 'PDF',
+    uploadedBy: 'Lab Tech'
+  },
+  {
+    id: 'DOC006',
+    date: '01/19/2025',
+    name: 'Thumbnail_image.png (Advance Directive) (Enc # 0)',
+    category: 'Legal Documents',
+    program: 'A-METH',
+    billTo: '',
+    size: '2.3 MB',
+    type: 'PNG',
+    uploadedBy: 'Legal Dept'
+  },
+  {
+    id: 'DOC007',
+    date: '01/27/2025',
+    name: 'Document: SATTL.GANGABATARAM.pdf (Encounter Documents) (Enc # 0)',
+    category: 'Session notes from EHR',
+    program: '',
+    billTo: '',
+    size: '1.2 MB',
+    type: 'PDF',
+    uploadedBy: 'Therapist'
+  },
+  {
+    id: 'DOC008',
+    date: '01/25/2025',
+    name: 'Document: Screenshot_2024_05_04_131911.png (Client Photograph) (Enc # 0)',
+    category: 'Patient Photograph',
+    program: '',
+    billTo: '',
+    size: '4.1 MB',
+    type: 'PNG',
+    uploadedBy: 'Intake Staff'
+  },
+  {
+    id: 'DOC009',
+    date: '01/24/2025',
+    name: 'Document: ganesh.jpg (Client Photograph) (Enc # 0)',
+    category: 'Patient Photograph',
+    program: 'A-AADC',
+    billTo: '',
+    size: '987 KB',
+    type: 'JPG',
+    uploadedBy: 'Clinical Staff'
+  },
+  {
+    id: 'DOC010',
+    date: '01/21/2025',
+    name: 'Document: LabResult_20241225_120700.pdf (Lab Report) (Enc # 100206235)',
+    category: 'Lab Report',
+    program: 'B-ACTS',
+    billTo: '',
+    size: '2.7 MB',
+    type: 'PDF',
+    uploadedBy: 'Lab Coordinator'
+  }
+];
 
 // Mock data for encounters based on the screenshot
 const mockEncounters: Encounter[] = [
@@ -76,7 +223,13 @@ const mockEncounters: Encounter[] = [
       hasAlert: true,
       missingRules: ['14 day treatment plan'],
       missingForms: ['FB Form Test 1', 'CAMS Interim Session']
-    }
+    },
+    billingNote: 'Admin., Ensoftek - CADC',
+    code: '97166',
+    charge: 350.00,
+    paid: 0.00,
+    adjustment: 0.00,
+    balance: 350.00
   },
   {
     id: '100199617',
@@ -92,7 +245,13 @@ const mockEncounters: Encounter[] = [
     unitsBilling: 4,
     insurance: 'Primary: (Medicaid) AETNA 012345',
     isUnbilled: true,
-    unbilledReason: 'Missing authorization code - Insurance verification pending'
+    unbilledReason: 'Missing authorization code - Insurance verification pending',
+    billingNote: 'Patient Admin., Ensoftek - CADC',
+    code: '90834',
+    charge: 275.00,
+    paid: 0.00,
+    adjustment: 0.00,
+    balance: 275.00
   },
   {
     id: '100191586',
@@ -111,7 +270,13 @@ const mockEncounters: Encounter[] = [
       hasAlert: true,
       missingRules: ['14 day treatment plan'],
       missingForms: ['PAR-Q HIR-Q']
-    }
+    },
+    billingNote: 'Details not available',
+    code: '90837',
+    charge: 425.00,
+    paid: 320.00,
+    adjustment: 25.00,
+    balance: 80.00
   },
   {
     id: '100199508',
@@ -125,7 +290,13 @@ const mockEncounters: Encounter[] = [
     reasonForm: 'Therapy Progress Form (100%) Mental Health Assessment (90%)',
     provider: 'Smith, Jennifer',
     unitsBilling: 2,
-    insurance: 'Primary: (Commercial) Blue Cross Blue Shield'
+    insurance: 'Primary: (Commercial) Blue Cross Blue Shield',
+    billingNote: 'Therapy session completed',
+    code: '90834',
+    charge: 200.00,
+    paid: 200.00,
+    adjustment: 0.00,
+    balance: 0.00
   },
   {
     id: '100199445',
@@ -456,9 +627,22 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
   className,
   patientId
 }) => {
+  // Search and filter state - following staff dashboard pattern
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [selectedIndividualEncounters, setSelectedIndividualEncounters] = useState<string[]>([]);
+  const [selectedGroupEncounters, setSelectedGroupEncounters] = useState<string[]>([]);
+  const [selectedServiceLocation, setSelectedServiceLocation] = useState<string[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<string[]>([]);
+  const [selectedForms, setSelectedForms] = useState<string[]>([]);
+  const [selectedEncounterStatus, setSelectedEncounterStatus] = useState<string[]>([]);
+  const [serviceDateFilter, setServiceDateFilter] = useState<'all' | 'range'>('all');
+  const [activeTab, setActiveTab] = useState<'clinical' | 'billing' | 'document'>('clinical');
   const [selectedEncounter, setSelectedEncounter] = useState<Encounter | null>(null);
+  
+  // Document view state
+  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
+  const [selectedDocumentCategory, setSelectedDocumentCategory] = useState<string[]>([]);
+  const [documentSearchQuery, setDocumentSearchQuery] = useState<string>('');
   const isMobile = useMediaQuery('(max-width: 640px)');
 
   // Handle encounter selection
@@ -466,24 +650,126 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
     setSelectedEncounter(encounter);
   };
 
-  // Filter encounters based on search query and active filter
+  // Get unique options for dropdowns - following staff dashboard pattern
+  const individualEncounterOptions = useMemo((): ComboboxOption[] => {
+    const encounters = [...new Set(mockEncounters.filter(e => e.category.includes('Individual') || e.category.includes('Therapy')).map(e => e.category))];
+    return encounters.sort().map(encounter => ({ value: encounter, label: encounter }));
+  }, []);
+
+  const groupEncounterOptions = useMemo((): ComboboxOption[] => {
+    const encounters = [...new Set(mockEncounters.filter(e => e.category.includes('Group') || e.category.includes('Sessions')).map(e => e.category))];
+    return encounters.sort().map(encounter => ({ value: encounter, label: encounter }));
+  }, []);
+
+  const serviceLocationOptions = useMemo((): ComboboxOption[] => {
+    const locations = [...new Set(mockEncounters.map(e => e.serviceProgram))];
+    return locations.sort().map(location => ({ value: location, label: location }));
+  }, []);
+
+  const providerOptions = useMemo((): ComboboxOption[] => {
+    const providers = [...new Set(mockEncounters.map(e => e.provider))];
+    return providers.sort().map(provider => ({ value: provider, label: provider }));
+  }, []);
+
+  const formsOptions = useMemo((): ComboboxOption[] => {
+    return [
+      { value: 'All', label: 'All' },
+      { value: 'Treatment Plan', label: 'Treatment Plan' },
+      { value: 'Progress Note', label: 'Progress Note' },
+      { value: 'Assessment', label: 'Assessment' }
+    ];
+  }, []);
+
+  const encounterStatusOptions = useMemo((): ComboboxOption[] => {
+    const statuses = [...new Set(mockEncounters.map(e => e.encounterStatus))];
+    return statuses.sort().map(status => ({ value: status, label: status }));
+  }, []);
+
+  const documentCategoryOptions: ComboboxOption[] = documentCategories.map(category => ({
+    value: category,
+    label: category
+  }));
+
+  const filteredDocuments = useMemo(() => {
+    let filtered = documents;
+
+    if (documentSearchQuery.trim()) {
+      const query = documentSearchQuery.toLowerCase();
+      filtered = filtered.filter(doc => 
+        doc.name.toLowerCase().includes(query) ||
+        doc.category.toLowerCase().includes(query) ||
+        doc.program.toLowerCase().includes(query) ||
+        doc.type.toLowerCase().includes(query)
+      );
+    }
+
+    if (selectedDocumentCategory.length > 0) {
+      filtered = filtered.filter(doc => 
+        selectedDocumentCategory.includes(doc.category)
+      );
+    }
+
+    return filtered;
+  }, [documents, documentSearchQuery, selectedDocumentCategory]);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const newDocuments: Document[] = Array.from(files).map((file, index) => ({
+        id: `DOC${Date.now()}_${index}`,
+        date: new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+        name: `${file.name} (Uploaded Document) (Enc # 0)`,
+        category: 'Portal Documents', 
+        program: '',
+        billTo: '',
+        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        type: file.type.split('/')[1]?.toUpperCase() || 'FILE',
+        uploadedBy: 'Current User'
+      }));
+      
+      setDocuments(prev => [...newDocuments, ...prev]);
+    }
+  };
+
   const filteredEncounters = useMemo(() => {
     return mockEncounters.filter(encounter => {
       const matchesSearch = searchQuery === '' || 
         encounter.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         encounter.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
         encounter.serviceProgram.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        encounter.issue.toLowerCase().includes(searchQuery.toLowerCase());
+        encounter.issue.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        encounter.id.includes(searchQuery);
       
-      let matchesFilter = true;
-      if (activeFilter !== 'all') {
-        matchesFilter = encounter.encounterStatus.toLowerCase() === activeFilter.toLowerCase() ||
-          encounter.billingProgram.toLowerCase() === activeFilter.toLowerCase();
-      }
+      // Individual encounters filtering
+      const matchesIndividual = selectedIndividualEncounters.length === 0 || 
+        selectedIndividualEncounters.some(selected => encounter.category.includes(selected));
       
-      return matchesSearch && matchesFilter;
+      // Group encounters filtering
+      const matchesGroup = selectedGroupEncounters.length === 0 || 
+        selectedGroupEncounters.some(selected => encounter.category.includes(selected));
+      
+      // Service location filtering
+      const matchesLocation = selectedServiceLocation.length === 0 || 
+        selectedServiceLocation.includes(encounter.serviceProgram);
+      
+      // Provider filtering
+      const matchesProvider = selectedProvider.length === 0 || 
+        selectedProvider.includes(encounter.provider);
+      
+      // Forms filtering (placeholder for now)
+      const matchesForms = selectedForms.length === 0 || selectedForms.includes('All');
+      
+      // Encounter status filtering
+      const matchesStatus = selectedEncounterStatus.length === 0 || 
+        selectedEncounterStatus.includes(encounter.encounterStatus);
+      
+      return matchesSearch && matchesIndividual && matchesGroup && 
+             matchesLocation && matchesProvider && matchesForms && 
+             matchesStatus;
     });
-  }, [searchQuery, activeFilter]);
+  }, [searchQuery, selectedIndividualEncounters, selectedGroupEncounters, 
+      selectedServiceLocation, selectedProvider, selectedForms, 
+      selectedEncounterStatus]);
 
   const gridOptions: GridOptions = {
     suppressCellFocus: true,
@@ -808,117 +1094,600 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
   return (
     <TooltipProvider>
       <div className={cn("bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100", className)}>
-        {/* Search and Controls Section */}
-        <div className="p-4 pb-0">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative w-full sm:w-64">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search encounters..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10"
-            />
-          </div>
-          
-          <div className="flex items-center gap-2 ml-auto">
-            <Menubar className="bg-white border rounded-lg px-2 py-1 shrink-0">
-              <MenubarMenu>
-                <MenubarTrigger>
-                  <div className="flex items-center gap-2">
-                    <span>Filter</span>
-                    {activeFilter !== 'all' && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600">
-                        1
-                      </span>
-                    )}
-                  </div>
-                </MenubarTrigger>
-                <MenubarContent>
-                  <MenubarItem 
-                    onClick={() => setActiveFilter('all')}
-                    className={cn(
-                      "flex items-center gap-2",
-                      activeFilter === 'all' && "bg-blue-50 text-blue-600"
-                    )}
-                  >
-                    All Encounters
-                  </MenubarItem>
-                  <MenubarSeparator />
-                  <MenubarLabel>Status</MenubarLabel>
-                  {['Open', 'Closed', 'Closed With Errors', 'In Progress'].map(status => (
-                    <MenubarItem 
-                      key={status}
-                      onClick={() => setActiveFilter(status)}
-                      className={cn(
-                        "flex items-center gap-2",
-                        activeFilter === status && "bg-blue-50 text-blue-600"
-                      )}
-                    >
-                      {status}
-                    </MenubarItem>
-                  ))}
-                  <MenubarSeparator />
-                  <MenubarLabel>Billing</MenubarLabel>
-                  {['Insurance', 'Self-pay', 'Medicaid'].map(billing => (
-                    <MenubarItem 
-                      key={billing}
-                      onClick={() => setActiveFilter(billing)}
-                      className={cn(
-                        "flex items-center gap-2",
-                        activeFilter === billing && "bg-blue-50 text-blue-600"
-                      )}
-                    >
-                      {billing}
-                    </MenubarItem>
-                  ))}
-                </MenubarContent>
-              </MenubarMenu>
-            </Menubar>
-          </div>
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 px-4 pt-4">
+          <Tabs
+            tabs={[
+              {
+                id: 'clinical',
+                label: 'Clinical View',
+                icon: <UserIcon className="w-4 h-4" />
+              },
+              {
+                id: 'billing',
+                label: 'Billing View',
+                icon: <CurrencyDollarIcon className="w-4 h-4" />
+              },
+              {
+                id: 'document',
+                label: 'Document View',
+                icon: <DocumentTextIcon className="w-4 h-4" />
+              }
+            ]}
+            activeTab={activeTab}
+            onTabChange={(tabId) => setActiveTab(tabId as 'clinical' | 'billing' | 'document')}
+            className="mb-4"
+          />
         </div>
-      </div>
-      
-      {/* Table Content */}
-      <div className="px-4 pb-4 pt-2">
-        {filteredEncounters.length > 0 ? (
-          <>
-            {/* Desktop View */}
-            <div className="hidden sm:block w-full overflow-x-auto">
-              <div className="min-w-[1400px] h-[calc(100vh-280px)]">
-                <DataTable
-                  rowData={filteredEncounters}
-                  columnDefs={columnDefs}
-                  className="w-full h-full rounded-lg"
-                  gridOptions={gridOptions}
-                />
+
+        {/* Clinical View Tab Content */}
+        {activeTab === 'clinical' && (
+          <div>
+            {/* Search and Filter Controls - Following Staff Dashboard Pattern */}
+            <div className="p-4 pb-0">
+              <div className="space-y-4">
+                {/* Row 1: Search Bar + Service Date */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                  <div className="relative flex-1 max-w-2xl">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search encounters by ID, category, provider, or issue..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="pl-10 w-full"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-sm font-medium text-gray-700">Service Date:</span>
+                    <RadioGroup
+                      value={serviceDateFilter}
+                      onValueChange={(value) => setServiceDateFilter(value as 'all' | 'range')}
+                      className="flex items-center gap-4"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="all" id="all" />
+                        <label htmlFor="all" className="text-sm font-medium text-gray-700 cursor-pointer">
+                          All
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="range" id="range" />
+                        <label htmlFor="range" className="text-sm font-medium text-gray-700 cursor-pointer">
+                          Range:
+                        </label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+
+               
+                {/* Row 3: Main Filters - Horizontal Layout */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Individual Encounters:</label>
+                    <Combobox
+                      options={individualEncounterOptions}
+                      value={selectedIndividualEncounters}
+                      onChange={setSelectedIndividualEncounters}
+                      placeholder="-- Select --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Group Encounters:</label>
+                    <Combobox
+                      options={groupEncounterOptions}
+                      value={selectedGroupEncounters}
+                      onChange={setSelectedGroupEncounters}
+                      placeholder="-- Select --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Service Location:</label>
+                    <Combobox
+                      options={serviceLocationOptions}
+                      value={selectedServiceLocation}
+                      onChange={setSelectedServiceLocation}
+                      placeholder="-- All --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Provider:</label>
+                    <Combobox
+                      options={providerOptions}
+                      value={selectedProvider}
+                      onChange={setSelectedProvider}
+                      placeholder="-- All --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Forms:</label>
+                    <Combobox
+                      options={formsOptions}
+                      value={selectedForms}
+                      onChange={setSelectedForms}
+                      placeholder="-- All --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Encounter status:</label>
+                    <Combobox
+                      options={encounterStatusOptions}
+                      value={selectedEncounterStatus}
+                      onChange={setSelectedEncounterStatus}
+                      placeholder="--All--"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-            
-            {/* Mobile View */}
-            <div className="sm:hidden max-h-[calc(100vh-280px)] overflow-y-auto">
-              {filteredEncounters.map((encounter) => (
-                <EncounterCard 
-                  key={encounter.id} 
-                  encounter={encounter}
-                  onSelect={handleEncounterSelect}
-                />
-              ))}
+          
+            {/* Clinical Table Content */}
+            <div className="px-4 pb-4 pt-2">
+              {filteredEncounters.length > 0 ? (
+                <>
+                  {/* Desktop View */}
+                  <div className="hidden sm:block w-full overflow-x-auto">
+                    <div className="min-w-[1400px] h-[calc(100vh-320px)]">
+                      <DataTable
+                        rowData={filteredEncounters}
+                        columnDefs={columnDefs}
+                        className="w-full h-full rounded-lg"
+                        gridOptions={gridOptions}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Mobile View */}
+                  <div className="sm:hidden max-h-[calc(100vh-320px)] overflow-y-auto">
+                    {filteredEncounters.map((encounter) => (
+                      <EncounterCard 
+                        key={encounter.id} 
+                        encounter={encounter}
+                        onSelect={handleEncounterSelect}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center h-[calc(100vh-320px)]">
+                  <DocumentTextIcon className="h-10 w-10 text-gray-300 mb-2" />
+                  <p className="text-gray-500">
+                    {searchQuery.trim() 
+                      ? `No encounters found matching "${searchQuery}"` 
+                      : "No encounters found for the selected filter."}
+                  </p>
+                </div>
+              )}
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center text-center h-[calc(100vh-280px)]">
-            <DocumentTextIcon className="h-10 w-10 text-gray-300 mb-2" />
-            <p className="text-gray-500">
-              {searchQuery.trim() 
-                ? `No encounters found matching "${searchQuery}"` 
-                : "No encounters found for the selected filter."}
-            </p>
+          </div>
+        )}
+
+        {/* Billing View Tab Content */}
+        {activeTab === 'billing' && (
+          <div>
+            {/* Billing Search and Filter Controls - Same as Clinical View */}
+            <div className="p-4 pb-0">
+              <div className="space-y-4">
+                {/* Row 1: Search Bar + Service Date */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                  <div className="relative flex-1 max-w-2xl">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search by billing code, provider, or insurance..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="pl-10 w-full"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-sm font-medium text-gray-700">Service Date:</span>
+                    <RadioGroup
+                      value={serviceDateFilter}
+                      onValueChange={(value) => setServiceDateFilter(value as 'all' | 'range')}
+                      className="flex items-center gap-4"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="all" id="billing-all" />
+                        <label htmlFor="billing-all" className="text-sm font-medium text-gray-700 cursor-pointer">
+                          All
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="range" id="billing-range" />
+                        <label htmlFor="billing-range" className="text-sm font-medium text-gray-700 cursor-pointer">
+                          Range:
+                        </label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+
+                {/* Row 2: Main Filters - Same as Clinical View */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Individual Encounters:</label>
+                    <Combobox
+                      options={individualEncounterOptions}
+                      value={selectedIndividualEncounters}
+                      onChange={setSelectedIndividualEncounters}
+                      placeholder="-- Select --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Group Encounters:</label>
+                    <Combobox
+                      options={groupEncounterOptions}
+                      value={selectedGroupEncounters}
+                      onChange={setSelectedGroupEncounters}
+                      placeholder="-- Select --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Service Location:</label>
+                    <Combobox
+                      options={serviceLocationOptions}
+                      value={selectedServiceLocation}
+                      onChange={setSelectedServiceLocation}
+                      placeholder="-- Select --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Provider:</label>
+                    <Combobox
+                      options={providerOptions}
+                      value={selectedProvider}
+                      onChange={setSelectedProvider}
+                      placeholder="-- Select --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Forms:</label>
+                    <Combobox
+                      options={formsOptions}
+                      value={selectedForms}
+                      onChange={setSelectedForms}
+                      placeholder="-- Select --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Encounter Status:</label>
+                    <Combobox
+                      options={encounterStatusOptions}
+                      value={selectedEncounterStatus}
+                      onChange={setSelectedEncounterStatus}
+                      placeholder="-- Select --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Billing Table */}
+            <div className="p-4">
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[100px]">Alert</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Date</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Category/Encounter</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Encounter Status</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Service Program</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Billing Program</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Bill-To</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Provider</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Billing Note</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Code</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Units</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Chg</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Paid</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Adj</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Bal</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Insurance</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredEncounters.map((encounter, index) => (
+                        <tr key={encounter.id} className={cn(
+                          "hover:bg-gray-50 transition-colors duration-150",
+                          index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                        )}>
+                          <td className="px-3 py-3 text-center whitespace-nowrap w-[100px]">
+                            <div className="flex items-center justify-center gap-1 h-full w-full px-1">
+                              {/* Golden Thread Alert - Clinical Documentation Issues */}
+                              {encounter.goldenThreadAlert?.hasAlert && (
+                                <div 
+                                  className="relative group flex-shrink-0"
+                                  title={createGoldenThreadTooltip(encounter.goldenThreadAlert)}
+                                >
+                                  <CustomTooltip
+                                    content={createGoldenThreadTooltip(encounter.goldenThreadAlert)}
+                                    type="golden"
+                                  >
+                                    <div className="relative flex items-center justify-center w-7 h-7 bg-amber-100 border-2 border-amber-400 rounded-full shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer">
+                                      <ExclamationTriangleIcon className="h-4 w-4 text-amber-700 font-bold" />
+                                      {/* Pulse animation for emphasis */}
+                                      <div className="absolute inset-0 bg-amber-400 rounded-full animate-ping opacity-20"></div>
+                                    </div>
+                                  </CustomTooltip>
+                                </div>
+                              )}
+
+                              {/* Unbilled Alert - Financial/Billing Issues */}
+                              {encounter.isUnbilled && (
+                                <div 
+                                  className="relative group flex-shrink-0"
+                                  title={`Unbilled Encounter: ${encounter.unbilledReason}`}
+                                >
+                                  <CustomTooltip
+                                    content={encounter.unbilledReason || 'Unbilled encounter'}
+                                    type="unbilled"
+                                  >
+                                    <div className="relative flex items-center justify-center w-7 h-7 bg-red-100 border-2 border-red-400 rounded-full shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer">
+                                      <ExclamationCircleIcon className="h-4 w-4 text-red-700 font-bold" />
+                                      {/* Pulse animation for emphasis */}
+                                      <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-20"></div>
+                                    </div>
+                                  </CustomTooltip>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">
+                            <div className="flex items-center text-sm text-gray-600">
+                              <ClockIcon className="h-4 w-4 mr-2 text-gray-500" />
+                              {encounter.date}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {encounter.category}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                ({encounter.id})
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-sm whitespace-nowrap">
+                            <Badge 
+                              variant={encounter.encounterStatus === 'Open' ? 'destructive' : 
+                                      encounter.encounterStatus === 'Closed' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {encounter.encounterStatus}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap max-w-[200px] truncate" title={encounter.serviceProgram}>{encounter.serviceProgram}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{encounter.billingProgram}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{encounter.billTo}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{encounter.provider}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap max-w-[150px] truncate" title={encounter.billingNote}>{encounter.billingNote || '-'}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap font-mono">{encounter.code || '-'}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap text-center">{encounter.unitsBilling}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap text-right font-mono">${encounter.charge?.toFixed(2) || '0.00'}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap text-right font-mono">${encounter.paid?.toFixed(2) || '0.00'}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap text-right font-mono">${encounter.adjustment?.toFixed(2) || '0.00'}</td>
+                          <td className="px-3 py-3 text-sm whitespace-nowrap text-right font-mono">
+                            <span className={cn(
+                              "font-semibold",
+                              (encounter.balance || 0) > 0 ? "text-red-600" : "text-green-600"
+                            )}>
+                              ${encounter.balance?.toFixed(2) || '0.00'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap max-w-[200px] truncate" title={encounter.insurance}>{encounter.insurance}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* No Results Message for Billing */}
+                {filteredEncounters.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <CurrencyDollarIcon className="h-10 w-10 text-gray-300 mb-2" />
+                    <p className="text-gray-500">
+                      {searchQuery.trim() 
+                        ? `No billing records found matching "${searchQuery}"` 
+                        : "No billing records found for the selected filter."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Document View Tab Content */}
+        {activeTab === 'document' && (
+          <div>
+            {/* Document Search and Filter Controls */}
+            <div className="p-4 pb-0">
+              <div className="space-y-4">
+                {/* Row 1: Search Bar + Upload Button */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                  <div className="relative flex-1 max-w-2xl">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search documents by name, category, or type..."
+                      value={documentSearchQuery}
+                      onChange={e => setDocumentSearchQuery(e.target.value)}
+                      className="pl-10 w-full"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <label className="relative cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-2">
+                      <DocumentTextIcon className="w-4 h-4" />
+                      Upload Document
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Row 2: Document Category Filter */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Document Category:</label>
+                    <Combobox
+                      options={documentCategoryOptions}
+                      value={selectedDocumentCategory}
+                      onChange={setSelectedDocumentCategory}
+                      placeholder="-- Select Category --"
+                      className="w-full"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Document Table */}
+            <div className="p-4">
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Date</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Document</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Program</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Bill-To</th>
+                        <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredDocuments.map((document, index) => (
+                        <tr key={document.id} className={cn(
+                          "hover:bg-gray-50 transition-colors duration-150",
+                          index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                        )}>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">
+                            <div className="flex items-center text-sm text-gray-600">
+                              <ClockIcon className="h-4 w-4 mr-2 text-gray-500" />
+                              {document.date}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap max-w-[400px]">
+                            <div className="space-y-1">
+                              <div className="font-medium text-gray-900 truncate" title={document.name}>
+                                {document.name}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <Badge variant="outline" className="text-xs">
+                                  {document.category}
+                                </Badge>
+                                <span>•</span>
+                                <span>{document.type}</span>
+                                <span>•</span>
+                                <span>{document.size}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">
+                            {document.program || '-'}
+                          </td>
+                          <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">
+                            {document.billTo || '-'}
+                          </td>
+                          <td className="px-3 py-3 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                className="text-blue-600 hover:text-blue-800 p-1.5 rounded-md hover:bg-blue-50 transition-colors duration-200"
+                                title="View document"
+                              >
+                                <FontAwesomeIcon icon={faEye} className="w-4 h-4" />
+                              </button>
+                              <button
+                                className="text-green-600 hover:text-green-800 p-1.5 rounded-md hover:bg-green-50 transition-colors duration-200"
+                                title="Download document"
+                              >
+                                <FontAwesomeIcon icon={faDownload} className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* No Results Message for Documents */}
+                {filteredDocuments.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <DocumentTextIcon className="h-10 w-10 text-gray-300 mb-2" />
+                    <p className="text-gray-500">
+                      {documentSearchQuery.trim() 
+                        ? `No documents found matching "${documentSearchQuery}"` 
+                        : "No documents found for the selected filter."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
-    </div>
     </TooltipProvider>
   );
 };
