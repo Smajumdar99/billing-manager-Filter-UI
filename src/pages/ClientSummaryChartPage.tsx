@@ -7,6 +7,8 @@ import { DiagnosisWidget } from '@/components/widgets/DiagnosisWidget/diagnosis-
 import { DemographicsWidget } from '@/components/widgets/DemographicsWidget/demographics-widget';
 import { InsuranceWidget } from '@/components/widgets/InsuranceWidget/insurance-widget';
 import { MedicationsWidget } from '@/components/widgets/MedicationsWidget/medications-widget';
+import { ProblemsWidget } from '@/components/widgets/ProblemsWidget/problems-widget';
+import AddProblemDialog from '@/components/molecules/AddProblemDialog/AddProblemDialog';
 import { Button } from '@/components/atoms/Button/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/atoms/Dialog/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -73,6 +75,13 @@ const availableWidgets: WidgetConfig[] = [
     title: 'Medications',
     component: MedicationsWidget,
     defaultSize: { w: 6, h: 8 } // 6 columns wide, 8 rows tall
+  },
+  {
+    id: 'problems',
+    type: 'problems',
+    title: 'Problems',
+    component: ProblemsWidget,
+    defaultSize: { w: 6, h: 8 } // 6 columns wide, 8 rows tall
   }
 ]
 
@@ -114,7 +123,8 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
       { i: 'diagnosis', x: 6, y: 0, w: 3, h: 8, minW: 3, minH: 6 },
       { i: 'demographics', x: 0, y: 8, w: 6, h: 8, minW: 4, minH: 6 },
       { i: 'insurance', x: 6, y: 8, w: 3, h: 8, minW: 3, minH: 6 },
-      { i: 'medications', x: 0, y: 16, w: 6, h: 8, minW: 4, minH: 6 }
+      { i: 'medications', x: 0, y: 16, w: 4, h: 8, minW: 4, minH: 6 },
+      { i: 'problems', x: 4, y: 16, w: 5, h: 8, minW: 4, minH: 6 }
     ],
     md: [
       { i: 'notification-center', x: 0, y: 0, w: 4, h: 8, minW: 3, minH: 6 },
@@ -122,7 +132,8 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
       { i: 'diagnosis', x: 8, y: 0, w: 4, h: 8, minW: 3, minH: 6 },
       { i: 'demographics', x: 0, y: 8, w: 8, h: 8, minW: 4, minH: 6 },
       { i: 'insurance', x: 8, y: 8, w: 4, h: 8, minW: 3, minH: 6 },
-      { i: 'medications', x: 0, y: 16, w: 8, h: 8, minW: 4, minH: 6 }
+      { i: 'medications', x: 0, y: 16, w: 6, h: 8, minW: 4, minH: 6 },
+      { i: 'problems', x: 6, y: 16, w: 6, h: 8, minW: 4, minH: 6 }
     ],
     sm: [
       { i: 'notification-center', x: 0, y: 0, w: 9, h: 8, minW: 9, minH: 6 },
@@ -130,13 +141,19 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
       { i: 'diagnosis', x: 0, y: 16, w: 9, h: 8, minW: 9, minH: 6 },
       { i: 'demographics', x: 0, y: 24, w: 9, h: 8, minW: 9, minH: 6 },
       { i: 'insurance', x: 0, y: 32, w: 9, h: 8, minW: 9, minH: 6 },
-      { i: 'medications', x: 0, y: 40, w: 9, h: 8, minW: 9, minH: 6 }
+      { i: 'medications', x: 0, y: 40, w: 9, h: 8, minW: 9, minH: 6 },
+      { i: 'problems', x: 0, y: 48, w: 9, h: 8, minW: 9, minH: 6 }
     ]
   })
 
   // State for dashboard settings - use external props when available
   const [internalEditMode] = useState(false)
   const [maximizedWidget, setMaximizedWidget] = useState<string | null>(null)
+  
+  // State for AddProblemDialog
+  const [isAddProblemDialogOpen, setIsAddProblemDialogOpen] = useState(false)
+  const [problems, setProblems] = useState<any[]>([])
+  const [editingProblem, setEditingProblem] = useState<any | null>(null)
   
   // Use external props if provided, otherwise use internal state
   const isEditMode = externalEditMode || internalEditMode
@@ -148,6 +165,63 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
     setLayouts(allLayouts)
     // Save to localStorage for persistence
     localStorage.setItem('clientSummaryDashboardLayouts', JSON.stringify(allLayouts))
+  }
+
+  /**
+   * Handle opening AddProblemDialog
+   */
+  const handleAddProblem = () => {
+    setIsAddProblemDialogOpen(true)
+  }
+
+  /**
+   * Handle closing AddProblemDialog
+   */
+  const handleCloseAddProblemDialog = () => {
+    setIsAddProblemDialogOpen(false)
+    setEditingProblem(null) // Reset editing state when closing
+  }
+
+  /**
+   * Handle adding a new problem
+   */
+  const handleAddNewProblem = (problem: any) => {
+    if (editingProblem) {
+      // Update existing problem
+      setProblems(prev => prev.map(p => p.id === editingProblem.id ? { ...problem, id: editingProblem.id } : p))
+      console.log('Problem updated:', problem)
+      setEditingProblem(null)
+    } else {
+      // Add new problem
+      setProblems(prev => [...prev, { ...problem, id: Date.now().toString() }])
+      console.log('New problem added:', problem)
+    }
+  }
+
+  /**
+   * Handle editing a problem from the widget
+   */
+  const handleEditProblemFromWidget = (problem: any) => {
+    setEditingProblem(problem)
+    setIsAddProblemDialogOpen(true)
+  }
+
+  /**
+   * Handle deleting a problem from the widget
+   */
+  const handleDeleteProblemFromWidget = (problemId: string) => {
+    setProblems(prev => prev.filter(p => p.id !== problemId))
+    console.log('Problem deleted:', problemId)
+  }
+
+  /**
+   * Handle navigation to Problems Management page
+   */
+  const handleViewEditAllProblems = () => {
+    // TODO: Implement navigation to Problems Management page
+    // This would typically use React Router or Next.js router
+    console.log('Navigate to Problems Management page')
+    window.location.href = '/problems-management'
   }
 
   /**
@@ -361,6 +435,36 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
             </Button>
           </div>
         )
+      case 'problems':
+        return (
+          <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <Button
+              onClick={handleAddProblem}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+            >
+              <PlusCircleIcon className="w-4 h-4" />
+              Add Problem
+            </Button>
+            <Button
+              onClick={handleViewEditAllProblems}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+            >
+              View/Edit All
+            </Button>
+            <Button
+              onClick={() => console.log('Preview & Print Problems')}
+              variant="link"
+              size="sm"
+              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+            >
+              Preview & Print
+            </Button>
+          </div>
+        )
       default:
         return null
     }
@@ -447,6 +551,10 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
               className="h-full"
               userRole="clinician"
               isFullscreen={false}
+              {...(widget.type === 'problems' && {
+                onEditProblem: handleEditProblemFromWidget,
+                onDeleteProblem: handleDeleteProblemFromWidget
+              })}
             />
           </div>
           
@@ -537,6 +645,15 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Problem Dialog */}
+      <AddProblemDialog
+        open={isAddProblemDialogOpen}
+        onClose={handleCloseAddProblemDialog}
+        onAddProblem={handleAddNewProblem}
+        existingProblems={problems}
+        editingProblem={editingProblem}
+      />
     </div>
   )
 }

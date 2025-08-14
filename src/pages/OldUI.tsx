@@ -25,6 +25,8 @@ import IncidentsPage from './IncidentsPage'
 import PrescriptionModal from '../components/molecules/PrescriptionModal/prescription-modal'
 import NewIncidentPage from '../components/organisms/NewIncident/NewIncidentPage'
 import InterdisciplinaryTreatmentPlanPage from '../components/organisms/InterdisciplinaryTreatmentPlan/InterdisciplinaryTreatmentPlanPage'
+import PlanSettingsPage from './PlanSettingsPage'
+import PlanSettingsAuthDialog from '../components/molecules/PlanSettingsAuthDialog'
 import { useOngoingPlanCheck } from '../hooks/useOngoingPlanCheck'
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog/confirm-dialog'
 
@@ -80,6 +82,13 @@ const availableWidgets: WidgetConfig[] = [
     title: 'Medications',
     component: () => null, // Placeholder - actual component imported in ClientSummaryChartPage
     defaultSize: { w: 6, h: 8 }
+  },
+  {
+    id: 'problems',
+    type: 'problems',
+    title: 'Problems',
+    component: () => null, // Placeholder - actual component imported in ClientSummaryChartPage
+    defaultSize: { w: 6, h: 8 }
   }
 ]
 
@@ -105,6 +114,9 @@ const OldUI: FC = () => {
   
   // Incident modal state
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false)
+  
+  // Plan Settings authentication dialog state
+  const [isPlanSettingsAuthOpen, setIsPlanSettingsAuthOpen] = useState(false)
   
   // Dashboard controls state for Client Summary Chart
   const [dashboardEditMode, setDashboardEditMode] = useState(false)
@@ -160,7 +172,8 @@ const OldUI: FC = () => {
     'diagnosis',
     'demographics',
     'insurance',
-    'medications'
+    'medications',
+    'problems'
   ])
   
   // Widget management functions
@@ -269,6 +282,14 @@ const OldUI: FC = () => {
             href: '#incidents'
           });
           sectionLabel = 'New Incident';
+          break;
+        case 'Plan Settings':
+          // Plan Settings is a global setting, add Treatment Plans as clickable breadcrumb
+          items.push({ 
+            label: 'Treatment Plans',
+            href: '#treatment-plans'
+          });
+          sectionLabel = 'Plan Settings';
           break;
         default:
           sectionLabel = selectedMenu;
@@ -541,8 +562,14 @@ const OldUI: FC = () => {
       );
     }
     
+    // Show Plan Settings content
+    if (selectedMenu === 'Plan Settings') {
+      console.log('Rendering Plan Settings page');
+      return <PlanSettingsPage />;
+    }
+    
     // Default fallback for other menu items
-    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline' && selectedMenu !== 'New Incident' && selectedMenu !== 'Interdisciplinary Treatment Plan' && selectedMenu !== 'Client Summary Chart') {
+    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline' && selectedMenu !== 'New Incident' && selectedMenu !== 'Interdisciplinary Treatment Plan' && selectedMenu !== 'Client Summary Chart' && selectedMenu !== 'Plan Settings') {
       return (
         <div className="h-full flex flex-col items-center justify-center text-center p-6">
           <DocumentTextIcon className="w-12 h-12 text-gray-400 mb-4" />
@@ -600,8 +627,8 @@ const OldUI: FC = () => {
 
       {/* Content Area */}
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar - Only show when on Clients tab - Non-sticky */}
-        {activeTab === 'Clients' && (
+        {/* Sidebar - Only show when on Clients tab and not on Plan Settings - Non-sticky */}
+        {activeTab === 'Clients' && selectedMenu !== 'Plan Settings' && (
           <div className="">
             <Sidebar 
               activeItem={selectedMenu}
@@ -624,6 +651,8 @@ const OldUI: FC = () => {
                       onNavigate={(href) => {
                         if (href === '#incidents') {
                           setSelectedMenu('Incidents');
+                        } else if (href === '#treatment-plans') {
+                          setSelectedMenu('Interdisciplinary Treatment Plan');
                         }
                       }}
                     />
@@ -665,8 +694,8 @@ const OldUI: FC = () => {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          console.log('Plan Settings button clicked');
-                          // TODO: Implement plan settings functionality
+                          console.log('Plan Settings button clicked - requesting authentication');
+                          setIsPlanSettingsAuthOpen(true);
                         }}
                         className="flex items-center gap-2"
                       >
@@ -817,7 +846,9 @@ const OldUI: FC = () => {
               ? 'h-[calc(100%-4rem)]' 
               : selectedMenu === 'Timeline'
                 ? 'h-[calc(100%-4rem)] overflow-hidden'
-                : 'p-6'
+                : selectedMenu === 'Plan Settings'
+                  ? 'h-[calc(100%-4rem)]' // Full height for Plan Settings
+                  : 'p-6'
           }>
             {renderContent()}
           </div>
@@ -842,6 +873,19 @@ const OldUI: FC = () => {
         title="Ongoing Plans Detected"
         message={`You have ${ongoingPlans.length} ongoing treatment plan${ongoingPlans.length > 1 ? 's' : ''} without end dates. Creating a new plan while existing plans are ongoing may cause conflicts. Would you like to proceed anyway?`}
         confirmButtonText="Proceed"
+      />
+      
+      {/* Plan Settings Authentication Dialog */}
+      <PlanSettingsAuthDialog
+        isOpen={isPlanSettingsAuthOpen}
+        onClose={() => {
+          console.log('Plan Settings authentication dialog closed');
+          setIsPlanSettingsAuthOpen(false);
+        }}
+        onSuccess={() => {
+          console.log('Plan Settings authentication successful - navigating to Plan Settings');
+          setSelectedMenu('Plan Settings');
+        }}
       />
 
     </div>

@@ -44,6 +44,8 @@ interface ComboboxProps {
   hideFilters?: boolean;
   keepOpenOnSelect?: boolean; // NEW: keep dropdown open after select
   dropdownDirection?: 'down' | 'up'; // NEW: control dropdown direction
+  // NEW: Enable direct typing in main input
+  enableDirectTyping?: boolean;
 }
 
 export const Combobox: React.FC<ComboboxProps> = ({
@@ -57,6 +59,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
   hideFilters = false,
   keepOpenOnSelect = false, // NEW: default false
   dropdownDirection = 'down', // NEW: default to down
+  enableDirectTyping = true, // NEW: default to true for better UX
 }) => {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -120,33 +123,66 @@ export const Combobox: React.FC<ComboboxProps> = ({
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
-      <button
-        type="button"
-        className={cn(
-          "flex w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-sm text-left shadow-sm",
-          open ? "ring-2 ring-primary" : ""
-        )}
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <span className="flex items-center">
-          {value.length === 0 ? (
-            <span className="text-gray-500">{placeholder}</span>
-          ) : multiple && value.length > 1 ? (
-            // Simple count display for multiple selections
-            <span className="text-sm text-gray-900">
-              {value.length} selected
-            </span>
-          ) : (
-            // Show single selection
-            <span className="text-sm text-gray-900 truncate">
-              {options.find(opt => value.includes(opt.value))?.label}
-            </span>
+      {enableDirectTyping ? (
+        // Direct typing input field
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type="text"
+            className={cn(
+              "flex w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+              open ? "ring-2 ring-blue-500" : ""
+            )}
+            placeholder={value.length === 0 ? placeholder : multiple && value.length > 1 ? `${value.length} selected` : options.find(opt => value.includes(opt.value))?.label || placeholder}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              if (!open) setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setOpen(false);
+                e.currentTarget.blur();
+              }
+            }}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+          />
+          <ChevronDownIcon 
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" 
+          />
+        </div>
+      ) : (
+        // Original button implementation
+        <button
+          type="button"
+          className={cn(
+            "flex w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-sm text-left shadow-sm",
+            open ? "ring-2 ring-primary" : ""
           )}
-        </span>
-        <ChevronDownIcon className="h-4 w-4 ml-2 opacity-50" />
-      </button>
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          <span className="flex items-center">
+            {value.length === 0 ? (
+              <span className="text-gray-500">{placeholder}</span>
+            ) : multiple && value.length > 1 ? (
+              // Simple count display for multiple selections
+              <span className="text-sm text-gray-900">
+                {value.length} selected
+              </span>
+            ) : (
+              // Show single selection
+              <span className="text-sm text-gray-900 truncate">
+                {options.find(opt => value.includes(opt.value))?.label}
+              </span>
+            )}
+          </span>
+          <ChevronDownIcon className="h-4 w-4 ml-2 opacity-50" />
+        </button>
+      )}
       {open && (
         <div className={cn(
           "absolute z-50 w-full min-w-[320px] rounded-md border bg-white shadow-lg max-h-96 overflow-auto",
@@ -184,14 +220,17 @@ export const Combobox: React.FC<ComboboxProps> = ({
                   >Groups</button>
                 </div>
               )}
-              <input
-                ref={inputRef}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm mb-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Search..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                onKeyDown={e => e.stopPropagation()}
-              />
+              {/* Only show search input if direct typing is disabled */}
+              {!enableDirectTyping && (
+                <input
+                  ref={inputRef}
+                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm mb-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  onKeyDown={e => e.stopPropagation()}
+                />
+              )}
               {filtered.length === 0 ? (
                 <div className="p-4 text-center text-sm text-gray-500">
                   No options found.

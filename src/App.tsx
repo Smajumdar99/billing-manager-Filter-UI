@@ -33,6 +33,7 @@ import ViewAppointmentPage from './pages/ViewAppointmentPage'
 import PrescriptionPage from './pages/PrescriptionPage'
 import NewIncidentPage from './pages/NewIncidentPage'
 import NewTreatmentPlanPage from './pages/NewTreatmentPlanPage'
+import ProblemsManagementPage from './pages/ProblemsManagementPage'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -214,6 +215,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <PrescriptionPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/problems-management" 
+        element={
+          <ProtectedRoute>
+            <ProblemsManagementPage />
           </ProtectedRoute>
         } 
       />
