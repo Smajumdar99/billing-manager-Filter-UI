@@ -83,7 +83,17 @@ const navigation: NavSection[] = [
       {
         title: "Billing & Financials",
         path: "/billing",
-        icon: <BanknotesIcon className="w-5 h-5" />
+        icon: <BanknotesIcon className="w-5 h-5" />,
+        children: [
+          {
+            title: "Billing Dashboard",
+            path: "/billing",
+          },
+          {
+            title: "Billing Manager",
+            path: "/billing-manager",
+          }
+        ]
       },
       {
         title: "Reports and Analytics",

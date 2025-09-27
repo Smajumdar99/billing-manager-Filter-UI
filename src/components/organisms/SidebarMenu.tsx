@@ -1,6 +1,6 @@
 import { FC } from 'react';
 import { NavSection } from '@/types/navigation';
-import { HomeIcon, UserIcon, UsersIcon, BanknotesIcon, ChartBarIcon, QuestionMarkCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export const navigation: NavSection[] = [
   {
@@ -8,7 +8,7 @@ export const navigation: NavSection[] = [
       {
         title: "Dashboard",
         path: "/dashboard",
-        icon: <HomeIcon className="w-5 h-5" />,
+        icon: <FontAwesomeIcon icon="home" className="w-5 h-5 text-current" />,
         children: [
           {
             title: "Overview",
@@ -23,7 +23,7 @@ export const navigation: NavSection[] = [
       {
         title: "Patient Care",
         path: "/patient-care",
-        icon: <UserIcon className="w-5 h-5" />,
+        icon: <FontAwesomeIcon icon="user-md" className="w-5 h-5 text-current" />,
         children: [
             {
               title: "Intake and Onboarding",
@@ -58,17 +58,27 @@ export const navigation: NavSection[] = [
       {
         title: "Clinic Operations",
         path: "/clinic-operations",
-        icon: <UsersIcon className="w-5 h-5" />
+        icon: <FontAwesomeIcon icon="hospital" className="w-5 h-5 text-current" />
       },
       {
         title: "Billing & Financials",
         path: "/billing",
-        icon: <BanknotesIcon className="w-5 h-5" />
+        icon: <FontAwesomeIcon icon="dollar-sign" className="w-5 h-5 text-current" />,
+        children: [
+          {
+            title: "Billing Dashboard",
+            path: "/billing",
+          },
+          {
+            title: "Billing Manager",
+            path: "/billing-manager",
+          }
+        ]
       },
       {
         title: "Reports and Analytics",
         path: "/reports",
-        icon: <ChartBarIcon className="w-5 h-5" />
+        icon: <FontAwesomeIcon icon="chart-bar" className="w-5 h-5 text-current" />
       }
     ]
   },
@@ -77,12 +87,12 @@ export const navigation: NavSection[] = [
       {
         title: "Support",
         path: "/support",
-        icon: <QuestionMarkCircleIcon className="w-5 h-5" />
+        icon: <FontAwesomeIcon icon="question-circle" className="w-5 h-5 text-current" />
       },
       {
         title: "Settings",
         path: "/settings",
-        icon: <Cog6ToothIcon className="w-5 h-5" />
+        icon: <FontAwesomeIcon icon="cog" className="w-5 h-5 text-current" />
       }
     ]
   }

@@ -6,27 +6,29 @@ import { VideoCameraIcon, UsersIcon, UserPlusIcon, ArrowUpTrayIcon, PrinterIcon,
 // Props for AppointmentEditActions
 interface AppointmentEditActionsProps {
   onSave: () => void;
+  onCreateTelehealth: () => void;
+  onContactAttendees: () => void;
 }
 
 // AppointmentEditActions: Action bar for editing appointments (edit mode only)
 // Each action is a button with an icon and tooltip. Handlers are stubbed for now.
-const AppointmentEditActions: React.FC<AppointmentEditActionsProps> = ({ onSave }) => {
+const AppointmentEditActions: React.FC<AppointmentEditActionsProps> = ({ onSave, onCreateTelehealth, onContactAttendees }) => {
   return (
     <TooltipProvider>
       <div className="flex flex-wrap gap-2 items-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 mb-2 shadow-sm">
         {/* Create Telehealth Appointment */}
         <TooltipRoot>
           <TooltipTrigger asChild>
-            <Button type="button" size="icon" variant="ghost" aria-label="Create Telehealth Appointment" onClick={() => console.log('Create Telehealth Appointment')}>
+            <Button type="button" size="icon" variant="ghost" aria-label="Create Telehealth Appointment" onClick={onCreateTelehealth}>
               <VideoCameraIcon className="w-5 h-5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">Create Telehealth Appointment</TooltipContent>
+          <TooltipContent side="top">Create Telehealth Appointment...</TooltipContent>
         </TooltipRoot>
         {/* Contact Attendees */}
         <TooltipRoot>
           <TooltipTrigger asChild>
-            <Button type="button" size="icon" variant="ghost" aria-label="Contact Attendees" onClick={() => console.log('Contact Attendees')}>
+            <Button type="button" size="icon" variant="ghost" aria-label="Contact Attendees" onClick={onContactAttendees}>
               <UsersIcon className="w-5 h-5" />
             </Button>
           </TooltipTrigger>

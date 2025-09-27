@@ -94,6 +94,42 @@ interface InsurancePolicy {
   verificationStatus?: 'verified' | 'pending' | 'failed';
 }
 
+interface PriorAuthRequest {
+  id: string;
+  patientName: string;
+  patientId: string;
+  requestDate: string;
+  serviceDate: string;
+  expirationDate?: string;
+  status: 'pending' | 'approved' | 'denied' | 'expired' | 'in_review';
+  serviceType: string;
+  cptCodes: string[];
+  unitsRequested: number;
+  unitsApproved?: number;
+  insuranceProvider: string;
+  diagnosis: string;
+  diagnosisCodes: string[];
+  clinician: string;
+  authNumber?: string;
+  denialReason?: string;
+  notes?: string;
+  urgency: 'routine' | 'urgent' | 'emergency';
+}
+
+interface CreditCard {
+  id: string;
+  cardType: 'visa' | 'mastercard' | 'amex' | 'discover';
+  lastFour: string;
+  expirationMonth: number;
+  expirationYear: number;
+  nameOnCard: string;
+  billingZip: string;
+  isDefault: boolean;
+  addedDate: string;
+  lastUsed?: string;
+  status: 'active' | 'expired' | 'declined';
+}
+
 const mockTransactions: BillingTransaction[] = [
   {
     id: '1',
@@ -101,14 +137,14 @@ const mockTransactions: BillingTransaction[] = [
     serviceDate: '2024-03-15',
     postingDate: '2024-03-15',
     type: 'charge',
-    amount: 150.00,
+    amount: 180.00,
     status: 'pending',
-    description: 'Office Visit - Primary Care',
+    description: 'Individual Psychotherapy Session (45 min)',
     reference: 'INV-2024-001',
-    cptCode: '99213',
+    cptCode: '90834',
     claimId: 'CLM-2024-001',
     insuranceInfo: {
-      provider: 'Blue Cross',
+      provider: 'Blue Cross Blue Shield',
       coveragePercent: 80,
       status: 'In Network'
     }
@@ -119,9 +155,9 @@ const mockTransactions: BillingTransaction[] = [
     serviceDate: '2024-03-14',
     postingDate: '2024-03-14',
     type: 'payment',
-    amount: 75.00,
+    amount: 45.00,
     status: 'completed',
-    description: 'Copay Payment',
+    description: 'Therapy Session Copay',
     paymentMethod: 'Credit Card',
     reference: 'PMT-2024-001'
   },
@@ -131,13 +167,13 @@ const mockTransactions: BillingTransaction[] = [
     serviceDate: '2024-03-10',
     postingDate: '2024-03-12',
     type: 'insurance_payment',
-    amount: 120.00,
+    amount: 144.00,
     status: 'completed',
-    description: 'Insurance Payment - Blue Cross',
+    description: 'Insurance Payment - Individual Therapy',
     reference: 'INS-2024-001',
     claimId: 'CLM-2024-001',
     insuranceInfo: {
-      provider: 'Blue Cross',
+      provider: 'Blue Cross Blue Shield',
       coveragePercent: 80,
       status: 'Processed'
     }
@@ -148,17 +184,55 @@ const mockTransactions: BillingTransaction[] = [
     serviceDate: '2024-03-01',
     postingDate: '2024-03-08',
     type: 'charge',
-    amount: 200.00,
+    amount: 250.00,
     status: 'denied',
-    description: 'Lab Tests - Comprehensive Panel',
-    cptCode: '80053',
+    description: 'Psychiatric Diagnostic Evaluation',
+    cptCode: '90791',
     claimId: 'CLM-2024-002',
     denialReason: 'Prior Authorization Required',
     appealStatus: 'Appeal Submitted',
     insuranceInfo: {
-      provider: 'Blue Cross',
+      provider: 'Blue Cross Blue Shield',
       coveragePercent: 80,
       status: 'Denied'
+    }
+  },
+  {
+    id: '5',
+    date: '2024-03-05',
+    serviceDate: '2024-03-05',
+    postingDate: '2024-03-05',
+    type: 'charge',
+    amount: 90.00,
+    status: 'pending',
+    description: 'Group Therapy Session',
+    reference: 'INV-2024-003',
+    cptCode: '90853',
+    claimId: 'CLM-2024-003',
+    insuranceInfo: {
+      provider: 'Aetna',
+      coveragePercent: 70,
+      status: 'In Network'
+    }
+  },
+  {
+    id: '6',
+    date: '2024-03-01',
+    serviceDate: '2024-03-01',
+    postingDate: '2024-03-01',
+    type: 'charge',
+    amount: 300.00,
+    status: 'denied',
+    description: 'Intensive Outpatient Program (IOP)',
+    reference: 'INV-2024-004',
+    cptCode: '90834',
+    claimId: 'CLM-2024-004',
+    denialReason: 'Prior Authorization Required for IOP Services',
+    appealStatus: 'PA Request Submitted',
+    insuranceInfo: {
+      provider: 'UnitedHealth',
+      coveragePercent: 80,
+      status: 'Out of Network'
     }
   }
 ];
@@ -167,16 +241,32 @@ const mockBillingNotes: BillingNote[] = [
   {
     id: '1',
     date: '2024-03-15',
-    author: 'Jane Smith',
-    content: 'Patient requested payment plan for outstanding balance. Approved for 6 monthly payments.',
+    author: 'Sarah Martinez, Billing Manager',
+    content: 'Patient requested payment plan for IOP services. Approved for 12 monthly payments of $75. Patient experiencing financial hardship due to recent job loss.',
     type: 'payment_plan',
     priority: 'high'
   },
   {
     id: '2',
     date: '2024-03-10',
-    author: 'John Doe',
-    content: 'Insurance verification completed. Secondary coverage pending.',
+    author: 'John Stevens, Insurance Specialist',
+    content: 'Prior authorization approved for 16 individual therapy sessions. Auth valid through 06/30/2024. Patient diagnosed with Major Depressive Disorder.',
+    type: 'insurance',
+    priority: 'medium'
+  },
+  {
+    id: '3',
+    date: '2024-03-08',
+    author: 'Maria Rodriguez, Collections',
+    content: 'Patient called regarding overdue balance. Explained insurance denial reason. Referred to prior auth team for resubmission.',
+    type: 'collection',
+    priority: 'high'
+  },
+  {
+    id: '4',
+    date: '2024-03-05',
+    author: 'David Chen, Billing Coordinator',
+    content: 'UnitedHealth requires additional documentation for IOP services. Submitted treatment plan and progress notes. Awaiting review.',
     type: 'insurance',
     priority: 'medium'
   }
@@ -271,6 +361,140 @@ const mockInsurancePolicies: InsurancePolicy[] = [
     },
     verificationDate: '2024-03-15',
     verificationStatus: 'verified'
+  }
+];
+
+const mockPriorAuthRequests: PriorAuthRequest[] = [
+  {
+    id: 'PA-2024-001',
+    patientName: 'Sarah Martinez',
+    patientId: 'PAT001',
+    requestDate: '2024-03-10',
+    serviceDate: '2024-03-15',
+    expirationDate: '2024-06-30',
+    status: 'approved',
+    serviceType: 'Individual Psychotherapy',
+    cptCodes: ['90834'],
+    unitsRequested: 16,
+    unitsApproved: 16,
+    insuranceProvider: 'Blue Cross Blue Shield',
+    diagnosis: 'Major Depressive Disorder, Recurrent',
+    diagnosisCodes: ['F33.1'],
+    clinician: 'Dr. Jennifer Walsh, PhD',
+    authNumber: 'AUTH-BCBS-78901',
+    urgency: 'routine',
+    notes: 'Patient has made significant progress. Continuation of therapy recommended.'
+  },
+  {
+    id: 'PA-2024-002',
+    patientName: 'Michael Brown',
+    patientId: 'PAT003',
+    requestDate: '2024-03-08',
+    serviceDate: '2024-03-20',
+    status: 'pending',
+    serviceType: 'Intensive Outpatient Program (IOP)',
+    cptCodes: ['90834', '90837'],
+    unitsRequested: 72,
+    insuranceProvider: 'UnitedHealth',
+    diagnosis: 'Alcohol Use Disorder, Severe',
+    diagnosisCodes: ['F10.20'],
+    clinician: 'Dr. Mark Thompson, MD',
+    urgency: 'urgent',
+    notes: 'Patient requires intensive treatment due to recent relapse. Previous outpatient treatment insufficient.'
+  },
+  {
+    id: 'PA-2024-003',
+    patientName: 'Emily Davis',
+    patientId: 'PAT004',
+    requestDate: '2024-02-28',
+    serviceDate: '2024-03-05',
+    expirationDate: '2024-05-31',
+    status: 'approved',
+    serviceType: 'Group Therapy',
+    cptCodes: ['90853'],
+    unitsRequested: 24,
+    unitsApproved: 20,
+    insuranceProvider: 'Aetna',
+    diagnosis: 'Generalized Anxiety Disorder',
+    diagnosisCodes: ['F41.1'],
+    clinician: 'LCSW Maria Santos',
+    authNumber: 'AUTH-AET-45678',
+    urgency: 'routine'
+  },
+  {
+    id: 'PA-2024-004',
+    patientName: 'David Wilson',
+    patientId: 'PAT005',
+    requestDate: '2024-03-12',
+    serviceDate: '2024-03-18',
+    status: 'denied',
+    serviceType: 'Psychiatric Evaluation',
+    cptCodes: ['90791'],
+    unitsRequested: 1,
+    insuranceProvider: 'Medicare',
+    diagnosis: 'Bipolar I Disorder',
+    diagnosisCodes: ['F31.9'],
+    clinician: 'Dr. Robert Lee, MD',
+    denialReason: 'Insufficient documentation of medical necessity. Previous psychiatric records required.',
+    urgency: 'routine'
+  },
+  {
+    id: 'PA-2024-005',
+    patientName: 'Lisa Johnson',
+    patientId: 'PAT006',
+    requestDate: '2024-03-14',
+    serviceDate: '2024-03-25',
+    status: 'in_review',
+    serviceType: 'Psychological Testing',
+    cptCodes: ['96116', '96118'],
+    unitsRequested: 8,
+    insuranceProvider: 'Cigna',
+    diagnosis: 'ADHD, Combined Presentation',
+    diagnosisCodes: ['F90.2'],
+    clinician: 'Dr. Susan Chen, PsyD',
+    urgency: 'routine',
+    notes: 'Comprehensive psychological evaluation requested for differential diagnosis and treatment planning.'
+  }
+];
+
+const mockCreditCards: CreditCard[] = [
+  {
+    id: 'CC-001',
+    cardType: 'visa',
+    lastFour: '4242',
+    expirationMonth: 12,
+    expirationYear: 2025,
+    nameOnCard: 'John Doe',
+    billingZip: '12345',
+    isDefault: true,
+    addedDate: '2024-01-15',
+    lastUsed: '2024-03-14',
+    status: 'active'
+  },
+  {
+    id: 'CC-002',
+    cardType: 'mastercard',
+    lastFour: '8888',
+    expirationMonth: 8,
+    expirationYear: 2026,
+    nameOnCard: 'John Doe',
+    billingZip: '12345',
+    isDefault: false,
+    addedDate: '2023-11-20',
+    lastUsed: '2024-02-28',
+    status: 'active'
+  },
+  {
+    id: 'CC-003',
+    cardType: 'amex',
+    lastFour: '1234',
+    expirationMonth: 6,
+    expirationYear: 2024,
+    nameOnCard: 'John Doe',
+    billingZip: '12345',
+    isDefault: false,
+    addedDate: '2023-08-10',
+    status: 'expired'
   }
 ];
 
@@ -820,55 +1044,70 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
                 </Button>
               </div>
 
-              {mockTransactions
-                .filter(t => t.status === 'denied' && t.denialReason?.includes('Prior Authorization Required'))
-                .map(auth => (
-                  <div key={auth.id} className="border rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{auth.description}</h4>
-                          <Badge className={getStatusColor(auth.status)}>{auth.status}</Badge>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          CPT: {auth.cptCode}
-                        </div>
+              {mockPriorAuthRequests.map(auth => (
+                <div key={auth.id} className="border rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{auth.serviceType}</h4>
+                        <Badge className={getPriorAuthStatusColor(auth.status)}>
+                          {auth.status.charAt(0).toUpperCase() + auth.status.slice(1).replace('_', ' ')}
+                        </Badge>
+                        <Badge className={getUrgencyColor(auth.urgency)}>
+                          {auth.urgency.charAt(0).toUpperCase() + auth.urgency.slice(1)}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {auth.patientName} • CPT: {auth.cptCodes.join(', ')}
                       </div>
                     </div>
-                    <div className="p-4">
-                      <div className="space-y-3 text-sm">
+                    {auth.authNumber && (
+                      <div className="text-right">
+                        <div className="text-sm font-medium">Auth #{auth.authNumber}</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <div className="text-gray-500 mb-1">Service Date</div>
+                        <div>{formatDate(auth.serviceDate)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500 mb-1">Insurance</div>
+                        <div>{auth.insuranceProvider}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500 mb-1">Clinician</div>
+                        <div>{auth.clinician}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500 mb-1">Units</div>
                         <div>
-                          <div className="text-gray-500 mb-1">Service Date</div>
-                          <div>{formatDate(auth.serviceDate)}</div>
+                          {auth.unitsApproved !== undefined 
+                            ? `${auth.unitsApproved} of ${auth.unitsRequested} approved` 
+                            : `${auth.unitsRequested} requested`
+                          }
                         </div>
-                        <div>
-                          <div className="text-gray-500 mb-1">Insurance</div>
-                          <div>{auth.insuranceInfo?.provider}</div>
-                        </div>
+                      </div>
+                      {auth.denialReason && (
                         <div>
                           <div className="text-red-500 flex items-center gap-1">
                             <XCircleIcon className="w-4 h-4" />
                             {auth.denialReason}
                           </div>
                         </div>
-                        {auth.appealStatus && (
-                          <div className="mt-2 pt-2 border-t">
-                            <div className="text-gray-500 mb-1">Appeal Status</div>
-                            <Badge variant="outline" className="mt-1">
-                              {auth.appealStatus}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
+                      )}
+                      {auth.expirationDate && (
+                        <div className="mt-2 pt-2 border-t">
+                          <div className="text-gray-500 mb-1">Expires</div>
+                          <div>{formatDate(auth.expirationDate)}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
-              ))}
-
-              {mockTransactions.filter(t => t.status === 'denied' && t.denialReason?.includes('Prior Authorization Required')).length === 0 && (
-                <div className="text-center text-gray-500 py-8">
-                  No prior authorization requests found
                 </div>
-              )}
+              ))}
             </div>
           </ScrollArea>
         </TabsContent>
@@ -885,28 +1124,51 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
               </div>
 
               <div className="grid gap-4">
-                {/* Mock credit card data - in production, this would come from your payment processor */}
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <CreditCardIcon className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <div className="font-medium">Visa ending in 4242</div>
-                        <div className="text-sm text-gray-500">Expires 12/25</div>
+                {mockCreditCards.map(card => (
+                  <div key={card.id} className="border rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={getCardTypeColor(card.cardType)}>
+                          {getCardIcon(card.cardType)}
+                        </div>
+                        <div>
+                          <div className="font-medium">
+                            {card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1)} ending in {card.lastFour}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Expires {card.expirationMonth.toString().padStart(2, '0')}/{card.expirationYear}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {card.isDefault && (
+                          <Badge className="bg-green-100 text-green-800">Default</Badge>
+                        )}
+                        <Badge className={
+                          card.status === 'active' ? 'bg-green-100 text-green-800' :
+                          card.status === 'expired' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }>
+                          {card.status.charAt(0).toUpperCase() + card.status.slice(1)}
+                        </Badge>
                       </div>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">Default</Badge>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="text-gray-500">Last used on {formatDate('2024-03-14')}</div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">Edit</Button>
-                        <Button variant="ghost" size="sm" className="text-red-600">Remove</Button>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="text-gray-500">
+                          {card.lastUsed ? `Last used on ${formatDate(card.lastUsed)}` : 'Never used'}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm">Edit</Button>
+                          {!card.isDefault && card.status === 'active' && (
+                            <Button variant="ghost" size="sm">Set Default</Button>
+                          )}
+                          <Button variant="ghost" size="sm" className="text-red-600">Remove</Button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           </ScrollArea>
@@ -1026,6 +1288,36 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
     </div>
   );
 
+  const getPriorAuthStatusColor = (status: PriorAuthRequest['status']) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'denied':
+        return 'bg-red-100 text-red-800';
+      case 'in_review':
+        return 'bg-blue-100 text-blue-800';
+      case 'expired':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getUrgencyColor = (urgency: PriorAuthRequest['urgency']) => {
+    switch (urgency) {
+      case 'urgent':
+        return 'bg-red-100 text-red-800';
+      case 'emergency':
+        return 'bg-red-200 text-red-900';
+      case 'routine':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const renderPriorAuth = () => (
     <div className="h-full p-4">
       <div className="flex items-center justify-between mb-4">
@@ -1037,9 +1329,107 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
           </Button>
         )}
       </div>
-      <div className="text-sm text-gray-500 text-center mt-8">
-        No prior authorization requests found.
-      </div>
+      <ScrollArea className="h-[calc(100%-60px)]">
+        <div className="space-y-4">
+          {mockPriorAuthRequests.map(auth => (
+            <div key={auth.id} className="border rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium">{auth.serviceType}</h4>
+                    <Badge className={getPriorAuthStatusColor(auth.status)}>
+                      {auth.status.charAt(0).toUpperCase() + auth.status.slice(1).replace('_', ' ')}
+                    </Badge>
+                    <Badge className={getUrgencyColor(auth.urgency)}>
+                      {auth.urgency.charAt(0).toUpperCase() + auth.urgency.slice(1)}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {auth.patientName} ({auth.patientId}) • {auth.insuranceProvider}
+                  </div>
+                </div>
+                {auth.authNumber && (
+                  <div className="text-right">
+                    <div className="text-sm font-medium">Auth #{auth.authNumber}</div>
+                    {auth.expirationDate && (
+                      <div className="text-xs text-gray-500">
+                        Expires: {formatDate(auth.expirationDate)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                  <div>
+                    <div className="text-gray-500 mb-1">Request Date</div>
+                    <div>{formatDate(auth.requestDate)}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500 mb-1">Service Date</div>
+                    <div>{formatDate(auth.serviceDate)}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500 mb-1">Clinician</div>
+                    <div>{auth.clinician}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500 mb-1">Units Requested</div>
+                    <div>
+                      {auth.unitsApproved !== undefined 
+                        ? `${auth.unitsApproved} of ${auth.unitsRequested}` 
+                        : auth.unitsRequested
+                      }
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-gray-500 mb-1">Diagnosis</div>
+                    <div className="flex items-center gap-2">
+                      <span>{auth.diagnosis}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {auth.diagnosisCodes.join(', ')}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-gray-500 mb-1">CPT Codes</div>
+                    <div className="flex gap-1">
+                      {auth.cptCodes.map(code => (
+                        <Badge key={code} variant="outline" className="text-xs">
+                          {code}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {auth.denialReason && (
+                    <div className="pt-2 border-t">
+                      <div className="text-red-500 flex items-start gap-2">
+                        <XCircleIcon className="w-4 h-4 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="font-medium">Denial Reason</div>
+                          <div className="text-sm">{auth.denialReason}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {auth.notes && (
+                    <div className="pt-2 border-t">
+                      <div className="text-gray-500 mb-1">Notes</div>
+                      <div className="text-sm">{auth.notes}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 
@@ -1070,6 +1460,26 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
     </div>
   );
 
+  const getCardIcon = (cardType: CreditCard['cardType']) => {
+    // In a real app, you might want to use actual card brand icons
+    return <CreditCardIcon className="w-5 h-5" />;
+  };
+
+  const getCardTypeColor = (cardType: CreditCard['cardType']) => {
+    switch (cardType) {
+      case 'visa':
+        return 'text-blue-600';
+      case 'mastercard':
+        return 'text-red-600';
+      case 'amex':
+        return 'text-green-600';
+      case 'discover':
+        return 'text-orange-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
   const renderCreditCards = () => (
     <div className="h-full p-4">
       <div className="flex items-center justify-between mb-4">
@@ -1081,9 +1491,84 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
           </Button>
         )}
       </div>
-      <div className="text-sm text-gray-500 text-center mt-8">
-        No saved payment methods found.
-      </div>
+      <ScrollArea className="h-[calc(100%-60px)]">
+        <div className="space-y-4">
+          {mockCreditCards.map(card => (
+            <div key={card.id} className="border rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={getCardTypeColor(card.cardType)}>
+                    {getCardIcon(card.cardType)}
+                  </div>
+                  <div>
+                    <div className="font-medium">
+                      {card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1)} ending in {card.lastFour}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Expires {card.expirationMonth.toString().padStart(2, '0')}/{card.expirationYear}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {card.isDefault && (
+                    <Badge className="bg-green-100 text-green-800">Default</Badge>
+                  )}
+                  <Badge className={
+                    card.status === 'active' ? 'bg-green-100 text-green-800' :
+                    card.status === 'expired' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }>
+                    {card.status.charAt(0).toUpperCase() + card.status.slice(1)}
+                  </Badge>
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                  <div>
+                    <div className="text-gray-500 mb-1">Name on Card</div>
+                    <div>{card.nameOnCard}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500 mb-1">Billing ZIP</div>
+                    <div>{card.billingZip}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500 mb-1">Added Date</div>
+                    <div>{formatDate(card.addedDate)}</div>
+                  </div>
+                  {card.lastUsed && (
+                    <div>
+                      <div className="text-gray-500 mb-1">Last Used</div>
+                      <div>{formatDate(card.lastUsed)}</div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <div className="text-sm text-gray-500">
+                    {card.status === 'expired' ? 'Card has expired' : 
+                     card.status === 'declined' ? 'Card was declined' : 
+                     'Card is active and ready to use'}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm">
+                      Edit
+                    </Button>
+                    {!card.isDefault && (
+                      <Button variant="ghost" size="sm">
+                        Set Default
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" className="text-red-600">
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 

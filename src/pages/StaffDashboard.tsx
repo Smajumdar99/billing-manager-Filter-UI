@@ -12,17 +12,15 @@ import {
   FunnelIcon,
   ArrowPathIcon,
   DocumentArrowDownIcon,
-  BellIcon,
   ExclamationTriangleIcon,
   ChartBarIcon,
   UserIcon,
   DocumentDuplicateIcon,
   ClipboardDocumentListIcon,
-  AdjustmentsHorizontalIcon,
-  UserGroupIcon as UsersIcon,
-  XCircleIcon,
   ArrowLeftOnRectangleIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  ChevronDownIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ColumnMenuTab, GridOptions } from 'ag-grid-community';
@@ -31,25 +29,10 @@ import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { Tabs } from '@/components/atoms/Tabs';
 import { Switch } from '@/components/atoms/Switch/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/atoms/Select/select';
 import { TableSkeleton } from '@/components/atoms/TableSkeleton';
 import { cn } from '@/lib/utils';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-import {
-  Menubar,
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarLabel
-} from '@/components/ui/menubar';
+
+
 import {
   TooltipProvider,
   TooltipRoot,
@@ -1100,18 +1083,7 @@ const getFormStatus = (planValue: string, admittedDate: string): 'complete' | 'i
   }
 };
 
-const getRiskBadgeStyles = (risk: string) => {
-  switch (risk) {
-    case 'High':
-      return "bg-red-50 text-red-700 border-red-200";
-    case 'Medium':
-      return "bg-yellow-50 text-yellow-700 border-yellow-200";
-    case 'Low':
-      return "bg-green-50 text-green-700 border-green-200";
-    default:
-      return "bg-gray-50 text-gray-700 border-gray-200";
-  }
-};
+
 
 // Category tabs for filtering
 const CATEGORIES = [
@@ -1119,146 +1091,156 @@ const CATEGORIES = [
   { id: 'discharged', label: 'Discharged', icon: <ArrowRightOnRectangleIcon className="w-4 h-4" /> }
 ];
 
-// Mobile Client Card Component
+// Mobile Client Card Component - I will use atomic design principles to match exact attachment design
 const ClientCard: React.FC<{ client: Client; onSelect: (client: Client) => void }> = ({ client, onSelect }) => {
+  const hasAppointmentToday = client.nextAppointment.includes('Today');
+  
   return (
     <div 
-      className="bg-white rounded-lg border border-gray-100 p-4 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-white rounded-lg border border-gray-200 p-4 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
       onClick={() => onSelect(client)}
     >
-      {/* Header with name and status */}
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">{client.firstName} {client.lastName}</h3>
-          <p className="text-xs text-gray-500">PID: {client.pid}</p>
+      {/* Header - Name and Status Badge */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-semibold text-gray-900 truncate">
+            {client.firstName} {client.lastName}
+          </h3>
+          <p className="text-sm text-gray-500 mt-0.5">PID: {client.pid}</p>
         </div>
-        <div className="flex gap-2">
-          <Badge variant="outline" className={cn('text-xs h-6', getStatusBadgeStyles(client.clientStatus))}>
+        <Badge variant="outline" className={cn('text-xs h-5 px-2 ml-2 flex-shrink-0', getStatusBadgeStyles(client.clientStatus))}>
             {getDisplayStatus(client.clientStatus)}
           </Badge>
-        </div>
       </div>
       
-      {/* Program and Provider */}
+      {/* Program Badge */}
       <div className="mb-3">
-        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+        <span className="inline-block text-sm font-medium text-blue-700 bg-blue-50 px-3 py-1 rounded">
           {client.program}
         </span>
-        <p className="text-xs text-gray-600 mt-1">Provider: {cleanProviderName(client.provider)}</p>
       </div>
       
-      {/* Key Information Grid */}
-      <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
+      {/* Provider */}
+      <div className="mb-3">
+        <span className="text-sm text-gray-600">Provider: </span>
+        <span className="text-sm font-medium text-gray-900">{cleanProviderName(client.provider)}</span>
+      </div>
+      
+      {/* Information Grid */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-3">
         <div>
-          <span className="font-medium">DOB:</span><br/>
-          {client.dob}
+          <span className="text-gray-600">DOB:</span>
+          <div className="font-medium text-gray-900">{client.dob}</div>
         </div>
         <div>
-          <span className="font-medium">Admitted:</span><br/>
-          {client.admittedDate}
+          <span className="text-gray-600">Admitted:</span>
+          <div className="font-medium text-gray-900">{client.admittedDate}</div>
         </div>
         <div>
-          <span className="font-medium">Discharged:</span><br/>
-          {client.dischargedDate || 'N/A'}
+          <span className="text-gray-600">Discharged:</span>
+          <div className="font-medium text-gray-900">N/A</div>
         </div>
         <div>
-          <span className="font-medium">Last Seen:</span><br/>
-          {client.lastSeen}
+          <span className="text-gray-600">Last Seen:</span>
+          <div className="font-medium text-gray-900">{client.lastSeen}</div>
         </div>
         <div>
-          <span className="font-medium">Next Appt:</span><br/>
-          {client.nextAppointment || 'None scheduled'}
+          <span className="text-gray-600">Next Appt:</span>
+          <div className={cn(
+            "font-medium",
+            hasAppointmentToday ? "text-orange-700" : "text-gray-900"
+          )}>
+            {client.nextAppointment}
+          </div>
         </div>
         <div>
-          <span className="font-medium">Location:</span><br/>
-          {client.facility}
+          <span className="text-gray-600">Location:</span>
+          <div className="font-medium text-gray-900">{client.facility}</div>
         </div>
       </div>
       
-      {/* Treatment Plans */}
-      <div className="mb-3 p-2 bg-gray-50 rounded">
-        <div className="text-xs font-medium text-gray-700 mb-1">Treatment Plans:</div>
-        <div className="space-y-1">
-          {/* 14-Day Treatment Plan */}
-          <div className="flex items-center gap-1 text-xs">
+      {/* Treatment Plans Section */}
+      <div className="mb-4">
+        <div className="text-sm font-medium text-gray-900 mb-2">Treatment Plans:</div>
+        <div className="space-y-2">
+          {/* 14-Day Plan */}
+          <div className="flex items-center gap-3">
             <FormStatusIcon 
               status={getFormStatus(client.treatmentPlan14Day, client.admittedDate)}
-              size="sm"
+              size="md"
               className="flex-shrink-0"
             />
-            <div className="flex-1">
-              <span>14-Day: {client.treatmentPlan14Day}</span>
-              {client.treatmentPlan14DayEncounter && (
-                <div className="text-blue-600 font-mono text-[10px]">{client.treatmentPlan14DayEncounter}</div>
-              )}
-            </div>
-            {client.treatmentPlan14Day !== 'Not yet' && (
-              <TooltipRoot>
-                <TooltipTrigger asChild>
-                  <button
-                    className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('View 14-Day Encounter Form for:', client.firstName, client.lastName, client.treatmentPlan14DayEncounter);
-                    }}
-                  >
-                    <DocumentDuplicateIcon className="w-3.5 h-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View Encounter Form</p>
-                </TooltipContent>
-              </TooltipRoot>
-            )}
+            <span className="text-sm text-gray-900">
+              14-Day: {client.treatmentPlan14Day}
+            </span>
           </div>
           
-          {/* MDTP - Multidisciplinary Treatment Plan */}
-          <div className="flex items-center gap-1 text-xs">
+          {/* MDTP */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
             <FormStatusIcon 
               status={getFormStatus(client.mdtp, client.admittedDate)}
-              size="sm"
+                size="md"
               className="flex-shrink-0"
             />
-            <div className="flex-1">
-              <span>MDTP: {client.mdtp}</span>
+              <div>
+                <span className="text-sm text-gray-900">MDTP: {client.mdtp}</span>
               {client.mdtpEncounter && (
-                <div className="text-blue-600 font-mono text-[10px]">{client.mdtpEncounter}</div>
+                  <div className="text-xs text-blue-600 font-mono">#{client.mdtpEncounter}</div>
               )}
+              </div>
             </div>
             {client.mdtp !== 'Not yet' && (
-              <TooltipRoot>
-                <TooltipTrigger asChild>
                   <button
                     className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('View MDTP Form for:', client.firstName, client.lastName, client.mdtpEncounter);
+                  console.log('View MDTP Form for:', client.firstName, client.lastName);
                     }}
                   >
-                    <ClipboardDocumentListIcon className="w-3.5 h-3.5" />
+                <ClipboardDocumentListIcon className="w-4 h-4" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View MDTP Form</p>
-                </TooltipContent>
-              </TooltipRoot>
             )}
           </div>
         </div>
       </div>
       
-      {/* Quick Actions */}
-      <div className="flex gap-2 pt-3 border-t border-gray-100">
-        <Button variant="outline" size="sm" className="text-xs flex-1">
-          <EyeIcon className="w-3 h-3 mr-1" />
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-sm flex-1 h-9"
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log('View chart for:', client.firstName, client.lastName);
+          }}
+        >
+          <EyeIcon className="w-4 h-4 mr-1" />
           Chart
         </Button>
-        <Button variant="outline" size="sm" className="text-xs flex-1">
-          <DocumentTextIcon className="w-3 h-3 mr-1" />
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-sm flex-1 h-9"
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log('View treatment plan for:', client.firstName, client.lastName);
+          }}
+        >
+          <DocumentTextIcon className="w-4 h-4 mr-1" />
           Plan
         </Button>
-        <Button variant="outline" size="sm" className="text-xs flex-1">
-          <CalendarIcon className="w-3 h-3 mr-1" />
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-sm flex-1 h-9"
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log('Schedule appointment for:', client.firstName, client.lastName);
+          }}
+        >
+          <CalendarIcon className="w-4 h-4 mr-1" />
           Schedule
         </Button>
       </div>
@@ -1277,10 +1259,10 @@ const StaffDashboard: React.FC = () => {
   const [selectedDueDateBy, setSelectedDueDateBy] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>(['Active']); // Default to Active only
   const [showIncompleteDetails, setShowIncompleteDetails] = useState(true);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showFilters, setShowFilters] = useState(false); // Hide filters by default
+  const [showMetrics, setShowMetrics] = useState(false); // Hide metrics by default for cleaner view
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const isMobile = useMediaQuery('(max-width: 640px)');
 
   // Column customization state
   const [columnConfigs, setColumnConfigs] = useState<ColumnConfig[]>([
@@ -1383,9 +1365,6 @@ const StaffDashboard: React.FC = () => {
       const matchesDueDate = (() => {
         if (selectedDueDateBy.length === 0) return true;
         
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
         // Check if client has appointments or treatment plan dates that fall within the selected period
         const hasAppointmentToday = client.nextAppointment.includes('Today');
         const hasAppointmentTomorrow = client.nextAppointment.includes('Tomorrow');
@@ -1469,7 +1448,6 @@ const StaffDashboard: React.FC = () => {
 
   // Handle client selection
   const handleClientSelect = (client: Client) => {
-    setSelectedClient(client);
     console.log('Selected client:', client);
   };
 
@@ -1941,22 +1919,234 @@ const StaffDashboard: React.FC = () => {
         }}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 p-6">
+      {/* Main Content - Mobile Optimized Padding */}
+      <div className="flex-1 p-3 sm:p-6">
         <div className="max-w-full mx-auto">
-          {/* Header Section */}
-          <div className="mb-4">
-            {/* Compact Title Row with Inline Metrics and Actions */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
-              
-              {/* Left Side - Title and Subtitle */}
+          {/* Header Section - Compact Desktop, Mobile Optimized */}
+          <div className="mb-4 sm:mb-6">
+            {/* Desktop: Single Row with Title, Metrics, and Actions */}
+            <div className="hidden lg:block">
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  {/* Title Section */}
               <div className="flex-shrink-0">
                 <h1 className="text-xl font-bold text-gray-900">Staff Dashboard</h1>
-                <p className="text-xs text-gray-600">Manage your behavioral health clients efficiently</p>
+                    <p className="text-sm text-gray-600 mt-0.5">Dashboard with overall status of all Patients where the counselor is the admit provider or a member of the care team</p>
               </div>
               
-              {/* Center - Compact Metrics Badges */}
-              <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+                  {/* Metrics Section - Desktop Inline */}
+                  <div className="flex items-center gap-3 mx-6">
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => {
+                            setActiveCategory('all');
+                            setActiveFilter('all');
+                            setSearchQuery('');
+                            setSelectedClinician([]);
+                            setSelectedFacility([]);
+                            setSelectedLocation([]);
+                            setSelectedStatus(['Active']);
+                            setSelectedDueDateBy([]);
+                            setShowIncompleteDetails(false);
+                          }}
+                          className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+                        >
+                          <UserGroupIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <span className="text-sm font-semibold text-blue-700">{metrics.total}</span>
+                          <span className="text-xs text-blue-600">Total</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Total clients in your caseload</p>
+                      </TooltipContent>
+                    </TooltipRoot>
+
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => {
+                            setActiveCategory('admitted');
+                            setActiveFilter('all');
+                            setSearchQuery('');
+                            setSelectedClinician([]);
+                            setSelectedFacility([]);
+                            setSelectedLocation([]);
+                            setSelectedStatus(['Active']);
+                            setSelectedDueDateBy([]);
+                            setShowIncompleteDetails(false);
+                          }}
+                          className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+                        >
+                          <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          <span className="text-sm font-semibold text-green-700">{metrics.admitted}</span>
+                          <span className="text-xs text-green-600">Active Since 2024</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Clients active since 2024</p>
+                      </TooltipContent>
+                    </TooltipRoot>
+
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => {
+                            setActiveCategory('discharged');
+                            setActiveFilter('all');
+                            setSearchQuery('');
+                            setSelectedClinician([]);
+                            setSelectedFacility([]);
+                            setSelectedLocation([]);
+                            setSelectedStatus(['Discharged']);
+                            setSelectedDueDateBy([]);
+                            setShowIncompleteDetails(false);
+                          }}
+                          className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                        >
+                          <ClockIcon className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                          <span className="text-sm font-semibold text-gray-700">{metrics.discharged}</span>
+                          <span className="text-xs text-gray-600">Discharged This Month</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Clients discharged this month</p>
+                      </TooltipContent>
+                    </TooltipRoot>
+
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => {
+                            setActiveCategory('all');
+                            setActiveFilter('high-risk');
+                            setSearchQuery('');
+                            setSelectedClinician([]);
+                            setSelectedFacility([]);
+                            setSelectedLocation([]);
+                            setSelectedStatus(['Active']);
+                            setSelectedDueDateBy([]);
+                            setShowIncompleteDetails(false);
+                          }}
+                          className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
+                        >
+                          <ExclamationTriangleIcon className="w-4 h-4 text-red-600 flex-shrink-0" />
+                          <span className="text-sm font-semibold text-red-700">{metrics.highRisk}</span>
+                          <span className="text-xs text-red-600">High Risk</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>High-risk clients requiring immediate attention</p>
+                      </TooltipContent>
+                    </TooltipRoot>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 flex-shrink-0">
+                    {/* Info icon with tooltip for Refresh button */}
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <button className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors">
+                          <InformationCircleIcon className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>The Refresh Button runs in the background and may take time to retrieve results. Once complete, the provider will be notified via Inbox reminder. In the meantime, you can wait or use other areas of the app</p>
+                      </TooltipContent>
+                    </TooltipRoot>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className="flex items-center gap-1.5 text-xs px-3 py-2"
+                    >
+                      <ArrowPathIcon className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+                      Refresh
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1.5 text-xs px-3 py-2"
+                    >
+                      <DocumentArrowDownIcon className="w-3.5 h-3.5" />
+                      Export
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile/Tablet: Stacked Layout */}
+            <div className="lg:hidden">
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                {/* Top Row - Title and Actions */}
+                <div className={cn(
+                  "flex items-center justify-between p-4 sm:p-5",
+                  showMetrics ? "border-b border-gray-100" : ""
+                )}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Staff Dashboard</h1>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-0.5 hidden sm:block">Dashboard with overall status of all Patients where the counselor is the admit provider or a member of the care team</p>
+                      </div>
+                      
+                      {/* Metrics Toggle Button - Mobile Only */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowMetrics(!showMetrics)}
+                        className="flex items-center gap-1.5 text-xs px-2 py-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      >
+                        <ChartBarIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Metrics</span>
+                        <ChevronDownIcon className={cn(
+                          "w-3.5 h-3.5 transition-transform duration-200",
+                          showMetrics ? "rotate-180" : ""
+                        )} />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Action Buttons - Mobile Friendly */}
+                  <div className="flex gap-2 ml-3">
+                    {/* Info icon with tooltip for Refresh button */}
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <button className="flex items-center justify-center w-9 h-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors">
+                          <InformationCircleIcon className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>The Refresh Button runs in the background and may take time to retrieve results. Once complete, the provider will be notified via Inbox reminder. In the meantime, you can wait or use other areas of the app</p>
+                      </TooltipContent>
+                    </TooltipRoot>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
+                    >
+                      <ArrowPathIcon className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+                      <span className="hidden sm:inline">Refresh</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
+                    >
+                      <DocumentArrowDownIcon className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Export</span>
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Mobile Metrics Section - Collapsible */}
+                {showMetrics && (
+                  <div className="p-3 sm:p-5 animate-in slide-in-from-top-2 duration-200 border-t border-gray-100">
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                 <TooltipRoot>
                   <TooltipTrigger asChild>
                     <button
@@ -1972,13 +2162,13 @@ const StaffDashboard: React.FC = () => {
                         setShowIncompleteDetails(false);
                       }}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-full px-2.5 py-1 border transition-all duration-200 hover:shadow-md",
+                          "flex items-center gap-2 rounded-full px-3 py-2 border transition-all duration-200 hover:shadow-md min-h-[40px]",
                         activeCategory === 'all' && activeFilter === 'all' 
                           ? "bg-blue-100 border-blue-300 ring-2 ring-blue-200" 
                           : "bg-blue-50 border-blue-200 hover:bg-blue-100"
                       )}
                     >
-                      <UserGroupIcon className="w-3.5 h-3.5 text-blue-600" />
+                        <UserGroupIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
                       <span className="text-sm font-semibold text-blue-700">{metrics.total}</span>
                       <span className="text-xs text-blue-600">Total</span>
                     </button>
@@ -1996,13 +2186,13 @@ const StaffDashboard: React.FC = () => {
                         setActiveFilter('all');
                       }}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-full px-2.5 py-1 border transition-all duration-200 hover:shadow-md",
+                          "flex items-center gap-2 rounded-full px-3 py-2 border transition-all duration-200 hover:shadow-md min-h-[40px]",
                         activeCategory === 'admitted' 
                           ? "bg-green-100 border-green-300 ring-2 ring-green-200" 
                           : "bg-green-50 border-green-200 hover:bg-green-100"
                       )}
                     >
-                      <CheckCircleIcon className="w-3.5 h-3.5 text-green-600" />
+                        <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
                       <span className="text-sm font-semibold text-green-700">{metrics.admitted}</span>
                       <span className="text-xs text-green-600">Active Since 2024</span>
                     </button>
@@ -2020,13 +2210,13 @@ const StaffDashboard: React.FC = () => {
                         setActiveFilter('all');
                       }}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-full px-2.5 py-1 border transition-all duration-200 hover:shadow-md",
+                          "flex items-center gap-2 rounded-full px-3 py-2 border transition-all duration-200 hover:shadow-md min-h-[40px]",
                         activeCategory === 'discharged' 
                           ? "bg-gray-100 border-gray-300 ring-2 ring-gray-200" 
                           : "bg-gray-50 border-gray-200 hover:bg-gray-100"
                       )}
                     >
-                      <UserIcon className="w-3.5 h-3.5 text-gray-600" />
+                        <UserIcon className="w-4 h-4 text-gray-600 flex-shrink-0" />
                       <span className="text-sm font-semibold text-gray-700">{metrics.discharged}</span>
                       <span className="text-xs text-gray-600">Discharged This Month</span>
                     </button>
@@ -2044,13 +2234,13 @@ const StaffDashboard: React.FC = () => {
                         setActiveFilter('urgent');
                       }}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-full px-2.5 py-1 border transition-all duration-200 hover:shadow-md",
+                          "flex items-center gap-2 rounded-full px-3 py-2 border transition-all duration-200 hover:shadow-md min-h-[40px]",
                         activeFilter === 'urgent' 
                           ? "bg-red-100 border-red-300 ring-2 ring-red-200" 
                           : "bg-red-50 border-red-200 hover:bg-red-100"
                       )}
                     >
-                      <ExclamationTriangleIcon className="w-3.5 h-3.5 text-red-600" />
+                        <ExclamationTriangleIcon className="w-4 h-4 text-red-600 flex-shrink-0" />
                       <span className="text-sm font-semibold text-red-700">{metrics.highRisk}</span>
                       <span className="text-xs text-red-600">High Risk</span>
                     </button>
@@ -2059,38 +2249,69 @@ const StaffDashboard: React.FC = () => {
                     <p>High-risk clients requiring immediate attention</p>
                   </TooltipContent>
                 </TooltipRoot>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
               </div>
               
-              {/* Right Side - Compact Action Buttons */}
-              <div className="flex gap-1.5 flex-shrink-0">
+          {/* Unified Content Section - Mobile Optimized */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            {/* Search and Filter Controls - Responsive Layout */}
+            <div className="space-y-4 mb-6">
+              {/* Mobile: Search Bar and Filter Toggle Row */}
+              <div className="lg:hidden">
+                <div className="flex gap-3 mb-4">
+                  <div className="flex-1 relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search clients..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="pl-10 w-full h-11 text-base"
+                    />
+                  </div>
+                  
+                  {/* Filter Toggle Button - Mobile Only */}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="flex items-center gap-1 text-xs px-2.5 py-1.5"
-                >
-                  <ArrowPathIcon className={cn("w-3 h-3", isRefreshing && "animate-spin")} />
-                  Refresh
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 text-xs px-2.5 py-1.5"
-                >
-                  <DocumentArrowDownIcon className="w-3 h-3" />
-                  Export
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={cn(
+                      "flex items-center gap-2 h-11 px-4 transition-all duration-200",
+                      showFilters 
+                        ? "bg-blue-50 border-blue-200 text-blue-700" 
+                        : "hover:bg-gray-50"
+                    )}
+                  >
+                    <FunnelIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Filters</span>
+                    {/* Active filters count */}
+                    {(selectedClinician.length + selectedFacility.length + selectedLocation.length + selectedDueDateBy.length + (selectedStatus.length > 0 && !selectedStatus.includes('Active') ? selectedStatus.length : 0) + (showIncompleteDetails ? 1 : 0)) > 0 && (
+                      <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {selectedClinician.length + selectedFacility.length + selectedLocation.length + selectedDueDateBy.length + (selectedStatus.length > 0 && !selectedStatus.includes('Active') ? selectedStatus.length : 0) + (showIncompleteDetails ? 1 : 0)}
+                      </span>
+                    )}
                 </Button>
               </div>
+
+                {/* Category Tabs - Mobile */}
+                <div className="w-full mb-4">
+                  <Tabs
+                    tabs={CATEGORIES}
+                    activeTab={activeCategory}
+                    onTabChange={setActiveCategory}
+                    className="w-full"
+                  />
             </div>
           </div>
 
-          {/* Unified Content Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            {/* Search and Filter Controls - Horizontal Layout */}
-            <div className="space-y-3 mb-6">
+              {/* Desktop: Original Horizontal Layout */}
+              <div className="hidden lg:block">
               {/* Row 1: Search Bar */}
-              <div className="w-full">
+                <div className="w-full mb-3">
                 <div className="relative max-w-2xl">
                   <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
@@ -2103,7 +2324,7 @@ const StaffDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Row 2: Tabs + Filters + Controls - All Horizontal */}
+                {/* Row 2: Tabs + Filters + Controls - Original Desktop Layout */}
               <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
                 {/* Admitted and Discharged Tab Bar */}
                 <div className="flex-shrink-0">
@@ -2198,6 +2419,101 @@ const StaffDashboard: React.FC = () => {
               </div>
             </div>
             
+              {/* Mobile: Collapsible Filters Section */}
+              {showFilters && (
+                <div className="lg:hidden space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in slide-in-from-top-2 duration-200">
+                  {/* Essential Filters Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <Combobox
+                      options={statusOptions}
+                      value={selectedStatus}
+                      onChange={setSelectedStatus}
+                      placeholder="Client Status"
+                      className="w-full min-h-[44px]"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+
+                    <Combobox
+                      options={clinicianOptions}
+                      value={selectedClinician}
+                      onChange={setSelectedClinician}
+                      placeholder="All Clinicians"
+                      className="w-full min-h-[44px]"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <Combobox
+                        options={dueDateOptions}
+                        value={selectedDueDateBy}
+                        onChange={setSelectedDueDateBy}
+                        placeholder="Due Dates"
+                        className="w-full min-h-[44px]"
+                        multiple={true}
+                        hideFilters={true}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Secondary Filters */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Combobox
+                      options={facilityOptions}
+                      value={selectedFacility}
+                      onChange={setSelectedFacility}
+                      placeholder="All Programs"
+                      className="w-full min-h-[44px]"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+
+                    <Combobox
+                      options={locationOptions}
+                      value={selectedLocation}
+                      onChange={setSelectedLocation}
+                      placeholder="All Locations"
+                      className="w-full min-h-[44px]"
+                      multiple={true}
+                      hideFilters={true}
+                    />
+                  </div>
+
+                  {/* Additional Filter Options */}
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Only Show Incomplete Toggle */}
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                        <Switch
+                          checked={showIncompleteDetails}
+                          onCheckedChange={setShowIncompleteDetails}
+                        />
+                        <span className="text-sm">Only show incomplete</span>
+                      </label>
+
+                      {/* Clear Filters Button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedClinician([]);
+                          setSelectedFacility([]);
+                          setSelectedLocation([]);
+                          setSelectedDueDateBy([]);
+                          setSelectedStatus(['Active']);
+                          setShowIncompleteDetails(true); // Reset to default
+                        }}
+                        className="text-sm text-gray-600 hover:text-gray-900"
+                      >
+                        Clear all filters
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
 
 
             {/* Client Table/Cards */}
@@ -2237,7 +2553,16 @@ const StaffDashboard: React.FC = () => {
                 </div>
                 
                 {/* Mobile/Tablet View - Cards */}
-                <div className="lg:hidden p-4">
+                <div className="lg:hidden p-4 sm:p-6">
+                  {/* Mobile Results Header */}
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600">
+                      Showing {filteredClients.length} client{filteredClients.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  
+                  {/* Client Cards List */}
+                  <div className="space-y-4">
                   {filteredClients.map((client) => (
                     <ClientCard 
                       key={client.id} 
@@ -2245,6 +2570,16 @@ const StaffDashboard: React.FC = () => {
                       onSelect={handleClientSelect}
                     />
                   ))}
+                  </div>
+                  
+                  {/* Load More for Mobile (if needed in future) */}
+                  {filteredClients.length > 10 && (
+                    <div className="mt-6 text-center">
+                      <p className="text-sm text-gray-500">
+                        Showing first {Math.min(filteredClients.length, 10)} results
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

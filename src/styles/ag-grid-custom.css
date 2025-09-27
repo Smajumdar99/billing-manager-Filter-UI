@@ -59,4 +59,47 @@
 /* Subtle row hover effect */
 .ag-theme-custom .ag-row:hover {
   background-color: var(--ag-row-hover-color) !important;
+}
+
+/* Subtle row selection styling for fax table */
+.fax-table-subtle-selection.ag-theme-alpine .ag-row.ag-row-selected {
+  background-color: #f8fafc !important; /* Very light gray-blue */
+  transition: all 0.2s ease-in-out;
+}
+
+.fax-table-subtle-selection.ag-theme-alpine .ag-row.ag-row-selected:hover {
+  background-color: #f1f5f9 !important; /* Slightly darker on hover */
+}
+
+/* Remove the intense blue background from cells in selected rows */
+.fax-table-subtle-selection.ag-theme-alpine .ag-row.ag-row-selected .ag-cell {
+  background-color: transparent !important;
+}
+
+/* Checkbox styling for selected rows */
+.fax-table-subtle-selection.ag-theme-alpine .ag-row.ag-row-selected .ag-checkbox-input-wrapper {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+.fax-table-subtle-selection.ag-theme-alpine .ag-row.ag-row-selected .ag-checkbox-input-wrapper.ag-checked {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Status and priority badges in selected rows should remain their original colors */
+.fax-table-subtle-selection.ag-theme-alpine .ag-row.ag-row-selected .ag-cell .inline-flex {
+  background-color: initial !important;
+}
+
+/* Override the default selection color variables for this specific table */
+.fax-table-subtle-selection.ag-theme-alpine {
+  --ag-selected-row-background-color: #f8fafc;
+  --ag-range-selection-background-color: rgba(59, 130, 246, 0.08);
+  --ag-range-selection-border-color: #3b82f6;
+}
+
+/* Ensure multi-select doesn't override our custom styling */
+.fax-table-subtle-selection.ag-theme-alpine .ag-row.ag-row-selected.ag-row-level-0 {
+  background-color: #f8fafc !important;
 } 

@@ -1,7 +1,8 @@
 import { FC, useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { ChevronDownIcon, Bars3Icon, ChevronUpDownIcon, HomeIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, ChevronUpDownIcon } from '@heroicons/react/24/outline'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@/components/atoms/Button'
 import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/atoms/Tooltip'
 import { NavItem, NavSection } from '@/types/navigation'
@@ -12,7 +13,6 @@ import { getUserSettings, saveUserSettings } from '@/services/firestore'
 import { AuroraBackground } from '@/components/ui/aurora-background'
 
 export interface SidebarProps {
-  logo: React.ReactNode
   navigation: NavSection[]
   userInfo: {
     name: string
@@ -26,7 +26,6 @@ export interface SidebarProps {
 }
 
 export const Sidebar: FC<SidebarProps> = ({
-  logo,
   navigation,
   userInfo,
   onCollapsedChange,
@@ -43,7 +42,6 @@ export const Sidebar: FC<SidebarProps> = ({
   const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
   const [expandedItems, setExpandedItems] = useState<string[]>(["Dashboard"])
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
 
   // Load user settings on mount
   useEffect(() => {
@@ -120,15 +118,22 @@ export const Sidebar: FC<SidebarProps> = ({
 
     const linkContent = (
       <>
-        <span className="p-1">{item.icon}</span>
+        <div className={cn(
+          "flex items-center justify-center w-5 h-5",
+          isActive ? "text-primary" : "text-foreground"
+        )}>
+          {item.icon}
+        </div>
         {!collapsed && (
           <>
             <span className="flex-1">{item.title}</span>
             {item.children && (
-              <ChevronDownIcon 
+              <FontAwesomeIcon 
+                icon="chevron-down"
                 className={cn(
                   "w-4 h-4 transition-transform",
-                  isExpanded && "rotate-180"
+                  isExpanded && "rotate-180",
+                  isActive ? "text-primary" : "text-muted-foreground"
                 )}
               />
             )}

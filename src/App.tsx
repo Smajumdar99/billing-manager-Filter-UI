@@ -1,9 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+// Import FontAwesome configuration
+import '@/lib/fontawesome'
 import { HomePage } from '@/pages/home'
 import { SignupPage } from '@/pages/signup'
 import { DashboardPage } from '@/pages/dashboard'
 import OldUIDashboard from '@/pages/OldUIDashboard'
 import BillingPage from '@/pages/BillingPage'
+import BillingManagerPage from '@/pages/BillingManagerPage'
 import PracticePage from '@/pages/PracticePage'
 import ReportsPage from '@/pages/ReportsPage'
 import AdministrationPage from '@/pages/AdministrationPage'
@@ -34,6 +37,7 @@ import PrescriptionPage from './pages/PrescriptionPage'
 import NewIncidentPage from './pages/NewIncidentPage'
 import NewTreatmentPlanPage from './pages/NewTreatmentPlanPage'
 import ProblemsManagementPage from './pages/ProblemsManagementPage'
+import FaxCenterPage from './pages/FaxCenterPage'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -148,6 +152,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <BillingPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/billing-manager" 
+        element={
+          <ProtectedRoute>
+            <BillingManagerPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/fax-center" 
+        element={
+          <ProtectedRoute>
+            <FaxCenterPage />
           </ProtectedRoute>
         } 
       />

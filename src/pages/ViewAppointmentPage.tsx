@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import TopNavigationBar from '../components/old-ui/TopNavigationBar';
 import MainNavigationBar from '../components/old-ui/MainNavigationBar';
 import { 
-  UserGroupIcon,
   InformationCircleIcon,
   PhoneIcon,
   ClockIcon,
@@ -38,6 +37,8 @@ import { PatientsTable } from '../components/organisms/PatientsTable';
 import { PatientData, PatientActionHandlers } from '../types/patients';
 import AddPatientsModal from '../components/molecules/GroupAppointmentForm/AddPatientsModal';
 import { ComboboxOption } from '@/components/atoms/Combobox/Combobox';
+import CreateTelehealthDialog from '../components/molecules/CreateTelehealthDialog/CreateTelehealthDialog';
+import ContactAttendeesDialog from '../components/molecules/ContactAttendeesDialog/ContactAttendeesDialog';
 
 // Mock appointment data interface
 interface AppointmentData {
@@ -97,7 +98,12 @@ const ViewAppointmentPage: React.FC = () => {
   const [selectedPatients, setSelectedPatients] = useState<any[]>([]);
   const [patientFilter, setPatientFilter] = useState('admitted');
   const [capacityError, setCapacityError] = useState(false);
-  const [showWaitlist, setShowWaitlist] = useState(false);
+  
+  // State for CreateTelehealthDialog
+  const [createTelehealthDialogOpen, setCreateTelehealthDialogOpen] = useState(false);
+  
+  // State for ContactAttendeesDialog
+  const [contactAttendeesDialogOpen, setContactAttendeesDialogOpen] = useState(false);
   
   // Waitlist patients mock data
   const waitlistPatients = useMemo(() => [
@@ -164,6 +170,67 @@ const ViewAppointmentPage: React.FC = () => {
     // Reset selected patients
     setSelectedPatients([]);
   }, [selectedPatients]);
+
+  // Handler for adding waitlist patient to event
+  const handleAddWaitlistPatientToEvent = useCallback((patientId: string) => {
+    // Find the waitlist patient
+    const waitlistPatient = waitlistPatients.find(p => p.id === patientId);
+    if (!waitlistPatient) {
+      console.error('Waitlist patient not found:', patientId);
+      return;
+    }
+
+    // Check if patient is already selected
+    if (selectedPatients.includes(patientId)) {
+      console.log('Patient already selected:', patientId);
+      return;
+    }
+
+    // Check capacity
+    if (selectedPatients.length >= groupCapacity) {
+      alert('Group capacity reached. Cannot add more patients.');
+      return;
+    }
+
+    // Add patient to selected list
+    setSelectedPatients(prev => [...prev, patientId]);
+    
+    // Remove from waitlist (optional - depends on business logic)
+    // setWaitlistPatients(prev => prev.filter(p => p.id !== patientId));
+    
+    console.log('Added waitlist patient to event:', waitlistPatient.name);
+    alert(`${waitlistPatient.name} added to the appointment from waitlist!`);
+  }, [waitlistPatients, selectedPatients, groupCapacity]);
+
+  // Handler for creating telehealth appointment
+  const handleCreateTelehealth = useCallback((telehealthData: any) => {
+    // TODO: Implement actual logic to create telehealth appointment
+    console.log('Creating telehealth appointment:', telehealthData);
+    
+    // Show success message
+    alert('Telehealth appointment created successfully!');
+    
+    // TODO: Refresh appointment data or navigate to new appointment
+  }, []);
+
+  // Handler for opening telehealth dialog
+  const handleOpenTelehealthDialog = useCallback(() => {
+    setCreateTelehealthDialogOpen(true);
+  }, []);
+
+  // Handler for sending email to attendees
+  const handleSendEmail = useCallback((emailData: any) => {
+    // TODO: Implement actual logic to send email to attendees
+    console.log('Sending email to attendees:', emailData);
+    
+    // Show success message
+    alert('Email sent to attendees successfully!');
+  }, []);
+
+  // Handler for opening contact attendees dialog
+  const handleOpenContactAttendeesDialog = useCallback(() => {
+    setContactAttendeesDialogOpen(true);
+  }, []);
 
   // Mock fetch function (replace with real API call)
   const fetchAppointment = async (id: string): Promise<AppointmentData | null> => {
@@ -513,7 +580,7 @@ const ViewAppointmentPage: React.FC = () => {
                             size="icon" 
                             variant="ghost" 
                             aria-label="Create Telehealth Appointment" 
-                            onClick={() => console.log('Create Telehealth Appointment')}
+                            onClick={handleOpenTelehealthDialog}
                             className="hover:bg-blue-50"
                           >
                             <VideoCameraIcon className="w-5 h-5" />
@@ -531,7 +598,7 @@ const ViewAppointmentPage: React.FC = () => {
                               size="icon" 
                               variant="ghost" 
                               aria-label="Contact Attendees" 
-                              onClick={() => console.log('Contact Attendees')}
+                              onClick={handleOpenContactAttendeesDialog}
                               className="hover:bg-blue-50"
                             >
                               <UsersIcon className="w-5 h-5" />
@@ -978,12 +1045,27 @@ const ViewAppointmentPage: React.FC = () => {
         setPatientFilter={setPatientFilter}
         capacityError={capacityError}
         setCapacityError={setCapacityError}
-        showWaitlist={showWaitlist}
-        setShowWaitlist={setShowWaitlist}
         waitlistPatients={waitlistPatients}
         onAddToEvent={handleAddToEvent}
+        onAddWaitlistPatientToEvent={handleAddWaitlistPatientToEvent}
       />
     )}
+
+    {/* CreateTelehealthDialog */}
+    <CreateTelehealthDialog
+      open={createTelehealthDialogOpen}
+      onClose={() => setCreateTelehealthDialogOpen(false)}
+      onCreateAppointment={handleCreateTelehealth}
+      appointmentId={appointmentId}
+    />
+
+    {/* ContactAttendeesDialog */}
+    <ContactAttendeesDialog
+      open={contactAttendeesDialogOpen}
+      onClose={() => setContactAttendeesDialogOpen(false)}
+      onSendEmail={handleSendEmail}
+      appointmentId={appointmentId}
+    />
     </TooltipProvider>
   );
 };

@@ -5,7 +5,7 @@ import {
   HomeIcon, ClipboardDocumentIcon, ClockIcon, CalendarDaysIcon, 
   UsersIcon, BeakerIcon, BanknotesIcon, ChartBarIcon, 
   Cog8ToothIcon, InboxIcon, UserGroupIcon, EllipsisHorizontalIcon,
-  ChevronDownIcon
+  ChevronDownIcon, DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 // Animated counter component for notification badge using react-countup
@@ -93,6 +93,7 @@ const navItems = [
   { name: 'Staff Dashboard', icon: <UserGroupIcon className="h-5 w-5" />, route: '/staff-dashboard' },
   { name: 'Practice', icon: <BeakerIcon className="h-5 w-5" />, route: '/practice' },
   { name: 'Billing', icon: <BanknotesIcon className="h-5 w-5" />, route: '/billing' },
+  { name: 'Fax Center', icon: <DocumentTextIcon className="h-5 w-5" />, route: '/fax-center' },
   { name: 'Reports', icon: <ChartBarIcon className="h-5 w-5" />, route: '/reports' },
   { name: 'Inbox', icon: <InboxIcon className="h-5 w-5" />, route: '/task-hub' },
   { name: 'Administration', icon: <Cog8ToothIcon className="h-5 w-5" />, route: '/administration' },

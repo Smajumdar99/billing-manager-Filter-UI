@@ -1722,7 +1722,11 @@ const NewAppointmentPage: React.FC = () => {
                 {isEditMode ? (
                   /* Edit Mode Actions */
                   originalAppointmentType === 'group' ? (
-                    <AppointmentEditActions onSave={handleSave} />
+                    <AppointmentEditActions 
+                      onSave={handleSave} 
+                      onCreateTelehealth={() => console.log('Create Telehealth - TODO: Implement')} 
+                      onContactAttendees={() => console.log('Contact Attendees - TODO: Implement')}
+                    />
                   ) : (
                     /* Individual appointments - specific actions */
                     <div className="flex flex-row gap-2 justify-end">
