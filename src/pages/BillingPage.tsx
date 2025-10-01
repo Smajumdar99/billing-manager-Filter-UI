@@ -3,43 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import TopNavigationBar from '@/components/old-ui/TopNavigationBar'
 import MainNavigationBar from '@/components/old-ui/MainNavigationBar'
-import { DataTable } from '@/components/organisms/DataTable'
 import { Button } from '@/components/atoms/Button/button'
-import { Badge } from '@/components/atoms/Badge/badge'
-import { Input } from '@/components/atoms/Input/input'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/atoms/Select/select'
 import { BillingStatCard } from '@/components/atoms/BillingStatCard/billing-stat-card'
-import { BillingMobileCard } from '@/components/molecules/BillingMobileCard/billing-mobile-card'
-import { BillingWidget } from '@/components/widgets/BillingWidget/billing-widget'
 import { BillingCardBlocks } from '@/components/organisms/BillingCardBlocks/BillingCardBlocks'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs'
 import { Sidebar } from '@/components/atoms/Sidebar/sidebar'
-import { PaymentFilters } from '@/components/molecules/BillingFilters/payment-filters'
-import { PriorAuthFilters } from '@/components/molecules/BillingFilters/prior-auth-filters'
-import { CreditCardFilters } from '@/components/molecules/BillingFilters/credit-card-filters'
-import { PaymentProcessingCenter } from '@/components/organisms/PaymentProcessingCenter/payment-processing-center'
-import { 
-  MagnifyingGlassIcon,
-  PlusIcon,
-  DocumentTextIcon,
-  ArrowDownTrayIcon,
-  BanknotesIcon,
-  CreditCardIcon,
-  CalendarIcon,
-  ExclamationTriangleIcon,
-  ClipboardDocumentCheckIcon,
-  ReceiptRefundIcon,
-  ShieldCheckIcon,
-  PencilSquareIcon,
-  ArchiveBoxXMarkIcon
-} from '@heroicons/react/24/outline'
-import { WidgetType } from '@/types/widget'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { TeamBillingWorkloadWidget } from '@/components/widgets/TeamBillingWorkloadWidget'
+import { UnbilledEncountersWidget } from '@/components/widgets/UnbilledEncountersWidget'
+import { BillingOverviewWidget } from '@/components/widgets/BillingOverviewWidget'
+import { ClaimsAcceptanceWidget } from '@/components/widgets/ClaimsAcceptanceWidget'
+import { ClaimsStatusRecommendationsWidget } from '@/components/widgets/ClaimsStatusRecommendationsWidget'
+import { AccountsReceivableWidget } from '@/components/widgets/AccountsReceivableWidget'
+import { ClaimsDenialsVsPaidWidget } from '@/components/widgets/ClaimsDenialsVsPaidWidget'
+import { ClaimsOverviewByStatusWidget } from '@/components/widgets/ClaimsOverviewByStatusWidget'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/atoms/Tabs/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select'
 
 // Billing data types for proper structure
 interface BillingInvoice {
@@ -120,73 +98,48 @@ const mockBillingData: BillingInvoice[] = [
   }
 ]
 
-// Billing widget configurations for comprehensive dashboard
-interface BillingWidgetConfig {
-  id: string
-  title: string
-  type: WidgetType
-  icon: React.ReactNode
-  description: string
+// Billing Pipeline Data for Manager Overview
+interface BillingPipelineData {
+  totalEncounters: number
+  billedEncounters: number
+  unbilledEncounters: number
+  billedAmount: number
+  unbilledAmount: number
+  paymentsReceived: number
+  paymentsOutstanding: number
+  totalClaims: number
+  submittedClaims: number
+  pendingClaims: number
+  billingBlockers: {
+    missingInsurance: number
+    missingDocumentation: number
+    authorizationPending: number
+    codingIncomplete: number
+    other: number
+  }
 }
 
-const billingWidgets: BillingWidgetConfig[] = [
-  {
-    id: 'new-payment',
-    title: 'New Payment',
-    type: 'billing_new_payment',
-    icon: <CreditCardIcon className="w-5 h-5" />,
-    description: 'Process patient payments with guided workflow'
-  },
-  {
-    id: 'invoices',
-    title: 'Invoices',
-    type: 'billing',
-    icon: <DocumentTextIcon className="w-5 h-5" />,
-    description: 'Comprehensive invoice tracking and management'
-  },
-  {
-    id: 'payment-receipts',
-    title: 'Receipts',
-    type: 'billing_payment_receipts',
-    icon: <ReceiptRefundIcon className="w-5 h-5" />,
-    description: 'View and manage payment receipts'
-  },
-  {
-    id: 'prior-auth',
-    title: 'PA',
-    type: 'billing_prior_auth',
-    icon: <ShieldCheckIcon className="w-5 h-5" />,
-    description: 'Manage insurance prior authorizations'
-  },
-  {
-    id: 'credit-cards',
-    title: 'Credit Cards',
-    type: 'billing_credit_cards',
-    icon: <CreditCardIcon className="w-5 h-5" />,
-    description: 'Manage patient credit card information'
-  },
-  {
-    id: 'billing-statements',
-    title: 'Statements',
-    type: 'billing_statement',
-    icon: <ClipboardDocumentCheckIcon className="w-5 h-5" />,
-    description: 'Generate and view patient billing statements'
-  },
-  {
-    id: 'write-off',
-    title: 'Write-Offs',
-    type: 'billing_write_off',
-    icon: <ArchiveBoxXMarkIcon className="w-5 h-5" />,
-    description: 'Process billing write-offs and adjustments'
-  },
-  {
-    id: 'billing-notes',
-    title: 'Notes',
-    type: 'billing_notes',
-    icon: <PencilSquareIcon className="w-5 h-5" />,
-    description: 'View and manage billing notes'
-  }
-]
+// Mock billing pipeline data
+const mockBillingPipelineData: BillingPipelineData = {
+  totalEncounters: 1247,
+  billedEncounters: 892,
+  unbilledEncounters: 355,
+  billedAmount: 234750.00,
+  unbilledAmount: 89250.00,
+  paymentsReceived: 187600.00,
+  paymentsOutstanding: 47150.00,
+  totalClaims: 1089,
+  submittedClaims: 756,
+  pendingClaims: 333,
+  billingBlockers: {
+    missingInsurance: 127,
+    missingDocumentation: 98,
+    authorizationPending: 76,
+    codingIncomplete: 42,
+    other: 12
+  } // Total: 355 (matches unbilledEncounters)
+}
+
 
 /**
  * BillingPage Component
@@ -202,13 +155,8 @@ export const BillingPage: FC = () => {
   // Set document title for better UX
   useDocumentTitle('Billing Dashboard')
 
-  // State management for filters and search
+  // State management for search
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState('all')
-  
-  // State for active billing widget tab
-  const [activeWidgetTab, setActiveWidgetTab] = useState('invoices')
   
   // State for sidebar navigation
   const [activeSidebarItem, setActiveSidebarItem] = useState('Billing Dashboard')
@@ -269,7 +217,7 @@ export const BillingPage: FC = () => {
     // Here you could navigate to specific views or filter data based on the selected block
   }
 
-  // Filter billing data based on search and filters
+  // Filter billing data based on search
   const filteredBillingData = useMemo(() => {
     return mockBillingData.filter(invoice => {
       const matchesSearch = !searchQuery || 
@@ -277,13 +225,9 @@ export const BillingPage: FC = () => {
         invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invoice.patientId.toLowerCase().includes(searchQuery.toLowerCase())
       
-      const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter
-      const matchesPaymentMethod = paymentMethodFilter === 'all' || 
-        invoice.paymentMethod.toLowerCase().includes(paymentMethodFilter.toLowerCase())
-      
-      return matchesSearch && matchesStatus && matchesPaymentMethod
+      return matchesSearch
     })
-  }, [searchQuery, statusFilter, paymentMethodFilter])
+  }, [searchQuery])
 
   // Calculate summary statistics
   const billingStats = useMemo(() => {
@@ -301,99 +245,6 @@ export const BillingPage: FC = () => {
     }
   }, [filteredBillingData])
 
-  // Status badge renderer with consistent colors
-  const getStatusBadge = (status: BillingInvoice['status']) => {
-    const statusConfig = {
-      paid: { label: 'Paid', className: 'bg-green-100 text-green-800' },
-      pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' },
-      overdue: { label: 'Overdue', className: 'bg-red-100 text-red-800' },
-      draft: { label: 'Draft', className: 'bg-gray-100 text-gray-800' },
-      cancelled: { label: 'Cancelled', className: 'bg-orange-100 text-orange-800' }
-    }
-    
-    const config = statusConfig[status]
-    return (
-      <Badge variant="outline" className={config.className}>
-        {config.label}
-      </Badge>
-    )
-  }
-
-  // AG Grid column definitions for billing table
-  const columnDefs = [
-    {
-      headerName: 'Invoice #',
-      field: 'invoiceNumber',
-      minWidth: 130,
-      cellRenderer: (params: any) => (
-        <div className="font-medium text-primary cursor-pointer hover:underline">
-          {params.value}
-        </div>
-      )
-    },
-    {
-      headerName: 'Patient',
-      field: 'patientName',
-      minWidth: 180,
-      cellRenderer: (params: any) => (
-        <div>
-          <div className="font-medium">{params.value}</div>
-          <div className="text-sm text-gray-500">{params.data.patientId}</div>
-        </div>
-      )
-    },
-    {
-      headerName: 'Date of Service',
-      field: 'dateOfService',
-      minWidth: 130,
-      cellRenderer: (params: any) => (
-        <div className="text-sm">
-          {new Date(params.value).toLocaleDateString()}
-        </div>
-      )
-    },
-    {
-      headerName: 'Amount',
-      field: 'amount',
-      minWidth: 100,
-      cellRenderer: (params: any) => (
-        <div className="font-medium">
-          ${params.value.toFixed(2)}
-        </div>
-      )
-    },
-    {
-      headerName: 'Balance Owed',
-      field: 'balanceOwed',
-      minWidth: 120,
-      cellRenderer: (params: any) => (
-        <div className={`font-medium ${params.value > 0 ? 'text-red-600' : 'text-green-600'}`}>
-          ${params.value.toFixed(2)}
-        </div>
-      )
-    },
-    {
-      headerName: 'Status',
-      field: 'status',
-      minWidth: 100,
-      cellRenderer: (params: any) => getStatusBadge(params.value)
-    },
-    {
-      headerName: 'Payment Method',
-      field: 'paymentMethod',
-      minWidth: 140
-    },
-    {
-      headerName: 'Insurance',
-      field: 'insuranceProvider',
-      minWidth: 160,
-      cellRenderer: (params: any) => (
-        <div className="text-sm">
-          {params.value || '-'}
-        </div>
-      )
-    }
-  ]
 
   return (
     <div className="flex flex-col h-screen bg-white">
@@ -429,261 +280,298 @@ export const BillingPage: FC = () => {
         {/* Main Content */}
         <div className="flex-1 bg-gray-50 overflow-auto">
           <div className="min-h-full flex flex-col">
-          {/* Header Section with Title and Actions */}
-          <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              {/* Title */}
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Billing Dashboard</h1>
-                <p className="mt-1 text-sm text-gray-600">
-                  Manage invoices, payments, and billing operations
-                </p>
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <ArrowDownTrayIcon className="w-4 h-4" />
-                  Export
-                </Button>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <DocumentTextIcon className="w-4 h-4" />
-                  Generate Report
-                </Button>
-                <Button size="sm" className="gap-2">
-                  <PlusIcon className="w-4 h-4" />
-                  New Invoice
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Billing Card Blocks Section */}
-          <div className="px-4 sm:px-6 py-6 bg-white border-b border-gray-200">
-            <BillingCardBlocks 
-              onBlockClick={handleBillingBlockClick}
-              selectedBlockId={selectedBillingBlock}
-            />
-          </div>
-
-          {/* Statistics Cards */}
-          <div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <BillingStatCard
-                title="Total Revenue"
-                value={`$${billingStats.totalRevenue.toFixed(2)}`}
-                icon={<BanknotesIcon className="w-5 h-5" />}
-                trend={{ value: 12.5, isPositive: true }}
-              />
-              <BillingStatCard
-                title="Outstanding"
-                value={`$${billingStats.totalOwed.toFixed(2)}`}
-                icon={<ExclamationTriangleIcon className="w-5 h-5" />}
-                trend={{ value: 3.2, isPositive: false }}
-              />
-              <BillingStatCard
-                title="Paid Invoices"
-                value={billingStats.paidInvoices}
-                icon={<CreditCardIcon className="w-5 h-5" />}
-              />
-              <BillingStatCard
-                title="Overdue"
-                value={billingStats.overdueInvoices}
-                icon={<CalendarIcon className="w-5 h-5" />}
-              />
-            </div>
-          </div>
-
-
-
-          {/* Billing Widgets Section */}
-          <div className="flex-1 p-4 sm:p-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full">
-              <Tabs 
-                value={activeWidgetTab} 
-                onValueChange={setActiveWidgetTab}
-                className="h-full flex flex-col"
-              >
-                {/* Widget Tabs Navigation */}
-                <div className="border-b border-gray-200 px-4 sm:px-6 py-3">
-                  <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-1">
-                    {billingWidgets.map((widget) => (
-                      <TabsTrigger
-                        key={widget.id}
-                        value={widget.id}
-                        className="flex items-center justify-center gap-1 px-2 py-2 text-xs sm:text-sm"
-                        title={widget.description}
-                      >
-                        <span className="hidden sm:inline">{widget.icon}</span>
-                        <span className="truncate">{widget.title.split(' ')[0]}</span>
-                      </TabsTrigger>
-                    ))}
+          {/* Header Section with Tabs and Actions */}
+          <Tabs defaultValue="dashboard" className="flex-1 flex flex-col">
+            <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                {/* Tab Navigation */}
+                <div>
+                  <TabsList className="grid w-full max-w-md grid-cols-2 bg-gray-100">
+                    <TabsTrigger value="dashboard" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">Dashboard</TabsTrigger>
+                    <TabsTrigger value="encounter-metrics" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">Encounter Metrics</TabsTrigger>
                   </TabsList>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <FontAwesomeIcon icon="download" className="w-4 h-4" />
+                    Export
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <FontAwesomeIcon icon="file-alt" className="w-4 h-4" />
+                    Generate Report
+                  </Button>
+                  <Button size="sm" className="gap-2">
+                    <FontAwesomeIcon icon="plus" className="w-4 h-4" />
+                    New Invoice
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Dashboard Tab Content */}
+            <TabsContent value="dashboard" className="flex-1 mt-0">
+              {/* Billing Manager Overview - Apple Style */}
+          <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-50 to-orange-50 border-b border-gray-100">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Column - Pipeline Overview */}
+              <div className="flex flex-col">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Pipeline Overview</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  
+                  {/* 1. How many encounters are there? */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition-all duration-300">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                        <FontAwesomeIcon icon="eye" className="w-3 h-3 text-gray-600" />
+                      </div>
+                      <p className="text-xl font-bold text-gray-900">{mockBillingPipelineData.totalEncounters.toLocaleString()}</p>
+                    </div>
+                    <p className="text-xs font-medium text-gray-600 mb-1">Total Encounters</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        <span className="text-xs text-gray-600">{mockBillingPipelineData.billedEncounters} Billed</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                        <span className="text-xs text-gray-600">{mockBillingPipelineData.unbilledEncounters} Not Billed</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. How much has been billed? */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition-all duration-300">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <FontAwesomeIcon icon="check-circle" className="w-3 h-3 text-emerald-600" />
+                      </div>
+                      <p className="text-xl font-bold text-gray-900">${mockBillingPipelineData.billedAmount.toLocaleString()}</p>
+                    </div>
+                    <p className="text-xs font-medium text-gray-600 mb-1">Amount Billed</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                        <FontAwesomeIcon icon="check" className="w-3 h-3" />
+                        Submitted
+                      </span>
+                      <span className="text-xs text-gray-600 font-medium">{mockBillingPipelineData.billedEncounters} encounters</span>
+                    </div>
+                  </div>
+
+                  {/* 3. How much has NOT been billed? */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition-all duration-300">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                        <FontAwesomeIcon icon="clock" className="w-3 h-3 text-orange-600" />
+                      </div>
+                      <p className="text-xl font-bold text-gray-900">${mockBillingPipelineData.unbilledAmount.toLocaleString()}</p>
+                    </div>
+                    <p className="text-xs font-medium text-gray-600 mb-1">Not Yet Billed</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-orange-600 font-medium flex items-center gap-1">
+                        <FontAwesomeIcon icon="clock" className="w-3 h-3" />
+                        Pending
+                      </span>
+                      <span className="text-xs text-gray-600 font-medium">{mockBillingPipelineData.unbilledEncounters} encounters</span>
+                    </div>
+                  </div>
+
+                  {/* 4. For billed claims - have we received payments? */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition-all duration-300">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <FontAwesomeIcon icon="dollar-sign" className="w-3 h-3 text-blue-600" />
+                      </div>
+                      <p className="text-xl font-bold text-gray-900">${mockBillingPipelineData.paymentsReceived.toLocaleString()}</p>
+                    </div>
+                    <p className="text-xs font-medium text-gray-600 mb-1">Payments Received</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                        <FontAwesomeIcon icon="money-bill-wave" className="w-3 h-3" />
+                        Collected
+                      </span>
+                      <span className="text-xs text-red-600 font-medium">${mockBillingPipelineData.paymentsOutstanding.toLocaleString()} Outstanding</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Billing Blockers - Apple Style */}
+              <div className="flex flex-col">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Billing Queue Issues</h3>
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 pb-4 hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <FontAwesomeIcon icon="exclamation-triangle" className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Active Blockers</p>
+                        <p className="text-xs text-gray-500">355 encounters need attention</p>
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {Object.values(mockBillingPipelineData.billingBlockers).reduce((sum, count) => sum + count, 0)}
+                    </p>
+                  </div>
+                  
+                  {/* Blockers Breakdown - Apple Style */}
+                  <div className="grid grid-cols-2 gap-4 mt-6">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span className="text-xs text-gray-600 font-medium">Insurance</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">{mockBillingPipelineData.billingBlockers.missingInsurance}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                        <span className="text-xs text-gray-600 font-medium">Documentation</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">{mockBillingPipelineData.billingBlockers.missingDocumentation}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <span className="text-xs text-gray-600 font-medium">Authorization</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">{mockBillingPipelineData.billingBlockers.authorizationPending}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-xs text-gray-600 font-medium">Coding</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">{mockBillingPipelineData.billingBlockers.codingIncomplete}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Dashboard Widgets Section */}
+          <div className="px-4 sm:px-6 py-6 bg-gradient-to-br from-blue-100 to-zinc-200">
+            {/* First Row - 2x2 Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6 mb-6">
+              <TeamBillingWorkloadWidget />
+              <UnbilledEncountersWidget />
+              <BillingOverviewWidget />
+              <ClaimsAcceptanceWidget />
             </div>
             
-                {/* Widget Content Area */}
-                <div className="flex-1 overflow-auto">
-                  {billingWidgets.map((widget) => (
-                    <TabsContent 
-                      key={widget.id} 
-                      value={widget.id}
-                      className="h-full mt-0"
-                    >
-                      {widget.id === 'invoices' ? (
-                        // Custom Invoice Management View
-                        <div className="h-full flex flex-col">
-                          {/* Invoice-Specific Search and Filters */}
-                          <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gray-50">
-                            <div className="flex flex-col space-y-4 lg:space-y-0 lg:flex-row lg:items-center gap-4">
-                              {/* Search Input */}
-                              <div className="relative flex-1 max-w-md">
-                                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <Input
-                                  placeholder="Search invoices, patients..."
-                                  value={searchQuery}
-                                  onChange={(e) => setSearchQuery(e.target.value)}
-                                  className="pl-10"
-                                />
-                              </div>
-                              
-                              {/* Invoice Filter Controls */}
-                              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
-                                {/* Status Filter */}
-                                <div className="min-w-0 flex-1 sm:w-48">
-                                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="All Statuses" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="all">All Statuses</SelectItem>
-                                      <SelectItem value="paid">Paid</SelectItem>
-                                      <SelectItem value="pending">Pending</SelectItem>
-                                      <SelectItem value="overdue">Overdue</SelectItem>
-                                      <SelectItem value="draft">Draft</SelectItem>
-                                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                
-                                {/* Payment Method Filter */}
-                                <div className="min-w-0 flex-1 sm:w-48">
-                                  <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="All Payment Methods" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="all">All Payment Methods</SelectItem>
-                                      <SelectItem value="insurance">Insurance</SelectItem>
-                                      <SelectItem value="credit">Credit Card</SelectItem>
-                                      <SelectItem value="self">Self Pay</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Desktop View - Data Table */}
-                          <div className="hidden lg:block flex-1 p-4">
-                            <DataTable
-                              rowData={filteredBillingData}
-                              columnDefs={columnDefs}
-                              className="w-full h-full"
-                              gridOptions={{
-                                suppressCellFocus: true,
-                                animateRows: true,
-                                pagination: true,
-                                paginationPageSize: 25,
-                                domLayout: 'normal',
-                                rowHeight: 60,
-                                headerHeight: 44,
-                                rowSelection: 'multiple',
-                                suppressRowClickSelection: true,
-                                defaultColDef: {
-                                  sortable: true,
-                                  filter: true,
-                                  resizable: true,
-                                  flex: 1
-                                }
-                              }}
-                            />
-                          </div>
-
-                          {/* Mobile View - Card Layout */}
-                          <div className="lg:hidden flex-1 p-4 overflow-y-auto">
-                            <div className="space-y-4">
-                              {filteredBillingData.length > 0 ? (
-                                filteredBillingData.map((invoice) => (
-                                  <BillingMobileCard
-                                    key={invoice.id}
-                                    invoice={invoice}
-                                    onViewDetails={(invoice) => console.log('View details:', invoice)}
-                                    onPayNow={(invoice) => console.log('Pay now:', invoice)}
-                                  />
-                                ))
-                              ) : (
-                                <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                                  <DocumentTextIcon className="w-12 h-12 mb-4 text-gray-300" />
-                                  <h3 className="text-lg font-medium mb-2">No invoices found</h3>
-                                  <p className="text-sm text-center">
-                                    Try adjusting your filters or create a new invoice
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        // Billing Widget Views with Tab-Specific Filters
-                        <div className="h-full flex flex-col">
-                          {/* Tab-Specific Filter Components */}
-                          {widget.id === 'payment-receipts' && (
-                            <PaymentFilters
-                              onSearchChange={(search) => console.log('Payment search:', search)}
-                              onTypeFilterChange={(type) => console.log('Payment type:', type)}
-                              onStatusFilterChange={(status) => console.log('Payment status:', status)}
-                              onDateFilterChange={(date) => console.log('Payment date:', date)}
-                            />
-                          )}
-                          
-                          {widget.id === 'prior-auth' && (
-                            <PriorAuthFilters
-                              onSearchChange={(search) => console.log('Prior auth search:', search)}
-                              onStatusFilterChange={(status) => console.log('Prior auth status:', status)}
-                              onProviderFilterChange={(provider) => console.log('Prior auth provider:', provider)}
-                              onUrgencyFilterChange={(urgency) => console.log('Prior auth urgency:', urgency)}
-                            />
-                          )}
-                          
-                          {widget.id === 'credit-cards' && (
-                            <CreditCardFilters
-                              onSearchChange={(search) => console.log('Credit card search:', search)}
-                              onCardTypeFilterChange={(type) => console.log('Card type:', type)}
-                              onStatusFilterChange={(status) => console.log('Card status:', status)}
-                              onExpirationFilterChange={(expiration) => console.log('Card expiration:', expiration)}
-                            />
-                          )}
-
-                          {/* Widget Content */}
-                          <div className="flex-1 overflow-auto">
-                            {widget.id === 'new-payment' ? (
-                              <PaymentProcessingCenter />
-                            ) : (
-                              <BillingWidget
-                                patientId="sample-patient"
-                                isFullscreen={true}
-                                type={widget.type}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </TabsContent>
-                  ))}
-                </div>
-              </Tabs>
+            {/* Full Width Claims Status Recommendations Widget */}
+            <div className="w-full mb-6">
+              <ClaimsStatusRecommendationsWidget />
+            </div>
+            
+            {/* Second Row - New Widgets (After Claims Status) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <AccountsReceivableWidget />
+              <ClaimsDenialsVsPaidWidget />
+              <ClaimsOverviewByStatusWidget />
             </div>
           </div>
+            </TabsContent>
+
+            {/* Encounter Metrics Tab Content */}
+            <TabsContent value="encounter-metrics" className="flex-1 mt-0">
+              {/* Filters Section */}
+              <div className="px-4 sm:px-6 py-4 bg-zinc-50 border-b border-gray-200">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  {/* Left Side - Date Filters */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex items-center gap-2">
+                      <FontAwesomeIcon icon="calendar-alt" className="w-4 h-4 text-primary" />
+                    </div>
+                    
+                    {/* Quick Date Filters */}
+                    <div className="flex flex-wrap gap-2">
+                      <button className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-primary transition-colors">
+                        Today
+                      </button>
+                      <button className="px-3 py-1.5 text-xs font-medium bg-primary text-white border border-primary rounded-lg hover:brightness-110 transition-colors">
+                        This Week
+                      </button>
+                      <button className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-primary transition-colors">
+                        This Month
+                      </button>
+                      <button className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-primary transition-colors">
+                        Last 30 Days
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Side - Custom Date Range & Status Filter */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    {/* Custom Date Range */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                        defaultValue="2024-09-01"
+                      />
+                      <span className="text-gray-500">to</span>
+                      <input
+                        type="date"
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                        defaultValue="2024-09-28"
+                      />
+                    </div>
+
+                    {/* Status Filter using Select component */}
+                    <Select defaultValue="all">
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="created">Created</SelectItem>
+                        <SelectItem value="submitted">Submitted</SelectItem>
+                        <SelectItem value="printed">Printed</SelectItem>
+                        <SelectItem value="resubmitted">Re-submitted</SelectItem>
+                        <SelectItem value="updated">Updated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Active Filters Display */}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-gray-600">Active filters:</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    This Week
+                    <button className="hover:bg-blue-200 rounded-full p-0.5">
+                      <FontAwesomeIcon icon="times" className="w-2 h-2" />
+                    </button>
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    All Status
+                    <button className="hover:bg-blue-200 rounded-full p-0.5">
+                      <FontAwesomeIcon icon="times" className="w-2 h-2" />
+                    </button>
+                  </span>
+                  <button className="text-xs text-gray-500 hover:text-gray-700 underline">
+                    Clear all
+                  </button>
+                </div>
+              </div>
+
+              {/* Billing Card Blocks Section */}
+              <div className="px-4 sm:px-6 py-6 bg-white">
+                <BillingCardBlocks 
+                  onBlockClick={handleBillingBlockClick}
+                  selectedBlockId={selectedBillingBlock}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+
         </div>
         </div>
       </div>

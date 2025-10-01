@@ -262,7 +262,16 @@ export const BillingCardBlocks: React.FC<BillingCardBlocksProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
       {billingSections.map((section) => (
-        <div key={section.id} className="bg-gray-50 rounded-lg border border-gray-200 p-4 md:p-6 shadow-sm">
+        <div key={section.id} className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-lg border border-gray-200 p-4 md:p-6 shadow-sm overflow-hidden">
+          {/* Gradient Pattern Overlay */}
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-200/40 to-transparent rounded-full -translate-x-16 -translate-y-16"></div>
+            <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-purple-200/40 to-transparent rounded-full translate-x-12 translate-y-12"></div>
+            <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-gradient-to-br from-indigo-200/30 to-transparent rounded-full"></div>
+          </div>
+          
+          {/* Content with relative positioning */}
+          <div className="relative z-10">
           <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
@@ -283,6 +292,7 @@ export const BillingCardBlocks: React.FC<BillingCardBlocksProps> = ({
                 />
               </div>
             ))}
+          </div>
           </div>
         </div>
       ))}

@@ -1,6 +1,5 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Icon } from '@/components/atoms/Icon';
 
 // Task block interface
 export interface TaskBlock {
@@ -96,52 +95,6 @@ export const TaskBlockCard: React.FC<TaskBlockCardProps> = ({
     return gradients[index % gradients.length];
   };
 
-  // Icon mapping based on label using FontAwesome icons
-  const getIcon = () => {
-    switch (label) {
-      case 'Expedite Queue':
-      case 'Urgent Tasks':
-        return <Icon icon="clock" className="h-5 w-5" />;
-      case 'Suggested Actions':
-      case 'All Reminders':
-        return <Icon icon="bell" className="h-5 w-5" />;
-      case 'Agenda':
-        return <Icon icon="calendar" className="h-5 w-5" />;
-      case 'FYI Zone':
-      case 'Birthdays':
-        return <Icon icon="info-circle" className="h-5 w-5" />;
-      case 'Review Forms':
-        return <Icon icon="file-alt" className="h-5 w-5" />;
-      case 'Review Prescriptions':
-      case 'Prescriptions':
-        return <Icon icon="pills" className="h-5 w-5" />;
-      case 'Assigned to Me':
-        return <Icon icon="user" className="h-5 w-5" />;
-      case 'Pending Too Long':
-      case 'Aging Tasks':
-        return <Icon icon="exclamation-triangle" className="h-5 w-5" />;
-      case 'Treatment Reviews':
-      case 'Transaction Reviews':
-        return <Icon icon="stethoscope" className="h-5 w-5" />;
-      case 'Tasks Created by Me':
-        return <Icon icon="clipboard" className="h-5 w-5" />;
-      case 'Messages':
-        return <Icon icon="envelope" className="h-5 w-5" />;
-      // Billing specific icons
-      case 'Created':
-      case 'Submitted':
-      case 'Printed':
-      case 'Re-submitted':
-      case 'Updated':
-        return <Icon icon="file-alt" className="h-5 w-5" />;
-      case 'Total':
-      case 'Unbilled':
-      case 'Billed':
-        return <Icon icon="chart-bar" className="h-5 w-5" />;
-      default:
-        return <Icon icon="clipboard" className="h-5 w-5" />;
-    }
-  };
 
   const colors = getColors();
   
@@ -164,11 +117,6 @@ export const TaskBlockCard: React.FC<TaskBlockCardProps> = ({
       
       {/* Header with icon and label */}
       <div className="flex items-center gap-2 z-10 relative">
-        <div className={`w-7 h-7 rounded-full ${colors.iconBg} flex items-center justify-center`}>
-          <div className={colors.icon}>
-            {getIcon()}
-          </div>
-        </div>
         <span className="text-gray-800 font-medium text-sm md:text-xs lg:text-sm text-left line-clamp-2">
           {label}
         </span>
