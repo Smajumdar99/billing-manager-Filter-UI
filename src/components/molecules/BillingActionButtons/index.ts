@@ -1,1 +1,1 @@
-export { BillingActionButtons, type BillingActionButtonsProps } from './billing-action-buttons'
+export { BillingActionButtons, type BillingActionButtonsProps, type ViewMode } from './billing-action-buttons'

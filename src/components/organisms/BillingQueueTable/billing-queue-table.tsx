@@ -18,6 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/atoms/Select/select'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faExclamationTriangle, faFileInvoiceDollar, faShieldAlt } from '@fortawesome/free-solid-svg-icons'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  BanknotesIcon,
+  PaperAirplaneIcon,
+  ShieldCheckIcon,
+  CheckCircleIcon,
+  PencilSquareIcon,
+  DocumentArrowDownIcon,
+  PlusCircleIcon
+} from '@heroicons/react/24/outline'
 
 export interface BillingQueueTableProps {
   encounters: BillingEncounter[]
@@ -67,53 +85,98 @@ export const BillingQueueTable: FC<BillingQueueTableProps> = ({
       cellRenderer: () => null, // Hide the cell content, show only checkbox
     },
     {
+      headerName: '',
+      field: 'statusIcons',
+      width: 80,
+      pinned: 'left' as const,
+      cellRenderer: (params: any) => {
+        const isBilled = params.data.status === 'paid' || 
+                        params.data.status === 'claim_accepted' || 
+                        params.data.status === 'claim_submitted' ||
+                        params.data.status === 'claim_generated';
+        
+        return (
+          <div className="flex items-center justify-center gap-2 py-2">
+            {/* Golden Thread Rule Error Icon */}
+            {params.data.hasErrors && params.data.errorSeverity === 'critical' && (
+              <TooltipProvider>
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center">
+                      <FontAwesomeIcon 
+                        icon={faExclamationTriangle} 
+                        className="w-4 h-4 text-red-600" 
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="text-xs">
+                      <p className="font-semibold mb-1">[Form Completion Rule]</p>
+                      <p>Encounter forms do not meet the completion criteria: Responsibilities v06 09202, Member must sign receipt of privacy practices</p>
+                    </div>
+                  </TooltipContent>
+                </TooltipRoot>
+              </TooltipProvider>
+            )}
+            
+            {/* Billed/Unbilled Status Icon */}
+            <TooltipProvider>
+              <TooltipRoot>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center">
+                    <FontAwesomeIcon 
+                      icon={faFileInvoiceDollar} 
+                      className={`w-4 h-4 ${isBilled ? 'text-green-600' : 'text-gray-400'}`}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isBilled ? 'Billed' : 'Unbilled'}</p>
+                </TooltipContent>
+              </TooltipRoot>
+            </TooltipProvider>
+            
+            {/* Billing Override Icon */}
+            {params.data.billingOverrideEnabled && (
+              <TooltipProvider>
+                <TooltipRoot>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center">
+                      <FontAwesomeIcon 
+                        icon={faShieldAlt} 
+                        className="w-4 h-4 text-green-600" 
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="text-xs">
+                      <p className="font-semibold">Overridden by: Admin</p>
+                      <p>Encounter ID: {params.data.id}</p>
+                      <p>{new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })} {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</p>
+                      <p className="mt-1">Assessment Only</p>
+                    </div>
+                  </TooltipContent>
+                </TooltipRoot>
+              </TooltipProvider>
+            )}
+          </div>
+        );
+      }
+    },
+    {
       headerName: 'Patient',
       field: 'patientName',
       minWidth: 220,
       pinned: 'left' as const,
       cellRenderer: (params: any) => {
-        // Use a professional Unsplash photo for all patients
-        const getUnsplashAvatar = () => {
-          // Professional headshot from Unsplash - optimized for healthcare applications
-          return `https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=32&h=32&fit=crop&crop=face&auto=format&q=80`;
-        };
-
         return (
-          <div className="py-1 flex items-center gap-3">
-            {/* Patient Avatar */}
-            <img 
-              src={getUnsplashAvatar()}
-              alt={`${params.data.patientName} avatar`}
-              className="w-8 h-8 rounded-full object-cover border border-gray-200"
-              onError={(e) => {
-                // Fallback to a neutral gray avatar if Unsplash fails
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-            {/* Fallback avatar */}
-            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-xs font-medium border border-gray-200 hidden">
-              <Icon icon="user" className="w-4 h-4" />
-            </div>
-            
+          <div className="py-1">
             {/* Patient Info */}
             <div className="flex-1 min-w-0">
               <div className="font-medium text-gray-900 text-sm truncate">{params.data.patientName}</div>
               <div className="text-xs text-gray-500">
                 {params.data.patientMrn}
               </div>
-              {/* Golden Thread Rule indicator */}
-              {params.data.hasErrors && params.data.errorSeverity === 'critical' && (
-                <div className="flex items-center gap-1 mt-1">
-                  <Icon icon="exclamation-triangle" className="w-3 h-3" />
-                  <span className="text-xs text-red-600">Golden Thread Rule</span>
-                </div>
-              )}
-              {/* Billing Override indicator */}
-              {params.data.canOverride && (
-                <div className="text-xs text-orange-600 mt-1">Billing Override</div>
-              )}
             </div>
           </div>
         );
@@ -189,53 +252,81 @@ export const BillingQueueTable: FC<BillingQueueTableProps> = ({
       }
     },
     {
-      headerName: 'Status',
-      field: 'status',
+      headerName: 'Encounter Status',
+      field: 'encounterStatus',
       minWidth: 140,
       cellRenderer: (params: any) => {
-        const getStatusDisplay = (status: BillingStatus) => {
-          const statusMap = {
-            ready_to_bill: { text: 'Pending for submission', className: 'text-orange-600' },
-            authorized: { text: 'Authorized', className: 'text-blue-600' },
-            unauthorized: { text: 'Unbilled Service', className: 'text-red-600' },
-            in_review: { text: 'In Review', className: 'text-yellow-600' },
-            claim_generated: { text: 'Claim Generated', className: 'text-indigo-600' },
-            claim_submitted: { text: 'Claim Submitted', className: 'text-purple-600' },
-            claim_accepted: { text: 'Claim Accepted', className: 'text-emerald-600' },
-            claim_rejected: { text: 'Claim Rejected', className: 'text-red-600' },
-            paid: { text: 'Paid', className: 'text-green-600' },
-            write_off: { text: 'Write-off', className: 'text-gray-600' },
-            patient_balance: { text: 'Patient Balance', className: 'text-orange-600' }
+        // Get encounter status from data or derive from billing status
+        const getEncounterStatus = () => {
+          if (params.data.encounterStatus) {
+            return params.data.encounterStatus;
           }
-          return statusMap[status] || { text: status, className: 'text-gray-600' }
-        }
+          // Derive from billing status if not explicitly set
+          const status = params.data.status;
+          if (status === 'claim_rejected' || status === 'unauthorized') {
+            return 'Closed on Error';
+          }
+          if (status === 'paid' || status === 'claim_accepted') {
+            return 'Closed';
+          }
+          return 'Open';
+        };
         
-        const statusInfo = getStatusDisplay(params.value)
+        const encounterStatus = getEncounterStatus();
+        const statusColors = {
+          'Open': 'text-blue-600',
+          'Closed': 'text-green-600',
+          'Closed on Error': 'text-red-600'
+        };
+        
         return (
-          <span className={`text-xs font-medium ${statusInfo.className}`}>
-            {statusInfo.text}
+          <span className={`text-xs font-medium ${statusColors[encounterStatus as keyof typeof statusColors] || 'text-gray-600'}`}>
+            {encounterStatus}
           </span>
         )
       }
     },
     {
-      headerName: 'Billing Override',
-      field: 'billingOverrideEnabled',
-      minWidth: 100,
-      cellStyle: () => ({ 
-        overflow: 'visible',
-        zIndex: 1
-      }),
-      cellRenderer: (params: any) => (
-        <div className="flex items-center justify-center py-2 relative">
-          <BillingOverrideToggle
-            enabled={params.data.billingOverrideEnabled || false}
-            canOverride={params.data.canOverride || false}
-            encounterHasErrors={params.data.hasErrors || false}
-            onToggle={(enabled) => onBillingOverrideToggle(params.data.id, enabled)}
-          />
-        </div>
-      )
+      headerName: 'Billing Status',
+      field: 'billingStatus',
+      minWidth: 180,
+      cellRenderer: (params: any) => {
+        // Get billing status from data or derive from status field
+        const getBillingStatus = () => {
+          if (params.data.billingStatus) {
+            return params.data.billingStatus;
+          }
+          // Derive from existing status field
+          const status = params.data.status;
+          const statusMap: Record<string, string> = {
+            'unauthorized': 'Unbilled',
+            'ready_to_bill': 'No claims generated',
+            'in_review': 'No claims generated',
+            'claim_generated': 'Claims generated but not submitted',
+            'claim_submitted': 'Claims generated but not submitted',
+            'claim_accepted': 'Billed',
+            'paid': 'Billed',
+            'claim_rejected': 'Denied',
+            'write_off': 'Denied'
+          };
+          return statusMap[status] || 'Unbilled';
+        };
+        
+        const billingStatus = getBillingStatus();
+        const statusColors: Record<string, string> = {
+          'Unbilled': 'text-gray-600',
+          'No claims generated': 'text-orange-600',
+          'Claims generated but not submitted': 'text-blue-600',
+          'Billed': 'text-green-600',
+          'Denied': 'text-red-600'
+        };
+        
+        return (
+          <span className={`text-xs font-medium ${statusColors[billingStatus] || 'text-gray-600'}`}>
+            {billingStatus}
+          </span>
+        )
+      }
     },
     {
       headerName: 'Facility',
@@ -307,57 +398,7 @@ export const BillingQueueTable: FC<BillingQueueTableProps> = ({
       }
     },
     {
-      headerName: 'HCFA bill',
-      field: 'hcfaBillType',
-      minWidth: 160,
-      cellStyle: () => ({ 
-        overflow: 'visible',
-        zIndex: 1
-      }),
-      cellRenderer: (params: any) => {
-        // HCFA bill type options
-        const billTypeOptions = [
-          { value: 'POS: 02 telehealth', label: 'POS: 02 telehealth' },
-          { value: 'POS: 11 office', label: 'POS: 11 office' },
-          { value: 'POS: 21 inpatient', label: 'POS: 21 inpatient' },
-          { value: 'POS: 22 outpatient', label: 'POS: 22 outpatient' },
-          { value: 'POS: 23 emergency', label: 'POS: 23 emergency' },
-          { value: 'UB-04 institutional', label: 'UB-04 institutional' },
-          { value: 'CMS-1500 professional', label: 'CMS-1500 professional' }
-        ]
-        
-        // Get current value or default
-        const getCurrentValue = () => {
-          return params.data.hcfaBillType || 'POS: 02 telehealth'
-        }
-        
-        return (
-          <div className="w-full">
-            <Select
-              value={getCurrentValue()}
-              onValueChange={(value) => onHcfaBillTypeChange(params.data.id, value)}
-            >
-              <SelectTrigger className="h-8 text-xs border-gray-200 focus:border-amber-500">
-                <SelectValue placeholder="Select bill type" />
-              </SelectTrigger>
-              <SelectContent className="z-[9999]">
-                {billTypeOptions.map((option) => (
-                  <SelectItem 
-                    key={option.value} 
-                    value={option.value}
-                    className="text-xs"
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )
-      }
-    },
-    {
-      headerName: 'Primary',
+      headerName: 'POS',
       field: 'primaryPayer',
       minWidth: 160,
       cellStyle: () => ({ 
@@ -365,37 +406,42 @@ export const BillingQueueTable: FC<BillingQueueTableProps> = ({
         zIndex: 1
       }),
       cellRenderer: (params: any) => {
-        // Primary payer options
-        const primaryPayerOptions = [
-          { value: 'Pacific Sources', label: 'Pacific Sources' },
-          { value: 'Bluecross', label: 'Bluecross' },
-          { value: 'Medicare', label: 'Medicare' },
-          { value: 'Medicaid', label: 'Medicaid' },
-          { value: 'United Healthcare', label: 'United Healthcare' },
-          { value: 'Aetna', label: 'Aetna' },
-          { value: 'Cigna', label: 'Cigna' },
-          { value: 'Humana', label: 'Humana' },
-          { value: 'BCBS', label: 'Blue Cross Blue Shield' },
-          { value: 'Self Pay', label: 'Self Pay' },
-          { value: 'Government', label: 'Government' },
-          { value: 'Corporate', label: 'Corporate' }
+        // POS (Place of Service) options
+        const posOptions = [
+          { value: '01', label: '1: Pharmacy' },
+          { value: '02', label: '2: Telehealth' },
+          { value: '03', label: '03: School' },
+          { value: '06', label: '6: Indian Health Service Provider-based Facility' },
+          { value: '07', label: '7: Tribal 638 Free-standing Facility' },
+          { value: '08', label: '8: Tribal 638 Provider-based Facility' },
+          { value: '09', label: '9: Prison/Correctional Facility' },
+          { value: '10', label: '10: Telehealth' },
+          { value: '11', label: '11: Office' },
+          { value: '12', label: '12: Home' },
+          { value: '13', label: '13: Assisted Living Facility' },
+          { value: '14', label: '14: Group Home' },
+          { value: '15', label: '15: Mobile Unit' },
+          { value: '16', label: '16: Temporary Lodging' },
+          { value: '17', label: '17: Walk-in Retail Health Clinic' },
+          { value: '18', label: '18: Place of Employment-Worksite' },
+          { value: '19', label: '19: Off Campus-Outpatient Hospital' },
+          { value: '22', label: '22: On Campus-Outpatient Hospital' },
+          { value: '32', label: '32: Nursing Facility' },
+          { value: '49', label: '49: Independent Clinic' },
+          { value: '52', label: '52: Psychiatric Facility-Partial Hospitalization' },
+          { value: '53', label: '53: Community Mental Health Center' },
+          { value: '54', label: '54: Intermediate Care Facility/Individuals with Intell' },
+          { value: '55', label: '55: Residential Substance Abuse Treatment Facility' },
+          { value: '57', label: '57: Non-residential Substance Abuse Treatment Facility' },
+          { value: '60', label: '60: Mass Immunization Center' },
+          { value: '61', label: '61: Comprehensive Inpatient Rehabilitation Facility' },
+          { value: '71', label: '71: Public Health Clinic' },
+          { value: '99', label: '99: Community' }
         ]
         
-        // Get current value or default to Pacific Sources
+        // Get current value or default to School (03)
         const getCurrentValue = () => {
-          const payerMap: Record<string, string> = {
-            'Medicare': 'Bluecross',
-            'Medicaid': 'Pacific Sources',
-            'Blue Cross Blue Shield': 'BCBS',
-            'HDFC ERGO': 'Pacific Sources',
-            'Bajaj Allianz': 'Pacific Sources',
-            'United India': 'Pacific Sources',
-            'Self Pay': 'Self Pay',
-            'Government': 'Government',
-            'Corporate': 'Corporate',
-            'Aetna': 'Aetna'
-          }
-          return payerMap[params.value] || 'Pacific Sources'
+          return params.data.posCode || '03'
         }
         
         return (
@@ -405,10 +451,10 @@ export const BillingQueueTable: FC<BillingQueueTableProps> = ({
               onValueChange={(value) => onPrimaryPayerChange(params.data.id, value)}
             >
               <SelectTrigger className="h-8 text-xs border-gray-200 focus:border-amber-500">
-                <SelectValue placeholder="Select primary payer" />
+                <SelectValue placeholder="Select POS" />
               </SelectTrigger>
-              <SelectContent className="z-[9999]">
-                {primaryPayerOptions.map((option) => (
+              <SelectContent className="z-[9999] max-h-[300px]">
+                {posOptions.map((option) => (
                   <SelectItem 
                     key={option.value} 
                     value={option.value}
@@ -419,35 +465,6 @@ export const BillingQueueTable: FC<BillingQueueTableProps> = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        )
-      }
-    },
-    {
-      headerName: 'CPT#',
-      field: 'cptCode',
-      minWidth: 100,
-      cellRenderer: (params: any) => {
-        // Generate CPT codes based on encounter type
-        const getCPTCode = (encounterType: string) => {
-          const cptMap: Record<string, string> = {
-            'Inpatient Surgery': '90834 (J45.20)',
-            'Emergency Visit': '90834 (J45.20)',
-            'Outpatient Consultation': '90834 (J45.20)',
-            'Diagnostic Procedure': '90834 (J45.20)',
-            'Surgery': '90834 (J45.20)',
-            'Follow-up Visit': '90834 (J45.20)',
-            'Laboratory Tests': '90834 (J45.20)',
-            'Maternity Care': '90834 (J45.20)',
-            'Corporate Health Check': '90834 (J45.20)',
-            'ICU Stay': '90834 (J45.20)'
-          }
-          return cptMap[encounterType] || '90834 (J45.20)'
-        }
-        
-        return (
-          <div className="text-sm text-gray-700">
-            {getCPTCode(params.data.encounterType)}
           </div>
         )
       }
@@ -504,23 +521,64 @@ export const BillingQueueTable: FC<BillingQueueTableProps> = ({
       pinned: 'right' as const,
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center">
-          <TooltipProvider>
-            <TooltipRoot>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEncounterEdit(params.data)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  <Icon icon="ellipsis" className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>More actions</p>
-              </TooltipContent>
-            </TooltipRoot>
-          </TooltipProvider>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-gray-100"
+              >
+                <Icon icon="ellipsis" className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {/* Add & Justify */}
+              <DropdownMenuItem onClick={() => console.log('Add & Justify:', params.data.id)}>
+                <PlusCircleIcon className="w-4 h-4 mr-2" />
+                Add & Justify
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Primary Bulk Actions */}
+              <DropdownMenuItem 
+                onClick={() => onGenerateClaim(params.data)}
+                disabled={!params.data.canGenerateClaim}
+              >
+                <BanknotesIcon className="w-4 h-4 mr-2" />
+                Generate Claims
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={() => console.log('Submit Claims:', params.data.id)}
+                disabled={!params.data.canSubmitClaim}
+              >
+                <PaperAirplaneIcon className="w-4 h-4 mr-2" />
+                Submit Claims
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={() => console.log('Override Blocks:', params.data.id)}
+                disabled={!params.data.canOverride || !params.data.hasErrors}
+              >
+                <ShieldCheckIcon className="w-4 h-4 mr-2" />
+                Override Blocks
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem onClick={() => console.log('Mark Ready:', params.data.id)}>
+                <CheckCircleIcon className="w-4 h-4 mr-2" />
+                Mark Ready
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Secondary Actions */}
+              <DropdownMenuItem onClick={() => console.log('Export:', params.data.id)}>
+                <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
+                Export
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )
     }

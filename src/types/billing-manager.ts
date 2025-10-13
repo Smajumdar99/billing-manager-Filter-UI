@@ -91,6 +91,7 @@ export interface BillingEncounter {
   patientName: string
   patientMrn: string
   dateOfService: string
+  treatmentTime?: string // Format: "HH:MM - HH:MM" (e.g., "10:00 - 10:30")
   encounterType: string
   provider: string
   department: string

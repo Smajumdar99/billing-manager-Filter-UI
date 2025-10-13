@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TagIcon, ExclamationTriangleIcon, PlusIcon, XMarkIcon, ClockIcon, HeartIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { Input } from '@/components/atoms/Input';
@@ -8,6 +9,7 @@ import { Select } from '@/components/atoms/Select/select';
 import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/atoms/Tooltip/tooltip';
 import AddConditionDialog from '@/components/molecules/AddConditionDialog/AddConditionDialog';
 import AddProblemDialog from '@/components/molecules/AddProblemDialog/AddProblemDialog';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { TreatmentPlanFormData } from '../../../pages/NewTreatmentPlanPage';
 
 /**
@@ -35,11 +37,40 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
   formData,
   updateFormData
 }) => {
+  const navigate = useNavigate();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
   const [isAddConditionDialogOpen, setIsAddConditionDialogOpen] = useState(false);
   const [editingConditionData, setEditingConditionData] = useState<any>(null);
   const [isAddProblemDialogOpen, setIsAddProblemDialogOpen] = useState(false);
   const [editingProblemData, setEditingProblemData] = useState<any>(null);
   const [isActiveDiagnosesExpanded, setIsActiveDiagnosesExpanded] = useState(true);
+
+  // Check for new conditions from mobile page on component mount/focus
+  useEffect(() => {
+    const checkForNewCondition = () => {
+      const newConditionStr = localStorage.getItem('newCondition');
+      if (newConditionStr) {
+        try {
+          const newCondition = JSON.parse(newConditionStr);
+          addPredefinedCondition(newCondition);
+          localStorage.removeItem('newCondition');
+        } catch (error) {
+          console.error('Error parsing new condition:', error);
+        }
+      }
+    };
+
+    // Check immediately
+    checkForNewCondition();
+
+    // Listen for focus events (when user returns to this page)
+    window.addEventListener('focus', checkForNewCondition);
+    
+    return () => {
+      window.removeEventListener('focus', checkForNewCondition);
+    };
+  }, []);
 
   // Handle recovery goal change
   const handleRecoveryGoalChange = (value: string) => {
@@ -47,6 +78,36 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
   };
 
   // Condition management
+  const handleAddConditionClick = () => {
+    if (isMobile) {
+      // Navigate to mobile page with state (no function)
+      navigate('/treatment-plan/add-condition', {
+        state: {
+          existingConditions: formData.conditions,
+          editingCondition: null
+        }
+      });
+    } else {
+      // Open desktop dialog
+      setIsAddConditionDialogOpen(true);
+    }
+  };
+
+  const handleEditConditionClick = (condition: any) => {
+    if (isMobile) {
+      // Navigate to mobile page with state (no function)
+      navigate('/treatment-plan/add-condition', {
+        state: {
+          existingConditions: formData.conditions,
+          editingCondition: condition
+        }
+      });
+    } else {
+      // Open desktop dialog
+      setEditingConditionData(condition);  
+      setIsAddConditionDialogOpen(true);
+    }
+  };
 
   const addPredefinedCondition = (condition: { code: string; description: string }) => {
     const newCondition = {
@@ -238,7 +299,7 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
                   <TooltipRoot>
                     <TooltipTrigger asChild>
                       <Button
-                        onClick={() => setIsAddConditionDialogOpen(true)}
+                        onClick={handleAddConditionClick}
                         className="gap-2"
                       >
                         <PlusIcon className="w-4 h-4" />
@@ -264,10 +325,7 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
                         <TooltipRoot>
                           <TooltipTrigger asChild>
                             <button
-                              onClick={() => {
-                                setEditingConditionData(condition);
-                                setIsAddConditionDialogOpen(true);
-                              }}
+                              onClick={() => handleEditConditionClick(condition)}
                               className="p-1 rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors"
                             >
                               <PencilIcon className="w-4 h-4" />
@@ -323,7 +381,7 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
                   <TooltipRoot>
                     <TooltipTrigger asChild>
                       <Button
-                        onClick={() => setIsAddConditionDialogOpen(true)}
+                        onClick={handleAddConditionClick}
                         size="sm"
                         variant="outline"
                         className="w-full"
@@ -456,17 +514,19 @@ const GoalsObjectivesProblemsStep: React.FC<GoalsObjectivesProblemsStepProps> = 
         </div>
       </div>
 
-      {/* Add Condition Dialog */}
-      <AddConditionDialog
-        open={isAddConditionDialogOpen}
-        onClose={() => {
-          setIsAddConditionDialogOpen(false);
-          setEditingConditionData(null);
-        }}
-        onAddCondition={addPredefinedCondition}
-        existingConditions={formData.conditions}
-        editingCondition={editingConditionData}
-      />
+      {/* Add Condition Dialog - Desktop Only */}
+      {!isMobile && (
+        <AddConditionDialog
+          open={isAddConditionDialogOpen}
+          onClose={() => {
+            setIsAddConditionDialogOpen(false);
+            setEditingConditionData(null);
+          }}
+          onAddCondition={addPredefinedCondition}
+          existingConditions={formData.conditions}
+          editingCondition={editingConditionData}
+        />
+      )}
 
       {/* Add Problem Dialog */}
       <AddProblemDialog

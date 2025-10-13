@@ -36,6 +36,7 @@ import ViewAppointmentPage from './pages/ViewAppointmentPage'
 import PrescriptionPage from './pages/PrescriptionPage'
 import NewIncidentPage from './pages/NewIncidentPage'
 import NewTreatmentPlanPage from './pages/NewTreatmentPlanPage'
+import AddConditionMobilePage from './pages/AddConditionMobilePage'
 import ProblemsManagementPage from './pages/ProblemsManagementPage'
 import FaxCenterPage from './pages/FaxCenterPage'
 
@@ -231,7 +232,15 @@ const AppRoutes = () => {
         } 
       />
       <Route 
-        path="/prescription" 
+        path="/treatment-plan/add-condition" 
+        element={
+          <ProtectedRoute>
+            <AddConditionMobilePage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/prescription"
         element={
           <ProtectedRoute>
             <PrescriptionPage />

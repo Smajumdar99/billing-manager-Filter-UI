@@ -8,11 +8,13 @@ import { Sidebar } from '@/components/atoms/Sidebar/sidebar'
 import { BillingQuickFilters } from '@/components/molecules/BillingQuickFilters'
 import { BillingFiltersPanel } from '@/components/molecules/BillingQueueFilters'
 import { BillingSortPanel, type SortOption } from '@/components/molecules/BillingSortPanel'
-import { BillingActionButtons } from '@/components/molecules/BillingActionButtons'
+import { BillingActionButtons, type ViewMode } from '@/components/molecules/BillingActionButtons'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs'
 import { BillingQueueTable } from '@/components/organisms/BillingQueueTable'
+import { BillingViewCardsListing } from '@/components/organisms/BillingViewCardsListing'
 import { BillingBulkActions } from '@/components/molecules/BillingBulkActions'
 import { BillingErrorDialog } from '@/components/molecules/BillingErrorDialog'
+import { OverrideDialog } from '@/components/molecules/OverrideDialog'
 import { Badge } from '@/components/atoms/Badge/badge'
 import { Button } from '@/components/atoms/Button/button'
 import {
@@ -22,6 +24,7 @@ import {
   TooltipContent
 } from '@/components/atoms/Tooltip/tooltip'
 import { Icon } from '@/components/atoms/Icon/Icon'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select'
 import { 
   mockBillingEncounters, 
   getBillingQueueStats, 
@@ -70,6 +73,11 @@ export const BillingManagerPage: FC = () => {
   const [showErrorDialog, setShowErrorDialog] = useState<BillingEncounter | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [currentSort, setCurrentSort] = useState<SortOption | undefined>(undefined)
+  const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [activeTab, setActiveTab] = useState<'ready' | 'blocked' | 'with_errors' | 'pending_submit'>('ready')
+  const [billingTypeFilter, setBillingTypeFilter] = useState<string>('all')
+  const [showOverrideDialog, setShowOverrideDialog] = useState(false)
+  const [overrideActionType, setOverrideActionType] = useState<'override' | 'override_and_generate'>('override')
 
   // Handle navigation in the main nav bar
   const handleMainNavigation = (itemName: string) => {
@@ -191,13 +199,16 @@ export const BillingManagerPage: FC = () => {
         console.log('Marking as cleared:', encounterIds)
         // TODO: Implement mark as cleared
         break
-      case 'reopen':
-        console.log('Reopening encounters:', encounterIds)
-        // TODO: Implement reopen
-        break
+      case 'override_billing':
       case 'override':
-        console.log('Overriding encounters:', encounterIds)
-        // TODO: Implement override
+        // Show override dialog
+        setOverrideActionType('override')
+        setShowOverrideDialog(true)
+        break
+      case 'override_and_generate':
+        // Show override dialog for override and generate
+        setOverrideActionType('override_and_generate')
+        setShowOverrideDialog(true)
         break
       case 'mark_for_rebilling':
         console.log('Marking for rebilling:', encounterIds)
@@ -219,6 +230,19 @@ export const BillingManagerPage: FC = () => {
   // Filter and sort encounters based on current filter criteria and sort options
   const filteredEncounters = useMemo(() => {
     let filtered = encounters.filter(encounter => {
+      // Tab-based filtering
+      if (activeTab === 'ready') {
+        // Show only encounters that are ready to bill (no blocking errors)
+        if (encounter.billingOverrideEnabled || encounter.hasErrors) {
+          return false
+        }
+      } else if (activeTab === 'blocked') {
+        // Show only encounters that are blocked from billing
+        if (!encounter.hasErrors && !encounter.billingOverrideEnabled) {
+          return false
+        }
+      }
+      
       // Exclude encounters with zero balance (core billing manager requirement)
       if (encounter.totalCharges === 0 || (encounter.allowedAmount !== undefined && encounter.allowedAmount === 0)) {
         return false
@@ -325,7 +349,50 @@ export const BillingManagerPage: FC = () => {
     }
 
     return filtered
-  }, [encounters, filters, activeFilterCards, refreshKey, currentSort])
+  }, [encounters, filters, activeFilterCards, refreshKey, currentSort, activeTab])
+
+  // Handle override confirmation from dialog
+  const handleOverrideConfirm = useCallback((reason: string, notes: string) => {
+    const encounterIds = selectedEncounters
+    
+    console.log('Override confirmed:', { reason, notes, encounterIds, actionType: overrideActionType })
+    
+    if (overrideActionType === 'override_and_generate') {
+      // Override and generate claims
+      setEncounters(prev => prev.map(enc => 
+        encounterIds.includes(enc.id) 
+          ? { 
+              ...enc, 
+              billingOverrideEnabled: true, 
+              hasErrors: false, 
+              errors: [], 
+              status: 'claim_generated',
+              overrideReason: reason,
+              overrideNotes: notes,
+              overriddenAt: new Date().toISOString()
+            }
+          : enc
+      ))
+    } else {
+      // Just override
+      setEncounters(prev => prev.map(enc => 
+        encounterIds.includes(enc.id) 
+          ? { 
+              ...enc, 
+              billingOverrideEnabled: true, 
+              hasErrors: false, 
+              errors: [],
+              overrideReason: reason,
+              overrideNotes: notes,
+              overriddenAt: new Date().toISOString()
+            }
+          : enc
+      ))
+    }
+    
+    setSelectedEncounters([])
+    setShowOverrideDialog(false)
+  }, [selectedEncounters, overrideActionType])
 
   // Handle CSV export
   const handleExportCSV = useCallback(() => {
@@ -720,8 +787,8 @@ export const BillingManagerPage: FC = () => {
                         </div>
                       </div>
                       
-                      {/* Metrics Section - Desktop Inline */}
-                      <div className="flex items-center gap-2 mx-4">
+                      {/* Metrics Section - Desktop Inline - Hidden for now */}
+                      <div className="hidden items-center gap-2 mx-4">
                         <TooltipRoot>
                           <TooltipTrigger asChild>
                             <button
@@ -777,36 +844,6 @@ export const BillingManagerPage: FC = () => {
                           </TooltipContent>
                         </TooltipRoot>
 
-                        <TooltipRoot>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => {
-                                handleQuickFilterChange({ statuses: ['claim_submitted', 'claim_generated'] });
-                              }}
-                              className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 bg-gray-25 text-gray-700 hover:bg-gray-50 border border-gray-100"
-                            >
-                              <Icon icon="money-bill-wave" className="w-4 h-4 flex-shrink-0 text-purple-600" />
-                              <span className="text-sm font-semibold text-gray-800">{queueStats.claimsSubmitted}</span>
-                              <span className="text-xs text-gray-600">Claims</span>
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Claims generated and submitted</p>
-                          </TooltipContent>
-                        </TooltipRoot>
-
-                        <TooltipRoot>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium bg-zinc-100 text-gray-700 border border-gray-200">
-                              <Icon icon="clock" className="w-4 h-4 flex-shrink-0" />
-                              <span className="text-sm font-semibold text-gray-700">${queueStats.totalValue.toLocaleString()}</span>
-                              <span className="text-xs text-gray-600">Value</span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Total dollar value of encounters in queue</p>
-                          </TooltipContent>
-                        </TooltipRoot>
                       </div>
                       
                       {/* Action Buttons */}
@@ -1024,36 +1061,6 @@ export const BillingManagerPage: FC = () => {
                             </TooltipContent>
                           </TooltipRoot>
                           
-                          <TooltipRoot>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => {
-                                  handleQuickFilterChange({ statuses: ['claim_submitted', 'claim_generated'] });
-                                }}
-                                className="flex items-center gap-2 rounded-full px-3 py-2 border transition-all duration-200 hover:shadow-md min-h-[40px] bg-purple-50 border-purple-200 hover:bg-purple-100"
-                              >
-                                <Icon icon="money-bill-wave" className="w-4 h-4 flex-shrink-0" />
-                                <span className="text-sm font-semibold text-purple-700">{queueStats.claimsSubmitted}</span>
-                                <span className="text-xs text-purple-600">Claims</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Claims generated and submitted</p>
-                            </TooltipContent>
-                          </TooltipRoot>
-
-                          <TooltipRoot>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-2 rounded-full px-3 py-2 border transition-all duration-200 min-h-[40px] bg-zinc-100 border-gray-200">
-                                <Icon icon="clock" className="w-4 h-4 flex-shrink-0" />
-                                <span className="text-sm font-semibold text-gray-700">${queueStats.totalValue.toLocaleString()}</span>
-                                <span className="text-xs text-gray-600">Value</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Total dollar value of encounters in queue</p>
-                            </TooltipContent>
-                          </TooltipRoot>
                         </div>
                       </div>
                     )}
@@ -1172,27 +1179,106 @@ export const BillingManagerPage: FC = () => {
                   {/* Desktop Right Content - Table */}
                   <div className="flex-1 flex flex-col overflow-hidden bg-zinc-100">
                     
+                    {/* Tab Bar with Billing Type Filter */}
+                    <div className="bg-white border-b border-gray-200">
+                      <div className="flex items-center justify-between px-4">
+                        <div className="flex items-center">
+                          <button
+                            onClick={() => setActiveTab('ready')}
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                              activeTab === 'ready'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                            }`}
+                          >
+                            Ready to Bill ({encounters.filter(e => e.status === 'ready_to_bill' && !e.hasErrors).length})
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('blocked')}
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                              activeTab === 'blocked'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                            }`}
+                          >
+                            Blocked ({encounters.filter(e => e.hasErrors && e.errorSeverity === 'critical').length})
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('with_errors')}
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                              activeTab === 'with_errors'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                            }`}
+                          >
+                            With Errors ({encounters.filter(e => e.hasErrors).length})
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('pending_submit')}
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                              activeTab === 'pending_submit'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                            }`}
+                          >
+                            Pending Submit ({encounters.filter(e => e.status === 'in_review' || e.status === 'authorized').length})
+                          </button>
+                        </div>
+                        
+                        {/* Separator and Billing Type Filter */}
+                        <div className="flex items-center gap-3 py-3">
+                          <div className="h-6 w-px bg-gray-300"></div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">Billing Type:</span>
+                            <Select value={billingTypeFilter} onValueChange={setBillingTypeFilter}>
+                              <SelectTrigger className="w-[180px] h-9">
+                                <SelectValue placeholder="All Types" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Types ({encounters.length})</SelectItem>
+                                <SelectItem value="hcfa">HCFA ({encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length})</SelectItem>
+                                <SelectItem value="ub04">UB-04 ({encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length})</SelectItem>
+                                <SelectItem value="not_set">Not Set ({encounters.filter(e => !e.billType && !e.hcfaBillType).length})</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {/* Action Buttons Section - Always visible */}
                     <BillingActionButtons
                       selectedEncounters={selectedEncounterObjects}
                       onAction={handleActionButtonClick}
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
                     />
 
-                    {/* Queue Table */}
+                    {/* Queue Table or Card View */}
                     <div className="flex-1 p-4 overflow-hidden">
-                      <BillingQueueTable
-                        encounters={filteredEncounters}
-                        onEncounterSelect={handleEncounterSelect}
-                        onEncounterEdit={(encounter) => console.log('Edit encounter:', encounter)}
-                        onEncounterClick={handleEncounterClick}
-                        onGenerateClaim={(encounter) => handleBulkAction('generate_claims', [encounter.id])}
-                        onViewErrors={setShowErrorDialog}
-                        onBillingOverrideToggle={(encounterId, enabled) => console.log('Toggle override:', encounterId, enabled)}
-                        onHcfaBillTypeChange={(encounterId, billType) => console.log('Change bill type:', encounterId, billType)}
-                        onPrimaryPayerChange={(encounterId, primaryPayer) => console.log('Change primary payer:', encounterId, primaryPayer)}
-                        selectedEncounters={selectedEncounters}
-                        className="h-full"
-                      />
+                      {viewMode === 'grid' ? (
+                        <BillingQueueTable
+                          encounters={filteredEncounters}
+                          onEncounterSelect={handleEncounterSelect}
+                          onEncounterEdit={(encounter) => console.log('Edit encounter:', encounter)}
+                          onEncounterClick={handleEncounterClick}
+                          onGenerateClaim={(encounter) => handleBulkAction('generate_claims', [encounter.id])}
+                          onViewErrors={setShowErrorDialog}
+                          onBillingOverrideToggle={(encounterId, enabled) => console.log('Toggle override:', encounterId, enabled)}
+                          onHcfaBillTypeChange={(encounterId, billType) => console.log('Change bill type:', encounterId, billType)}
+                          onPrimaryPayerChange={(encounterId, primaryPayer) => console.log('Change primary payer:', encounterId, primaryPayer)}
+                          selectedEncounters={selectedEncounters}
+                          className="h-full"
+                        />
+                      ) : (
+                        <BillingViewCardsListing
+                          encounters={filteredEncounters}
+                          selectedEncounters={selectedEncounters}
+                          onEncounterSelect={handleEncounterSelect}
+                          onEncounterClick={handleEncounterClick}
+                          className="h-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1278,6 +1364,32 @@ export const BillingManagerPage: FC = () => {
                     )}
                   </div>
 
+                  {/* Mobile Tab Bar - Queue Type Selection */}
+                  <div className="bg-white border-b border-gray-200">
+                    <div className="flex items-center px-3">
+                      <button
+                        onClick={() => setActiveTab('ready')}
+                        className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                          activeTab === 'ready'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                        }`}
+                      >
+                        Ready to Bill
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('blocked')}
+                        className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                          activeTab === 'blocked'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                        }`}
+                      >
+                        Blocked
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Mobile Action Buttons Section */}
                   <div className="p-3 bg-zinc-100 border-b border-gray-200">
                     <BillingActionButtons
@@ -1319,6 +1431,15 @@ export const BillingManagerPage: FC = () => {
           canOverride={true} // In real app, check user permissions
         />
       )}
+
+      {/* Override Dialog */}
+      <OverrideDialog
+        open={showOverrideDialog}
+        onClose={() => setShowOverrideDialog(false)}
+        encounters={selectedEncounterObjects}
+        onConfirm={handleOverrideConfirm}
+        actionType={overrideActionType}
+      />
       </div>
     </TooltipProvider>
   )

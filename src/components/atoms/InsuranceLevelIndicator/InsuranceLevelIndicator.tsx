@@ -101,143 +101,6 @@ export const InsuranceLevelIndicator: FC<InsuranceLevelIndicatorProps> = ({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {/* Unbilled indicator */}
-      {isCompletelyUnbilled() && (
-        <TooltipProvider>
-          <TooltipRoot>
-            <TooltipTrigger asChild>
-              <div className="flex items-center cursor-help">
-                <Icon 
-                  icon="exclamation-triangle" 
-                  className="w-4 h-4 text-red-600 animate-pulse" 
-                />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent 
-              side="top" 
-              align="center"
-              className="z-[99999] max-w-sm bg-white border border-red-300 shadow-lg"
-              sideOffset={8}
-            >
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-red-800">
-                  Unbilled Encounter
-                </p>
-                <p className="text-xs text-red-700 font-medium">
-                  No insurance levels have been billed yet
-                </p>
-                <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border-l-2 border-red-400">
-                  <div className="flex items-center gap-1 font-medium">
-                    <Icon icon="file-invoice-dollar" className="w-3 h-3" />
-                    <span>URGENT: Requires immediate billing attention</span>
-                  </div>
-                </div>
-              </div>
-            </TooltipContent>
-          </TooltipRoot>
-        </TooltipProvider>
-      )}
-      
-      {/* Bill icon with overall tooltip */}
-      <TooltipProvider>
-        <TooltipRoot>
-          <TooltipTrigger asChild>
-            <div className={`flex items-center cursor-help ${isCompletelyUnbilled() ? 'text-red-600' : 'text-gray-600'}`}>
-              <svg 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                className="current-color"
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14,2 14,8 20,8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10,9 9,9 8,9" />
-              </svg>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent 
-            side="top" 
-            align="center"
-            className={`z-[99999] max-w-xs bg-white border border-gray-200 shadow-lg ${isCompletelyUnbilled() ? 'border-red-300' : ''}`}
-            sideOffset={8}
-          >
-            <div className="space-y-1">
-              <p className={`text-sm font-semibold ${isCompletelyUnbilled() ? 'text-red-800' : 'text-gray-900'}`}>
-                Insurance Billing Status
-              </p>
-              <p className={`text-xs ${isCompletelyUnbilled() ? 'text-red-700 font-medium' : 'text-gray-700'}`}>
-                {getOverallTooltip()}
-              </p>
-              {isCompletelyUnbilled() && (
-                <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border-l-2 border-red-400">
-                  <div className="flex items-center gap-1 font-medium">
-                    <Icon icon="file-invoice-dollar" className="w-3 h-3" />
-                    <span>URGENT: Requires immediate billing attention</span>
-                  </div>
-                </div>
-              )}
-              <div className="text-xs text-gray-600 mt-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                    <div className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center justify-center gap-1 min-w-[28px] border-r border-gray-300">
-                      <Icon icon="check" className="w-2.5 h-2.5" />
-                      1
-                    </div>
-                    <div className="px-2 py-1 bg-gray-100 text-gray-400 text-xs font-medium flex items-center justify-center min-w-[28px] border-r border-gray-300">
-                      2
-                    </div>
-                    <div className="px-2 py-1 bg-gray-100 text-gray-400 text-xs font-medium flex items-center justify-center min-w-[28px]">
-                      3
-                    </div>
-                  </div>
-                  <span className="text-gray-700">= Billed successfully</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                    <div className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium flex items-center justify-center gap-1 min-w-[28px] border-r border-gray-300">
-                      <Icon icon="clock" className="w-2.5 h-2.5" />
-                      1
-                    </div>
-                    <div className="px-2 py-1 bg-gray-100 text-gray-400 text-xs font-medium flex items-center justify-center min-w-[28px] border-r border-gray-300">
-                      2
-                    </div>
-                    <div className="px-2 py-1 bg-gray-100 text-gray-400 text-xs font-medium flex items-center justify-center min-w-[28px]">
-                      3
-                    </div>
-                  </div>
-                  <span className="text-gray-700">= Pending/Ready to bill</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                    <div className="px-2 py-1 bg-gray-100 text-gray-400 text-xs font-medium flex items-center justify-center min-w-[28px] border-r border-gray-300">
-                      1
-                    </div>
-                    <div className="px-2 py-1 bg-gray-100 text-gray-400 text-xs font-medium flex items-center justify-center min-w-[28px] border-r border-gray-300">
-                      2
-                    </div>
-                    <div className="px-2 py-1 bg-gray-100 text-gray-400 text-xs font-medium flex items-center justify-center min-w-[28px]">
-                      3
-                    </div>
-                  </div>
-                  <span className="text-gray-700">= Not applicable</span>
-                </div>
-                {isCompletelyUnbilled() && (
-                  <div className="text-red-600 font-medium flex items-center gap-1">
-                    <Icon icon="file-invoice-dollar" className="w-3 h-3" />
-                    <span>= Completely unbilled</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </TooltipContent>
-        </TooltipRoot>
-      </TooltipProvider>
-      
       {/* Insurance level indicators - Unified rectangle with 3 boxes */}
       <TooltipProvider>
         <TooltipRoot>
@@ -249,6 +112,11 @@ export const InsuranceLevelIndicator: FC<InsuranceLevelIndicatorProps> = ({
                 const isPresent = level?.present || false
                 const status = level?.status || 'not_applicable'
                 
+                // Get previous level to check if it's billed (for sequential billing logic)
+                const previousLevelType = index === 1 ? 'primary' : index === 2 ? 'secondary' : null
+                const previousLevel = previousLevelType ? sortedLevels.find(l => l.level === previousLevelType) : null
+                const isPreviousLevelBilled = previousLevel?.status === 'billed'
+                
                 let bgColor = 'bg-gray-100'
                 let textColor = 'text-gray-400'
                 let icon = null
@@ -259,9 +127,15 @@ export const InsuranceLevelIndicator: FC<InsuranceLevelIndicatorProps> = ({
                     textColor = 'text-emerald-700'
                     icon = <Icon icon="check" className="w-2.5 h-2.5" />
                   } else if (status === 'ready' || status === 'pending') {
-                    bgColor = 'bg-amber-100'
-                    textColor = 'text-amber-700'
-                    icon = <Icon icon="clock" className="w-2.5 h-2.5" />
+                    // Only show as pending/ready if:
+                    // - It's primary (index 0), OR
+                    // - Previous level is billed
+                    if (index === 0 || isPreviousLevelBilled) {
+                      bgColor = 'bg-amber-100'
+                      textColor = 'text-amber-700'
+                      icon = <Icon icon="clock" className="w-2.5 h-2.5" />
+                    }
+                    // Otherwise, keep it gray (not yet eligible for billing)
                   }
                 }
                 
