@@ -6,8 +6,7 @@ import TopNavigationBar from '@/components/old-ui/TopNavigationBar'
 import MainNavigationBar from '@/components/old-ui/MainNavigationBar'
 import { Sidebar } from '@/components/atoms/Sidebar/sidebar'
 import { BillingQuickFilters } from '@/components/molecules/BillingQuickFilters'
-import { BillingFiltersPanel } from '@/components/molecules/BillingQueueFilters'
-import { BillingSortPanel, type SortOption } from '@/components/molecules/BillingSortPanel'
+import { BillingFiltersPanel, type SortOption } from '@/components/molecules/BillingQueueFilters'
 import { BillingActionButtons, type ViewMode } from '@/components/molecules/BillingActionButtons'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs'
 import { BillingQueueTable } from '@/components/organisms/BillingQueueTable'
@@ -872,6 +871,36 @@ export const BillingManagerPage: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => console.log('Reports clicked')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2"
+                        >
+                          <Icon icon="chart-bar" className="w-3.5 h-3.5" />
+                          Reports
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => console.log('Invoice Manager clicked')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2"
+                        >
+                          <Icon icon="file-invoice" className="w-3.5 h-3.5" />
+                          Invoice Manager
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => console.log('Encounter Details clicked')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2"
+                        >
+                          <Icon icon="file-medical" className="w-3.5 h-3.5" />
+                          Encounter Details
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={handleExportCSV}
                           className="flex items-center gap-1.5 text-xs px-3 py-2"
                         >
@@ -988,6 +1017,36 @@ export const BillingManagerPage: FC = () => {
                         >
                           <Icon icon="sync" className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">Refresh</span>
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => console.log('Reports clicked')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
+                        >
+                          <Icon icon="chart-bar" className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Reports</span>
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => console.log('Invoice Manager clicked')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
+                        >
+                          <Icon icon="file-invoice" className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Invoice Manager</span>
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => console.log('Encounter Details clicked')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
+                        >
+                          <Icon icon="file-medical" className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Encounter Details</span>
                         </Button>
                         
                         <Button
@@ -1110,7 +1169,7 @@ export const BillingManagerPage: FC = () => {
 
                         <Tabs defaultValue="quick" className="w-full">
                           <div className="mb-4">
-                            <TabsList className="grid w-full grid-cols-3">
+                            <TabsList className="grid w-full grid-cols-2">
                               <TabsTrigger value="quick" className="gap-2 text-xs">
                                 <Icon icon="filter" className="w-3 h-3" />
                                 Quick Filters
@@ -1118,10 +1177,6 @@ export const BillingManagerPage: FC = () => {
                               <TabsTrigger value="advanced" className="gap-2 text-xs">
                                 <Icon icon="cog" className="w-3 h-3" />
                                 Advanced
-                              </TabsTrigger>
-                              <TabsTrigger value="sort" className="gap-2 text-xs">
-                                <Icon icon="sort" className="w-3 h-3" />
-                                Sort
                               </TabsTrigger>
                             </TabsList>
                           </div>
@@ -1141,14 +1196,8 @@ export const BillingManagerPage: FC = () => {
                               onFiltersChange={setFilters}
                               onClearFilters={handleClearAllFilters}
                               encounterCount={filteredEncounters.length}
-                            />
-                          </TabsContent>
-
-                          <TabsContent value="sort" className="mt-0">
-                            <BillingSortPanel
                               currentSort={currentSort}
                               onSortChange={handleSortChange}
-                              encounterCount={filteredEncounters.length}
                             />
                           </TabsContent>
                         </Tabs>
@@ -1252,6 +1301,21 @@ export const BillingManagerPage: FC = () => {
                       onAction={handleActionButtonClick}
                       viewMode={viewMode}
                       onViewModeChange={setViewMode}
+                      totalEncounters={filteredEncounters.length}
+                      onSelectAll={() => {
+                        const allSelected = filteredEncounters.every(enc => selectedEncounters.includes(enc.id))
+                        if (allSelected) {
+                          // Deselect all
+                          filteredEncounters.forEach(enc => handleEncounterSelect(enc.id, false))
+                        } else {
+                          // Select all
+                          filteredEncounters.forEach(enc => {
+                            if (!selectedEncounters.includes(enc.id)) {
+                              handleEncounterSelect(enc.id, true)
+                            }
+                          })
+                        }
+                      }}
                     />
 
                     {/* Queue Table or Card View */}

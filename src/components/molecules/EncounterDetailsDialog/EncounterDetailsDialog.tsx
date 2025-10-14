@@ -1,6 +1,6 @@
 "use client"
 
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogTitle, DialogDescription } from '@/components/atoms/Dialog/dialog';
 import { Button } from '@/components/atoms/Button';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,15 @@ export const EncounterDetailsDialog: FC<EncounterDetailsDialogProps> = ({
   selectedEncounterId
 }) => {
   const [activeEncounterId, setActiveEncounterId] = useState<string>(selectedEncounterId || encounters[0]?.id || '');
+  
+  // Auto-select the first encounter when dialog opens or encounters change
+  useEffect(() => {
+    if (open && encounters.length > 0) {
+      // If selectedEncounterId is provided, use it; otherwise use the first encounter
+      const initialId = selectedEncounterId || encounters[0].id;
+      setActiveEncounterId(initialId);
+    }
+  }, [open, encounters, selectedEncounterId]);
   
   const activeEncounter = encounters.find(e => e.id === activeEncounterId);
 
@@ -101,7 +110,9 @@ export const EncounterDetailsDialog: FC<EncounterDetailsDialogProps> = ({
           {/* Left: Encounters List */}
           <div className="w-[340px] min-w-[340px] p-4 bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
             <div className="mb-3 pb-3 border-b border-gray-100">
-              <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">All Encounters</h3>
+              <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                {activeEncounter ? `${activeEncounter.patientName}'s Encounters` : 'Patient Encounters'}
+              </h3>
               <p className="text-sm text-gray-500 mt-0.5">{encounters.length} total</p>
             </div>
             
@@ -123,9 +134,14 @@ export const EncounterDetailsDialog: FC<EncounterDetailsDialogProps> = ({
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-base font-semibold text-gray-900 truncate flex-1">
-                        {encounter.patientName}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-blue-600 truncate">
+                          {encounter.id}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          {encounter.encounterType}
+                        </p>
+                      </div>
                       <span className={cn(
                         "text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ml-2",
                         encounterStatus === 'Open' ? 'bg-blue-100 text-blue-700' :
@@ -138,10 +154,6 @@ export const EncounterDetailsDialog: FC<EncounterDetailsDialogProps> = ({
                     
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">ID:</span>
-                        <span className="text-xs font-medium text-blue-600">{encounter.id}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-600">Date:</span>
                         <span className="text-xs text-gray-900">
                           {new Date(encounter.dateOfService).toLocaleDateString('en-US', { 
@@ -152,8 +164,12 @@ export const EncounterDetailsDialog: FC<EncounterDetailsDialogProps> = ({
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">MRN:</span>
-                        <span className="text-xs text-gray-900">{encounter.patientId || encounter.patientMrn}</span>
+                        <span className="text-xs text-gray-600">Provider:</span>
+                        <span className="text-xs text-gray-900 truncate ml-2">{encounter.provider}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">Department:</span>
+                        <span className="text-xs text-gray-900 truncate ml-2">{encounter.department}</span>
                       </div>
                     </div>
                   </button>

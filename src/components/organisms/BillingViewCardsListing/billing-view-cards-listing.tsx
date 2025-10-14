@@ -60,14 +60,21 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEncounterId, setSelectedEncounterId] = useState<string>('');
+  const [selectedPatientId, setSelectedPatientId] = useState<string>('');
 
   const handleEncounterClick = (encounter: BillingEncounter) => {
     setSelectedEncounterId(encounter.id);
+    setSelectedPatientId(encounter.patientId);
     setDialogOpen(true);
     if (onEncounterClick) {
       onEncounterClick(encounter);
     }
   };
+
+  // Filter encounters to show only those for the selected patient
+  const patientEncounters = selectedPatientId 
+    ? encounters.filter(enc => enc.patientId === selectedPatientId)
+    : [];
   
   // Helper function to determine if encounter is billed
   const isBilled = (encounter: BillingEncounter) => {
@@ -296,6 +303,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
             }
           `}
         </style>
+        
         {encounters.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <p className="text-lg">No encounters found</p>
@@ -572,14 +580,14 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                           <th className="pl-3 pr-0 py-2.5 text-center font-normal text-gray-700 w-6"></th>
                           <th className="pl-0 pr-1 py-2.5 text-center font-normal text-gray-700">Insurance Levels</th>
                           <th className="px-3 py-2.5 text-left font-normal text-gray-700 w-48">Insurance</th>
+                          <th className="px-3 py-2.5 text-center font-normal text-gray-700">Billing Type</th>
+                          <th className="px-3 py-2.5 text-center font-normal text-gray-700">X12 Partner</th>
                           <th className="px-3 py-2.5 text-left font-normal text-gray-700">Code</th>
                           <th className="px-3 py-2.5 text-center font-normal text-gray-700">Unit</th>
                           <th className="px-3 py-2.5 text-right font-normal text-gray-700">Unit Price</th>
                           <th className="px-3 py-2.5 text-center font-normal text-gray-700">POS</th>
                           <th className="px-3 py-2.5 text-left font-normal text-gray-700">Diagnosis</th>
                           <th className="px-3 py-2.5 text-left font-normal text-gray-700">Rend</th>
-                          <th className="px-3 py-2.5 text-center font-normal text-gray-700">Billing Type</th>
-                          <th className="px-3 py-2.5 text-center font-normal text-gray-700">X12 Partner</th>
                           <th className="px-3 py-2.5 text-right font-normal text-gray-700">Total</th>
                         </tr>
                       </thead>
@@ -717,6 +725,12 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                               </Select>
                             </td>
                             
+                            {/* Billing Type */}
+                            <td className="px-3 py-2.5 text-center text-gray-900">HCFA</td>
+                            
+                            {/* X12 Partner */}
+                            <td className="px-3 py-2.5 text-center text-gray-900">-</td>
+                            
                             {/* CPT Code */}
                             <td className="px-3 py-2.5">
                               <div className="flex flex-col gap-0.5">
@@ -748,12 +762,6 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             {/* Rendering Provider */}
                             <td className="px-3 py-2.5 text-gray-900">{encounter.provider.replace(/^Dr\.\s*/i, '')}</td>
                             
-                            {/* Billing Type */}
-                            <td className="px-3 py-2.5 text-center text-gray-900">HCFA</td>
-                            
-                            {/* X12 Partner */}
-                            <td className="px-3 py-2.5 text-center text-gray-900">-</td>
-                            
                             {/* Total */}
                             <td className="px-3 py-2.5 text-right font-semibold text-gray-900">${service.totalPrice.toFixed(2)}</td>
                           </tr>
@@ -783,7 +791,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
       <EncounterDetailsDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        encounters={encounters}
+        encounters={patientEncounters}
         selectedEncounterId={selectedEncounterId}
       />
     </TooltipProvider>

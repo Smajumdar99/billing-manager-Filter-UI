@@ -20,6 +20,9 @@ export interface BillingActionButtonsProps {
   viewMode?: ViewMode
   onViewModeChange?: (mode: ViewMode) => void
   className?: string
+  // Select All props
+  totalEncounters?: number
+  onSelectAll?: () => void
 }
 
 /**
@@ -33,7 +36,9 @@ export const BillingActionButtons: FC<BillingActionButtonsProps> = ({
   onAction,
   viewMode = 'grid',
   onViewModeChange,
-  className = ""
+  className = "",
+  totalEncounters = 0,
+  onSelectAll
 }) => {
   const selectedCount = selectedEncounters.length
   const encounterIds = selectedEncounters.map(e => e.id)
@@ -244,8 +249,39 @@ export const BillingActionButtons: FC<BillingActionButtonsProps> = ({
         )}
       </div>
 
-      {/* View Mode Switcher - Right Side */}
-      <div className="flex items-center gap-2">
+      {/* View Mode Switcher and Select All - Right Side */}
+      <div className="flex items-center gap-3">
+        {/* Select All Control */}
+        {onSelectAll && totalEncounters > 0 && (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={totalEncounters > 0 && selectedEncounters.length === totalEncounters}
+              ref={(input) => {
+                if (input) {
+                  const allSelected = totalEncounters > 0 && selectedEncounters.length === totalEncounters
+                  const someSelected = selectedEncounters.length > 0 && !allSelected
+                  input.indeterminate = someSelected
+                }
+              }}
+              onChange={onSelectAll}
+              className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
+            />
+            <span className="text-sm text-gray-700">
+              {selectedEncounters.length === totalEncounters
+                ? 'Deselect All'
+                : selectedEncounters.length > 0
+                ? `${selectedEncounters.length} selected`
+                : 'Select All'}
+            </span>
+          </div>
+        )}
+        
+        {/* Vertical Separator */}
+        {onSelectAll && totalEncounters > 0 && onViewModeChange && (
+          <div className="h-6 w-px bg-gray-300"></div>
+        )}
+        
         {onViewModeChange && (
           <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
             <Button
