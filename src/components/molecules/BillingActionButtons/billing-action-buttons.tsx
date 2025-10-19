@@ -1,6 +1,5 @@
-import { FC } from 'react'
+import { FC, useState } from 'react'
 import { Button } from '@/components/atoms/Button/button'
-import { Badge } from '@/components/atoms/Badge/badge'
 import { Icon } from '@/components/atoms/Icon/Icon'
 import {
   DropdownMenu,
@@ -9,16 +8,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Squares2X2Icon, TableCellsIcon } from '@heroicons/react/24/outline'
 import { BillingEncounter } from '@/types/billing-manager'
-
-export type ViewMode = 'grid' | 'card'
+import { GenerateClaimsDialog } from '@/components/molecules/GenerateClaimsDialog'
+import { ClaimSubmissionDialog } from '@/components/molecules/ClaimSubmissionDialog'
+import { SetBillTypeDialog } from '@/components/molecules/SetBillTypeDialog'
+import { SetBillToDialog } from '@/components/molecules/SetBillToDialog'
 
 export interface BillingActionButtonsProps {
   selectedEncounters: BillingEncounter[]
   onAction: (action: string, encounterIds: string[]) => void
-  viewMode?: ViewMode
-  onViewModeChange?: (mode: ViewMode) => void
   className?: string
   // Select All props
   totalEncounters?: number
@@ -34,12 +32,14 @@ export interface BillingActionButtonsProps {
 export const BillingActionButtons: FC<BillingActionButtonsProps> = ({
   selectedEncounters,
   onAction,
-  viewMode = 'grid',
-  onViewModeChange,
   className = "",
   totalEncounters = 0,
   onSelectAll
 }) => {
+  const [showGenerateClaimsDialog, setShowGenerateClaimsDialog] = useState(false)
+  const [showClaimSubmissionDialog, setShowClaimSubmissionDialog] = useState(false)
+  const [showSetBillTypeDialog, setShowSetBillTypeDialog] = useState(false)
+  const [showSetBillToDialog, setShowSetBillToDialog] = useState(false)
   const selectedCount = selectedEncounters.length
   const encounterIds = selectedEncounters.map(e => e.id)
   
@@ -49,7 +49,7 @@ export const BillingActionButtons: FC<BillingActionButtonsProps> = ({
   )
   
   // Check if any encounters are billed
-  const hasBilled = selectedEncounters.some(e => e.status === 'billed' || e.status === 'paid')
+  const hasBilled = selectedEncounters.some(e => e.status === 'claim_generated' || e.status === 'claim_submitted')
   
   // Check if any encounters are marked for rebill
   const hasRebillMarked = selectedEncounters.some(e => e.markedForRebill)
@@ -58,18 +58,68 @@ export const BillingActionButtons: FC<BillingActionButtonsProps> = ({
   const hasBlockedEncounters = selectedEncounters.some(e => e.hasErrors || e.billingOverrideEnabled)
 
   const handleAction = (action: string) => {
-    onAction(action, encounterIds)
+    if (action === 'generate_claims') {
+      setShowGenerateClaimsDialog(true)
+    } else if (action === 'generate_and_submit_claims') {
+      setShowClaimSubmissionDialog(true)
+    } else if (action === 'set_bill_type') {
+      setShowSetBillTypeDialog(true)
+    } else if (action === 'set_bill_to') {
+      setShowSetBillToDialog(true)
+    } else {
+      onAction(action, encounterIds)
+    }
+  }
+
+  const handleClaimSubmission = (submissionDate: string) => {
+    console.log('Submitting claims with date:', submissionDate)
+    onAction('generate_and_submit_claims', encounterIds)
+  }
+
+  const handleSetBillType = (billType: 'hcfa' | 'ub04') => {
+    console.log('Setting bill type:', billType)
+    onAction('set_bill_type', encounterIds)
+  }
+
+  const handleSetBillTo = (billTo: 'person' | 'insurance') => {
+    console.log('Setting bill-to:', billTo)
+    onAction('set_bill_to', encounterIds)
   }
 
   return (
     <div className={`bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between gap-4 ${className}`}>
-      {/* Selection Info and Action Buttons */}
+      {/* Left Side - Select All and Action Buttons */}
       <div className="flex items-center gap-2">
-        {selectedCount > 0 ? (
+        {/* Select All Control */}
+        {onSelectAll && totalEncounters > 0 && (
           <>
-            <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-              {selectedCount} encounter{selectedCount !== 1 ? 's' : ''} selected
-            </Badge>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={totalEncounters > 0 && selectedEncounters.length === totalEncounters}
+                ref={(input) => {
+                  if (input) {
+                    const allSelected = totalEncounters > 0 && selectedEncounters.length === totalEncounters
+                    const someSelected = selectedEncounters.length > 0 && !allSelected
+                    input.indeterminate = someSelected
+                  }
+                }}
+                onChange={onSelectAll}
+                className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
+              />
+              <span className="text-sm text-gray-700">
+                {selectedEncounters.length === totalEncounters
+                  ? 'Deselect All'
+                  : selectedEncounters.length > 0
+                  ? `${selectedEncounters.length} selected`
+                  : 'Select All'}
+              </span>
+            </div>
+          </>
+        )}
+        
+        {selectedCount > 0 && (
+          <>
             <Button
               variant="ghost"
               size="sm"
@@ -105,7 +155,7 @@ export const BillingActionButtons: FC<BillingActionButtonsProps> = ({
               className="text-xs"
             >
               <Icon icon="paper-plane" className="w-3.5 h-3.5 mr-1.5" />
-              <span className="hidden xl:inline">Submit Claims</span>
+              <span className="hidden xl:inline">Generate & Submit Claims</span>
               <span className="xl:hidden">Submit</span>
             </Button>
             
@@ -244,75 +294,43 @@ export const BillingActionButtons: FC<BillingActionButtonsProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </>
-        ) : (
-          <span className="text-sm text-gray-600">Select encounters to perform bulk actions</span>
         )}
       </div>
 
-      {/* View Mode Switcher and Select All - Right Side */}
+      {/* Right Side - Empty for now */}
       <div className="flex items-center gap-3">
-        {/* Select All Control */}
-        {onSelectAll && totalEncounters > 0 && (
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={totalEncounters > 0 && selectedEncounters.length === totalEncounters}
-              ref={(input) => {
-                if (input) {
-                  const allSelected = totalEncounters > 0 && selectedEncounters.length === totalEncounters
-                  const someSelected = selectedEncounters.length > 0 && !allSelected
-                  input.indeterminate = someSelected
-                }
-              }}
-              onChange={onSelectAll}
-              className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
-            />
-            <span className="text-sm text-gray-700">
-              {selectedEncounters.length === totalEncounters
-                ? 'Deselect All'
-                : selectedEncounters.length > 0
-                ? `${selectedEncounters.length} selected`
-                : 'Select All'}
-            </span>
-          </div>
-        )}
-        
-        {/* Vertical Separator */}
-        {onSelectAll && totalEncounters > 0 && onViewModeChange && (
-          <div className="h-6 w-px bg-gray-300"></div>
-        )}
-        
-        {onViewModeChange && (
-          <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onViewModeChange('grid')}
-              className={`rounded-none h-8 px-2 ${
-                viewMode === 'grid' 
-                  ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-              title="Grid View"
-            >
-              <TableCellsIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onViewModeChange('card')}
-              className={`rounded-none h-8 px-2 border-l border-gray-300 ${
-                viewMode === 'card' 
-                  ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-              title="Card View"
-            >
-              <Squares2X2Icon className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
       </div>
+
+      {/* Generate Claims Dialog */}
+      <GenerateClaimsDialog
+        open={showGenerateClaimsDialog}
+        onClose={() => setShowGenerateClaimsDialog(false)}
+        selectedEncounters={selectedEncounters}
+      />
+
+      {/* Claim Submission Dialog */}
+      <ClaimSubmissionDialog
+        open={showClaimSubmissionDialog}
+        onClose={() => setShowClaimSubmissionDialog(false)}
+        onSubmit={handleClaimSubmission}
+        selectedEncounters={selectedEncounters}
+      />
+
+      {/* Set Bill Type Dialog */}
+      <SetBillTypeDialog
+        open={showSetBillTypeDialog}
+        onClose={() => setShowSetBillTypeDialog(false)}
+        onSubmit={handleSetBillType}
+        selectedEncounters={selectedEncounters}
+      />
+
+      {/* Set Bill-To Dialog */}
+      <SetBillToDialog
+        open={showSetBillToDialog}
+        onClose={() => setShowSetBillToDialog(false)}
+        onSubmit={handleSetBillTo}
+        selectedEncounters={selectedEncounters}
+      />
     </div>
   )
 }

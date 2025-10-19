@@ -292,7 +292,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 
   return (
     <TooltipProvider>
-      <div className={`space-y-4 overflow-y-auto pt-0 ${className}`}>
+      <div className={`space-y-2 overflow-y-auto pt-0 ${className}`}>
         <style>
           {`
             .ag-header-cell-center .ag-header-cell-label {

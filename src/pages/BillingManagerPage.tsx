@@ -871,7 +871,7 @@ export const BillingManagerPage: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => console.log('Reports clicked')}
+                          onClick={() => navigate('/billing-reports')}
                           className="flex items-center gap-1.5 text-xs px-3 py-2"
                         >
                           <Icon icon="chart-bar" className="w-3.5 h-3.5" />
@@ -881,7 +881,7 @@ export const BillingManagerPage: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => console.log('Invoice Manager clicked')}
+                          onClick={() => navigate('/invoice-manager')}
                           className="flex items-center gap-1.5 text-xs px-3 py-2"
                         >
                           <Icon icon="file-invoice" className="w-3.5 h-3.5" />
@@ -1022,7 +1022,7 @@ export const BillingManagerPage: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => console.log('Reports clicked')}
+                          onClick={() => navigate('/billing-reports')}
                           className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
                         >
                           <Icon icon="chart-bar" className="w-3.5 h-3.5" />
@@ -1032,7 +1032,7 @@ export const BillingManagerPage: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => console.log('Invoice Manager clicked')}
+                          onClick={() => navigate('/invoice-manager')}
                           className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
                         >
                           <Icon icon="file-invoice" className="w-3.5 h-3.5" />
@@ -1274,9 +1274,8 @@ export const BillingManagerPage: FC = () => {
                           </button>
                         </div>
                         
-                        {/* Separator and Billing Type Filter */}
+                        {/* Billing Type Filter */}
                         <div className="flex items-center gap-3 py-3">
-                          <div className="h-6 w-px bg-gray-300"></div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-gray-700">Billing Type:</span>
                             <Select value={billingTypeFilter} onValueChange={setBillingTypeFilter}>

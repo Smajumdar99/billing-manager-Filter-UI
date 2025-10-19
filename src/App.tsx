@@ -7,6 +7,8 @@ import { DashboardPage } from '@/pages/dashboard'
 import OldUIDashboard from '@/pages/OldUIDashboard'
 import BillingPage from '@/pages/BillingPage'
 import BillingManagerPage from '@/pages/BillingManagerPage'
+import BillingReportsPage from '@/pages/BillingReportsPage'
+import InvoiceManagerPage from '@/pages/InvoiceManagerPage'
 import PracticePage from '@/pages/PracticePage'
 import ReportsPage from '@/pages/ReportsPage'
 import AdministrationPage from '@/pages/AdministrationPage'
@@ -161,6 +163,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <BillingManagerPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/billing-reports" 
+        element={
+          <ProtectedRoute>
+            <BillingReportsPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/invoice-manager" 
+        element={
+          <ProtectedRoute>
+            <InvoiceManagerPage />
           </ProtectedRoute>
         } 
       />
