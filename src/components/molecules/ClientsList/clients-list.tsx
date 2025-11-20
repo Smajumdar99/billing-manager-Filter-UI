@@ -73,7 +73,7 @@ const advancedSearchFields = [
   { id: 'school', label: 'School' },
   { id: 'email', label: 'Email' },
   { id: 'chosenName', label: 'Chosen Name' },
-  
+
   // Column 2
   { id: 'first', label: 'First' },
   { id: 'language', label: 'Language' },
@@ -88,7 +88,7 @@ const advancedSearchFields = [
   { id: 'preferredName', label: 'Preferred Name' },
   { id: 'testingPurpose', label: 'testing purpose' },
   { id: 'testingPurpose2', label: 'testing purpose' },
-  
+
   // Column 3
   { id: 'last', label: 'Last' },
   { id: 'aliasName', label: 'Alias Name' },
@@ -623,6 +623,7 @@ const ClientGridCard: React.FC<{
   onSelect: (patient: any) => void;
   onPrescribeClick: () => void;
 }> = ({ patient, onSelect, onPrescribeClick }) => {
+  const navigate = useNavigate();
   const age = calculateAge(patient.dateOfBirth);
   const [imageError, setImageError] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -644,7 +645,7 @@ const ClientGridCard: React.FC<{
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isMenuOpen]);
-  
+
   // Generate initials as fallback
   const initials = patient.name
     .split(' ')
@@ -656,18 +657,23 @@ const ClientGridCard: React.FC<{
   // Action handlers
   const handleAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation(); // Prevent card click
-    
+
+    if (action === 'Add Encounter') {
+      navigate('/add-encounter');
+      return;
+    }
+
     if (action === 'Prescribe') {
       onPrescribeClick();
       return;
     }
-    
+
     console.log(`${action} action for patient:`, patient.name);
     // Add your action logic here
   };
-  
+
   return (
-    <div 
+    <div
       className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group hover:border-blue-200 relative overflow-hidden"
       onClick={() => onSelect(patient)}
     >
@@ -699,7 +705,7 @@ const ClientGridCard: React.FC<{
           <span className={cn('px-3 py-1 text-xs font-medium rounded-full border', getStatusBadgeStyles(patient.status))}>
             {patient.status}
           </span>
-          
+
           {/* Desktop: Three-dot menu in header */}
           <div className="hidden sm:block relative" ref={menuRef}>
             <button
@@ -712,7 +718,7 @@ const ClientGridCard: React.FC<{
             >
               <EllipsisVerticalIcon className="h-5 w-5 text-gray-500" />
             </button>
-            
+
             {/* Desktop Dropdown Menu */}
             {isMenuOpen && (
               <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
@@ -788,9 +794,9 @@ const ClientGridCard: React.FC<{
                   <CubeIcon className="h-4 w-4 text-gray-500" />
                   ABA Tool
                 </button>
-                
+
                 <div className="border-t border-gray-100 my-1" />
-                
+
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -860,7 +866,7 @@ const ClientGridCard: React.FC<{
             <PencilIcon className="h-3.5 w-3.5" />
             <span className="hidden lg:inline">Edit</span>
           </button>
-          
+
           {/* Overflow Menu */}
           <div className="relative" ref={menuRef}>
             <button
@@ -874,7 +880,7 @@ const ClientGridCard: React.FC<{
               <EllipsisVerticalIcon className="h-3.5 w-3.5" />
               <span className="hidden lg:inline">More</span>
             </button>
-            
+
             {/* Overflow Dropdown Menu */}
             {isMenuOpen && (
               <div className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
@@ -898,9 +904,9 @@ const ClientGridCard: React.FC<{
                   <CubeIcon className="h-4 w-4 text-gray-500" />
                   ABA Tool
                 </button>
-                
+
                 <div className="border-t border-gray-100 my-1" />
-                
+
                 <button
                   onClick={(e) => {
                     handleAction(e, 'Delete');
@@ -1013,7 +1019,7 @@ const ClientGridCard: React.FC<{
             <PencilIcon className="h-4 w-4 text-gray-500" />
             <span className="text-xs text-gray-600 font-medium">Edit</span>
           </button>
-          
+
           {/* More Menu for Additional Actions */}
           <div className="relative flex-shrink-0" ref={menuRef}>
             <button
@@ -1026,7 +1032,7 @@ const ClientGridCard: React.FC<{
               <EllipsisHorizontalIcon className="h-4 w-4 text-gray-500" />
               <span className="text-xs text-gray-600 font-medium">More</span>
             </button>
-            
+
             {/* More Actions Dropdown */}
             {isMenuOpen && (
               <div className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
@@ -1054,9 +1060,9 @@ const ClientGridCard: React.FC<{
                   <CubeIcon className="h-4 w-4 text-gray-500" />
                   ABA Tool
                 </button>
-                
+
                 <div className="border-t border-gray-100 my-1" />
-                
+
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -1080,10 +1086,11 @@ const ClientGridCard: React.FC<{
 };
 
 // Table Actions Dropdown Component
-const TableActionsDropdown: React.FC<{ 
+const TableActionsDropdown: React.FC<{
   patient: any;
   onPrescribeClick: () => void;
 }> = ({ patient, onPrescribeClick }) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -1091,28 +1098,34 @@ const TableActionsDropdown: React.FC<{
   const handleAction = (action: string, event?: React.MouseEvent) => {
     console.log(`🔥 TableActionsDropdown: ${action} action clicked for patient:`, patient.name);
     console.log('🔥 Event details:', event?.type, event?.target);
-    
+
     // Prevent event bubbling to AG Grid
     if (event) {
       event.preventDefault();
       event.stopPropagation();
     }
-    
+
+    if (action === 'Add Encounter') {
+      navigate('/add-encounter');
+      setIsOpen(false);
+      return;
+    }
+
     if (action === 'Prescribe') {
       console.log('🔥 TableActionsDropdown: About to call onPrescribeClick for patient:', patient.name);
       console.log('🔥 onPrescribeClick function:', typeof onPrescribeClick, onPrescribeClick);
-      
+
       try {
         onPrescribeClick();
         console.log('🔥 TableActionsDropdown: onPrescribeClick called successfully');
       } catch (error) {
         console.error('🔥 Error calling onPrescribeClick:', error);
       }
-      
+
       setIsOpen(false);
       return;
     }
-    
+
     console.log(`${action} action for patient:`, patient.name);
     setIsOpen(false);
     // Add your action logic here
@@ -1120,13 +1133,13 @@ const TableActionsDropdown: React.FC<{
 
   const toggleDropdown = (event?: React.MouseEvent) => {
     console.log('🔥 TableActionsDropdown: Toggle dropdown clicked, current isOpen:', isOpen);
-    
+
     // Prevent AG Grid from interfering
     if (event) {
       event.preventDefault();
       event.stopPropagation();
     }
-    
+
     // Calculate position when opening
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
@@ -1136,7 +1149,7 @@ const TableActionsDropdown: React.FC<{
       });
       console.log('🔥 Dropdown position calculated:', { top: rect.bottom + window.scrollY + 4, left: rect.right - 192 + window.scrollX });
     }
-    
+
     setIsOpen(!isOpen);
     console.log('🔥 Dropdown isOpen set to:', !isOpen);
   };
@@ -1178,7 +1191,7 @@ const TableActionsDropdown: React.FC<{
       </button>
 
       {isOpen && createPortal(
-        <div 
+        <div
           id={`dropdown-${patient.id}`}
           style={{
             position: 'fixed',
@@ -1206,7 +1219,7 @@ const TableActionsDropdown: React.FC<{
               <DocumentTextIcon className="h-4 w-4 text-gray-500" />
               Documents
             </button>
-            
+
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
               onClick={(e) => {
@@ -1217,7 +1230,7 @@ const TableActionsDropdown: React.FC<{
               <ChartBarIcon className="h-4 w-4 text-gray-500" />
               Chart
             </button>
-            
+
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
               onClick={(e) => {
@@ -1228,7 +1241,7 @@ const TableActionsDropdown: React.FC<{
               <PlusIcon className="h-4 w-4 text-gray-500" />
               Add Encounter
             </button>
-            
+
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 active:bg-blue-100 transition-colors font-medium"
               onClick={(e) => {
@@ -1239,7 +1252,7 @@ const TableActionsDropdown: React.FC<{
               <BeakerIcon className="h-4 w-4 text-blue-600" />
               Prescribe
             </button>
-            
+
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
               onClick={(e) => {
@@ -1250,7 +1263,7 @@ const TableActionsDropdown: React.FC<{
               <CubeIcon className="h-4 w-4 text-gray-500" />
               Diagnosis
             </button>
-            
+
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
               onClick={(e) => {
@@ -1261,7 +1274,7 @@ const TableActionsDropdown: React.FC<{
               <CubeIcon className="h-4 w-4 text-gray-500" />
               ABA Tool
             </button>
-            
+
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
               onClick={(e) => {
@@ -1272,9 +1285,9 @@ const TableActionsDropdown: React.FC<{
               <PencilIcon className="h-4 w-4 text-gray-500" />
               Edit
             </button>
-            
+
             <div className="border-t border-gray-100 my-1" />
-            
+
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
               onClick={(e) => {
@@ -1324,10 +1337,10 @@ const AdvancedSearchModal: React.FC<{
 
   const handleSearch = () => {
     const selectedFieldIds = Object.keys(selectedFields).filter(key => selectedFields[key]);
-    onSearch({ 
+    onSearch({
       query: searchQuery,
       fields: selectedFieldIds,
-      searchMode 
+      searchMode
     });
     onClose();
   };
@@ -1348,7 +1361,7 @@ const AdvancedSearchModal: React.FC<{
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
-      
+
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
@@ -1363,12 +1376,12 @@ const AdvancedSearchModal: React.FC<{
                 placeholder="Enter search terms..."
                 className="flex-1"
               />
-                             <Button
-                 onClick={handleSearch}
-                 className="px-6 bg-primary hover:bg-primary/90 text-primary-foreground"
-               >
-                 Submit
-               </Button>
+              <Button
+                onClick={handleSearch}
+                className="px-6 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                Submit
+              </Button>
               <Button
                 variant="outline"
                 onClick={onClose}
@@ -1715,7 +1728,7 @@ const MobileCardSkeleton: React.FC = () => (
       </div>
       <div className="w-16 h-6 bg-gray-200 rounded-full" />
     </div>
-    
+
     <div className="space-y-2 mb-3">
       <div className="flex justify-between">
         <div className="w-16 h-4 bg-gray-200 rounded" />
@@ -1730,7 +1743,7 @@ const MobileCardSkeleton: React.FC = () => (
         <div className="w-16 h-4 bg-gray-200 rounded" />
       </div>
     </div>
-    
+
     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
       <div className="w-24 h-4 bg-gray-200 rounded" />
       <div className="w-4 h-4 bg-gray-200 rounded" />
@@ -1780,9 +1793,9 @@ const ClientsList: React.FC<ClientsListProps> = ({
   // Filter patients based on search query and scope
   const filteredPatients = mockPatients.filter(patient => {
     if (!searchQuery.trim()) return true;
-    
+
     const searchTerm = searchQuery.toLowerCase();
-    
+
     // Filter based on selected scope
     switch (searchScope) {
       case 'name':
@@ -1822,7 +1835,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
   // Handle patient selection
   const handlePatientSelect = (patient: any) => {
     setSelectedPatient(patient);
-    
+
     // Store patient data for the OldUI to use
     sessionStorage.setItem('selectedPatient', JSON.stringify({
       id: patient.id,
@@ -1848,13 +1861,13 @@ const ClientsList: React.FC<ClientsListProps> = ({
       diagnosis: patient.diagnosis,
       levelOfCare: patient.levelOfCare
     }));
-    
+
     // Store the desired menu tab to navigate directly to Client Summary Chart
     sessionStorage.setItem('selectedMenu', 'Client Summary Chart');
-    
+
     // Navigate to the old UI with the selected patient
     navigate('/old-ui');
-    
+
     // Call the callback if provided
     onPatientSelect?.(patient);
   };
@@ -1875,11 +1888,11 @@ const ClientsList: React.FC<ClientsListProps> = ({
           .join('')
           .toUpperCase()
           .slice(0, 2);
-        
+
         const [imageError, setImageError] = React.useState(false);
-        
+
         return (
-          <div 
+          <div
             className="flex items-center py-2 cursor-pointer hover:bg-blue-50 rounded-md px-2 -mx-2 transition-colors"
             onClick={() => handlePatientSelect(params.data)}
           >
@@ -2082,8 +2095,8 @@ const ClientsList: React.FC<ClientsListProps> = ({
       pinned: 'right',
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center py-2">
-          <TableActionsDropdown 
-            patient={params.data} 
+          <TableActionsDropdown
+            patient={params.data}
             onPrescribeClick={() => {
               console.log('Actions Column: onPrescribeClick called for patient:', params.data.name);
               console.log('Actions Column: Setting selectedPatient to:', params.data);
@@ -2122,7 +2135,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
               >
                 <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
               </button>
-              
+
               {/* Mobile Search Input */}
               <div className="relative flex-1">
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -2151,7 +2164,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              
+
               {/* Search Input */}
               <div className="relative flex-1 sm:w-80">
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -2163,7 +2176,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
                   className="w-full pl-10"
                 />
               </div>
-              
+
               {/* Advanced Search Link */}
               <button
                 onClick={() => setIsAdvancedSearchOpen(true)}
@@ -2172,7 +2185,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
                 Advanced Search
               </button>
             </div>
-            
+
             <div className="flex items-center gap-3">
               {/* View Toggle - Desktop only */}
               <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1">
@@ -2201,7 +2214,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
                   <span className="hidden sm:inline">Grid</span>
                 </button>
               </div>
-              
+
               <Button
                 variant="default"
                 size="sm"
@@ -2231,7 +2244,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
                 <GridSkeleton />
               )}
             </div>
-            
+
             {/* Mobile View - Skeleton Cards */}
             <div className="sm:hidden">
               <MobileSkeleton />
@@ -2275,7 +2288,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
                 </div>
               )}
             </div>
-            
+
             {/* Mobile View - Always Grid Cards with three-dot menu */}
             <div className="sm:hidden">
               <div className="grid grid-cols-1 gap-4">
@@ -2298,8 +2311,8 @@ const ClientsList: React.FC<ClientsListProps> = ({
             <UserIcon className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No clients found</h3>
             <p className="text-gray-500 mb-4">
-              {searchQuery.trim() 
-                ? `No clients match "${searchQuery}"` 
+              {searchQuery.trim()
+                ? `No clients match "${searchQuery}"`
                 : "No clients available"}
             </p>
             <Button
@@ -2321,7 +2334,7 @@ const ClientsList: React.FC<ClientsListProps> = ({
         onClose={() => setIsAdvancedSearchOpen(false)}
         onSearch={handleAdvancedSearch}
       />
-      
+
       {/* Prescription Modal */}
       <PrescriptionModal
         isOpen={isPrescriptionModalOpen}
