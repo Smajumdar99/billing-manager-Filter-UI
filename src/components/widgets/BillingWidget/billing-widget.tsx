@@ -1,19 +1,36 @@
-import { FC } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs';
+import { FC, useState } from 'react';
 import { ScrollArea } from '@/components/atoms/ScrollArea/scroll-area';
 import { Badge } from '@/components/atoms/Badge/badge';
 import { Button } from '@/components/atoms/Button/button';
+import { Textarea } from '@/components/atoms/Textarea/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/atoms/Dialog/dialog';
+import {
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/atoms/Tooltip/tooltip';
 import { 
   CreditCardIcon, 
-  DocumentTextIcon, 
-  CalendarIcon, 
-  ClockIcon,
+  DocumentTextIcon,
+  CalendarIcon,
   BanknotesIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ArchiveBoxXMarkIcon,
   PencilSquareIcon,
-  ClipboardDocumentCheckIcon
+  ClipboardDocumentCheckIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  UserIcon,
+  BuildingOfficeIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import { WidgetType } from '@/types/widget';
 
@@ -499,6 +516,11 @@ const mockCreditCards: CreditCard[] = [
 ];
 
 export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen = false, type = 'billing' }) => {
+  // State for billing note editing
+  const [billingNote, setBillingNote] = useState('Person is currently not insured');
+  const [editedNote, setEditedNote] = useState(billingNote);
+  const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -512,6 +534,22 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleOpenNoteDialog = () => {
+    setEditedNote(billingNote);
+    setIsNoteDialogOpen(true);
+  };
+
+  const handleSaveNoteDialog = () => {
+    setBillingNote(editedNote);
+    setIsNoteDialogOpen(false);
+    // TODO: Save to backend/API
+  };
+
+  const handleCancelNoteDialog = () => {
+    setEditedNote(billingNote);
+    setIsNoteDialogOpen(false);
   };
 
   const getStatusColor = (status: BillingTransaction['status']) => {
@@ -550,630 +588,108 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
 
   const renderBillingOverview = () => (
     <div className="h-full flex flex-col relative">
-      <Tabs defaultValue="transactions" className="flex-1">
-        <TabsList className="pl-2 shrink-0 w-full justify-start gap-2 sticky top-0 bg-gray-50 border-b z-10">
-          <TabsTrigger value="transactions">
-            Transactions
-            <Badge variant="secondary" className="ml-2 h-4 w-4">
-              {mockTransactions.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="claims">Claims</TabsTrigger>
-          <TabsTrigger value="statements">Statements</TabsTrigger>
-          <TabsTrigger value="insurance">Insurance</TabsTrigger>
-          <TabsTrigger value="payment_receipts">Payment Receipts</TabsTrigger>
-          <TabsTrigger value="prior_auth">Prior Authorization</TabsTrigger>
-          <TabsTrigger value="credit_cards">Credit Cards</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="transactions" className="absolute inset-0 top-[41px]">
-          <ScrollArea className="h-[calc(100%)]">
-            <div className="p-3 grid grid-cols-2 gap-3 mb-4">
-              <div className="rounded-lg border bg-white hover:bg-gray-50/50 transition-colors p-4 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-medium flex items-center gap-1.5">
-                    <BanknotesIcon className="w-4 h-4 text-gray-500" />
-                    Account Summary
-                  </h4>
-                  <Button variant="ghost" size="sm" className="h-7 px-2.5 hover:bg-white">
-                    <CreditCardIcon className="w-3.5 h-3.5 mr-1" />
-                    Pay Now
-                  </Button>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs text-gray-500">Current Balance</span>
-                      <span className="font-semibold text-red-600">{formatCurrency(350.00)}</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full" 
-                        style={{ width: '70%' }} 
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                    <div className="flex items-center justify-between bg-orange-50/50 rounded-md p-2">
-                      <div>
-                        <span className="text-xs text-gray-500 block">Past Due</span>
-                        <span className="font-medium text-sm text-orange-600">{formatCurrency(150.00)}</span>
-                      </div>
-                      <XCircleIcon className="w-4 h-4 text-orange-500" />
-                    </div>
-                    <div className="flex items-center justify-between bg-green-50/50 rounded-md p-2">
-                      <div>
-                        <span className="text-xs text-gray-500 block">Last Payment</span>
-                        <span className="font-medium text-sm text-green-600">{formatCurrency(75.00)}</span>
-                      </div>
-                      <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                    </div>
-                  </div>
-                </div>
+      <ScrollArea className="h-full">
+        <div className="p-4 space-y-4">
+          {/* Total Balance Due Card - Prominent */}
+          <div className="rounded-lg border-2 border-red-200 bg-red-50/30 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <BanknotesIcon className="w-5 h-5 text-red-600" />
               </div>
-              <div className="rounded-lg border bg-white hover:bg-gray-50/50 transition-colors p-4 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-medium flex items-center gap-1.5">
-                    <ClipboardDocumentCheckIcon className="w-4 h-4 text-gray-500" />
-                    Insurance Status
-                  </h4>
-                  <Badge variant="outline" className="text-xs px-1.5 h-5 hover:bg-blue-50">
-                    In Network
-                  </Badge>
+              <div className="flex-1">
+                <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                  Total Balance Due
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between items-baseline mb-1">
-                      <span className="text-xs text-gray-500">Deductible Met</span>
-                      <div>
-                        <span className="font-medium text-sm">{formatCurrency(1500)}</span>
-                        <span className="text-xs text-gray-400 ml-0.5">/ {formatCurrency(2000)}</span>
-                      </div>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full" 
-                        style={{ width: '75%' }} 
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-baseline mb-1">
-                      <span className="text-xs text-gray-500">Out of Pocket</span>
-                      <div>
-                        <span className="font-medium text-sm">{formatCurrency(3000)}</span>
-                        <span className="text-xs text-gray-400 ml-0.5">/ {formatCurrency(5000)}</span>
-                      </div>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full" 
-                        style={{ width: '60%' }} 
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <div>
-                      <span className="text-xs text-gray-500 block">Coverage Split</span>
-                      <div className="font-medium text-sm">80% / 20%</div>
-                    </div>
-                    <div className="flex -space-x-0.5">
-                      <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center ring-1 ring-blue-100">
-                        <span className="text-xs font-medium text-blue-600">80</span>
-                      </div>
-                      <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center ring-1 ring-gray-100">
-                        <span className="text-xs font-medium text-gray-500">20</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="text-2xl font-bold text-red-600 mt-0.5">
+                  {formatCurrency(24100.00)}
                 </div>
               </div>
             </div>
-
-            {/* Billing Notes Section */}
-            <div className="px-4 mb-6">
-              <div className="rounded-lg border p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-medium">Billing Notes</h4>
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <PencilSquareIcon className="w-4 h-4" />
-                    Add Note
-                  </Button>
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-red-200">
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-4 h-4 text-gray-400 shrink-0" />
+                <div>
+                  <div className="text-xs text-gray-500">Non-Billable</div>
+                  <div className="text-sm font-medium text-gray-700">{formatCurrency(0.00)}</div>
                 </div>
-                <div className="space-y-3">
-                  {mockBillingNotes.map(note => (
-                    <div key={note.id} className="flex gap-3 text-sm">
-                      <div className="shrink-0 w-[2px] self-stretch rounded-full bg-blue-500" />
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{note.author}</span>
-                          <span className="text-gray-500">·</span>
-                          <span className="text-gray-500">{formatDate(note.date)}</span>
-                          <Badge 
-                            variant="outline" 
-                            className={
-                              note.priority === 'high' 
-                                ? 'border-red-500 text-red-500' 
-                                : note.priority === 'medium'
-                                ? 'border-yellow-500 text-yellow-500'
-                                : 'border-gray-500 text-gray-500'
-                            }
-                          >
-                            {note.priority}
-                          </Badge>
-                        </div>
-                        <p className="text-gray-600">{note.content}</p>
-                      </div>
-                    </div>
-                  ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <InformationCircleIcon className="w-4 h-4 text-gray-400 shrink-0" />
+                <div>
+                  <div className="text-xs text-gray-500">Undistributed</div>
+                  <div className="text-sm font-medium text-gray-700">{formatCurrency(0.00)}</div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="space-y-4 px-4">
-              {mockTransactions.map(transaction => (
-                <div key={transaction.id} className="rounded-lg border p-3 space-y-1.5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-medium">{transaction.description}</h4>
-                        <Badge className={getTypeColor(transaction.type)}>{transaction.type}</Badge>
-                        <Badge className={getStatusColor(transaction.status)}>{transaction.status}</Badge>
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                          <span className="text-xs">Service: {formatDate(transaction.serviceDate)}</span>
-                        </div>
-                        {transaction.cptCode && (
-                          <div className="flex items-center gap-1.5">
-                            <DocumentTextIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-xs">CPT: {transaction.cptCode}</span>
-                          </div>
-                        )}
-                        {transaction.claimId && (
-                          <div className="flex items-center gap-1.5">
-                            <ClipboardDocumentCheckIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-xs">Claim: {transaction.claimId}</span>
-                          </div>
-                        )}
-                        {transaction.denialReason && (
-                          <div className="flex items-center gap-1.5">
-                            <XCircleIcon className="w-3.5 h-3.5 text-red-500" />
-                            <span className="text-xs text-red-500">{transaction.denialReason}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <span className={`text-sm font-medium ${transaction.amount >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatCurrency(Math.abs(transaction.amount))}
-                    </span>
-                  </div>
+          {/* Responsibility & Payer Card */}
+          <div className="rounded-lg border bg-white p-4 space-y-3 shadow-sm">
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <UserIcon className="w-4 h-4 text-gray-400" />
+              <h3 className="text-sm font-semibold text-gray-700">Payment Responsibility</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-2 bg-blue-50 rounded-md">
+                <div className="flex items-center gap-2">
+                  <UserIcon className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm text-gray-600">Person Responsibility</span>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="claims" className="absolute inset-0 top-[41px]">
-          <ScrollArea className="h-[calc(100%)]">
-            <div className="space-y-4 p-4">
-              {mockTransactions
-                .filter(t => t.claimId)
-                .map(claim => (
-                  <div key={claim.id} className="rounded-lg border p-3 space-y-1.5">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-medium">{claim.description}</h4>
-                          <Badge className={getStatusColor(claim.status)}>{claim.status}</Badge>
-                        </div>
-                        <div className="mt-2 space-y-1">
-                          <div className="flex items-center gap-1.5">
-                            <DocumentTextIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-xs">Claim ID: {claim.claimId}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-xs">Service Date: {formatDate(claim.serviceDate)}</span>
-                          </div>
-                          {claim.insuranceInfo && (
-                            <div className="flex items-center gap-1.5">
-                              <CheckCircleIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                              <span className="text-xs">{claim.insuranceInfo.provider} - {claim.insuranceInfo.status}</span>
-                            </div>
-                          )}
-                          {claim.denialReason && (
-                            <div className="flex items-center gap-1.5">
-                              <XCircleIcon className="w-3.5 h-3.5 text-red-500" />
-                              <span className="text-xs text-red-500">{claim.denialReason}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-sm font-medium">
-                        {formatCurrency(claim.amount)}
-                      </span>
-                    </div>
-                  </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="statements" className="absolute inset-0 top-[41px]">
-          <ScrollArea className="h-[calc(100%)]">
-            <div className="p-4 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Billing Statements</h3>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <DocumentTextIcon className="w-4 h-4 mr-1" />
-                    Download Latest
-                  </Button>
+                <button className="text-sm font-semibold text-blue-600 hover:text-blue-700 underline">
+                  {formatCurrency(24100.00)}
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                <div className="flex items-center gap-2">
+                  <BuildingOfficeIcon className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">Due from Payer</span>
                 </div>
+                <span className="text-sm font-medium text-gray-700">{formatCurrency(0.00)}</span>
               </div>
+            </div>
+          </div>
 
-              {mockStatements.map(statement => (
-                <div key={statement.id} className="border rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">Statement {statement.id}</h4>
-                        <Badge className={
-                          statement.status === 'paid' ? 'bg-green-100 text-green-800' :
-                          statement.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                          statement.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }>
-                          {statement.status.charAt(0).toUpperCase() + statement.status.slice(1)}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Due Date: {formatDate(statement.dueDate)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">Remaining Balance</div>
-                      <div className={`font-semibold ${statement.remainingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {formatCurrency(statement.remainingBalance)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="divide-y">
-                    {statement.items.map((item, index) => (
-                      <div key={index} className="px-4 py-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{item.description}</span>
-                          <span className="text-sm text-gray-500">{formatDate(item.serviceDate)}</span>
-                        </div>
-                        <div className="grid grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <div className="text-gray-500">Charges</div>
-                            <div className="font-medium">{formatCurrency(item.chargeAmount)}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500">Adjustments</div>
-                            <div className="font-medium text-blue-600">{formatCurrency(item.adjustments)}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500">Insurance</div>
-                            <div className="font-medium text-green-600">{formatCurrency(item.insurance)}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500">Patient Portion</div>
-                            <div className="font-medium text-red-600">{formatCurrency(item.patientPortion)}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+          {/* Billing Type Card */}
+          <div className="rounded-lg border bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ClipboardDocumentCheckIcon className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600">Current Billing Type:</span>
+              </div>
+              <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                Independent Living
+              </Badge>
+            </div>
+          </div>
+
+          {/* Billing Note - Editable Alert */}
+          <TooltipProvider>
+            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-blue-50/60 border border-blue-200/60">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1.5 mb-1">
+                  <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Billing Note</span>
+                  <TooltipRoot>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleOpenNoteDialog}
+                        className="p-1 hover:bg-blue-100 rounded transition-colors"
+                      >
+                        <PencilIcon className="w-3.5 h-3.5 text-blue-600" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit billing note</p>
+                    </TooltipContent>
+                  </TooltipRoot>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="insurance" className="absolute inset-0 top-[41px]">
-          <ScrollArea className="h-[calc(100%)]">
-            <div className="p-4 space-y-6">
-              {mockInsurancePolicies.map(policy => (
-                <div key={policy.id} className="border rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{policy.provider}</h4>
-                        <Badge className={
-                          policy.type === 'primary' ? 'bg-blue-100 text-blue-800' :
-                          policy.type === 'secondary' ? 'bg-purple-100 text-purple-800' :
-                          'bg-gray-100 text-gray-800'
-                        }>
-                          {policy.type.charAt(0).toUpperCase() + policy.type.slice(1)}
-                        </Badge>
-                        <Badge className={
-                          policy.status === 'active' ? 'bg-green-100 text-green-800' :
-                          policy.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                          policy.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }>
-                          {policy.status.charAt(0).toUpperCase() + policy.status.slice(1)}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Policy: {policy.policyNumber} • Group: {policy.groupNumber}
-                      </div>
-                    </div>
-                    {policy.verificationStatus && (
-                      <Badge className={
-                        policy.verificationStatus === 'verified' ? 'bg-green-100 text-green-800' :
-                        policy.verificationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }>
-                        {policy.verificationStatus === 'verified' ? 'Verified' : 
-                         policy.verificationStatus === 'pending' ? 'Verification Pending' : 
-                         'Verification Failed'}
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <h5 className="text-sm font-medium mb-2">Subscriber Information</h5>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Name:</span>
-                            <span>{policy.subscriberName}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">ID:</span>
-                            <span>{policy.subscriberId}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Effective Date:</span>
-                            <span>{formatDate(policy.effectiveDate)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium mb-2">Coverage Details</h5>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Deductible:</span>
-                            <span>{formatCurrency(policy.coverageDetails.deductible)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Deductible Met:</span>
-                            <span>{formatCurrency(policy.coverageDetails.deductibleMet)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Out of Pocket:</span>
-                            <span>{formatCurrency(policy.coverageDetails.outOfPocket)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Out of Pocket Met:</span>
-                            <span>{formatCurrency(policy.coverageDetails.outOfPocketMet)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Copay:</span>
-                            <span>{formatCurrency(policy.coverageDetails.copay)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Coinsurance:</span>
-                            <span>{policy.coverageDetails.coinsurance}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {policy.verificationDate && (
-                      <div className="text-sm text-gray-500 mt-4">
-                        Last Verified: {formatDate(policy.verificationDate)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="payment_receipts" className="absolute inset-0 top-[41px]">
-          <ScrollArea className="h-[calc(100%)]">
-            <div className="p-4 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Payment Receipts</h3>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <DocumentTextIcon className="w-4 h-4 mr-1" />
-                  Download All
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {mockTransactions
-                  .filter(t => t.type === 'payment')
-                  .map(payment => (
-                    <div key={payment.id} className="border rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{payment.description}</h4>
-                            <Badge className={getStatusColor(payment.status)}>{payment.status}</Badge>
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Reference: {payment.reference}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-semibold text-green-600">
-                            {formatCurrency(payment.amount)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-gray-500 mb-1">Payment Date</div>
-                            <div>{formatDate(payment.date)}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500 mb-1">Payment Method</div>
-                            <div className="flex items-center gap-1">
-                              <CreditCardIcon className="w-4 h-4" />
-                              {payment.paymentMethod}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                ))}
+                <p className="text-sm text-blue-700 leading-snug whitespace-pre-wrap">
+                  {billingNote || 'No billing note. Click edit to add one.'}
+                </p>
               </div>
             </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="prior_auth" className="absolute inset-0 top-[41px]">
-          <ScrollArea className="h-[calc(100%)]">
-            <div className="p-4 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Prior Authorizations</h3>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <ClipboardDocumentCheckIcon className="w-4 h-4 mr-1" />
-                  New Request
-                </Button>
-              </div>
-
-              {mockPriorAuthRequests.map(auth => (
-                <div key={auth.id} className="border rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{auth.serviceType}</h4>
-                        <Badge className={getPriorAuthStatusColor(auth.status)}>
-                          {auth.status.charAt(0).toUpperCase() + auth.status.slice(1).replace('_', ' ')}
-                        </Badge>
-                        <Badge className={getUrgencyColor(auth.urgency)}>
-                          {auth.urgency.charAt(0).toUpperCase() + auth.urgency.slice(1)}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {auth.patientName} • CPT: {auth.cptCodes.join(', ')}
-                      </div>
-                    </div>
-                    {auth.authNumber && (
-                      <div className="text-right">
-                        <div className="text-sm font-medium">Auth #{auth.authNumber}</div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <div className="text-gray-500 mb-1">Service Date</div>
-                        <div>{formatDate(auth.serviceDate)}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-500 mb-1">Insurance</div>
-                        <div>{auth.insuranceProvider}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-500 mb-1">Clinician</div>
-                        <div>{auth.clinician}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-500 mb-1">Units</div>
-                        <div>
-                          {auth.unitsApproved !== undefined 
-                            ? `${auth.unitsApproved} of ${auth.unitsRequested} approved` 
-                            : `${auth.unitsRequested} requested`
-                          }
-                        </div>
-                      </div>
-                      {auth.denialReason && (
-                        <div>
-                          <div className="text-red-500 flex items-center gap-1">
-                            <XCircleIcon className="w-4 h-4" />
-                            {auth.denialReason}
-                          </div>
-                        </div>
-                      )}
-                      {auth.expirationDate && (
-                        <div className="mt-2 pt-2 border-t">
-                          <div className="text-gray-500 mb-1">Expires</div>
-                          <div>{formatDate(auth.expirationDate)}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="credit_cards" className="absolute inset-0 top-[41px]">
-          <ScrollArea className="h-[calc(100%)]">
-            <div className="p-4 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Credit Cards on File</h3>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <CreditCardIcon className="w-4 h-4 mr-1" />
-                  Add New Card
-                </Button>
-              </div>
-
-              <div className="grid gap-4">
-                {mockCreditCards.map(card => (
-                  <div key={card.id} className="border rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={getCardTypeColor(card.cardType)}>
-                          {getCardIcon(card.cardType)}
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1)} ending in {card.lastFour}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Expires {card.expirationMonth.toString().padStart(2, '0')}/{card.expirationYear}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {card.isDefault && (
-                          <Badge className="bg-green-100 text-green-800">Default</Badge>
-                        )}
-                        <Badge className={
-                          card.status === 'active' ? 'bg-green-100 text-green-800' :
-                          card.status === 'expired' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }>
-                          {card.status.charAt(0).toUpperCase() + card.status.slice(1)}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="text-gray-500">
-                          {card.lastUsed ? `Last used on ${formatDate(card.lastUsed)}` : 'Never used'}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">Edit</Button>
-                          {!card.isDefault && card.status === 'active' && (
-                            <Button variant="ghost" size="sm">Set Default</Button>
-                          )}
-                          <Button variant="ghost" size="sm" className="text-red-600">Remove</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
+          </TooltipProvider>
+        </div>
+      </ScrollArea>
     </div>
   );
 
@@ -1607,24 +1123,71 @@ export const BillingWidget: FC<BillingWidgetProps> = ({ patientId, isFullscreen 
   );
 
   // Render appropriate content based on widget type
-  switch (type) {
-    case 'billing':
-      return renderBillingOverview();
-    case 'billing_payment_receipts':
-      return renderPaymentReceipts();
-    case 'billing_statement':
-      return renderBillingStatement();
-    case 'billing_prior_auth':
-      return renderPriorAuth();
-    case 'billing_new_payment':
-      return renderNewPayment();
-    case 'billing_credit_cards':
-      return renderCreditCards();
-    case 'billing_write_off':
-      return renderWriteOff();
-    case 'billing_notes':
-      return renderBillingNotes();
-    default:
-      return renderBillingOverview();
-  }
+  const renderContent = () => {
+    switch (type) {
+      case 'billing':
+        return renderBillingOverview();
+      case 'billing_payment_receipts':
+        return renderPaymentReceipts();
+      case 'billing_statement':
+        return renderBillingStatement();
+      case 'billing_prior_auth':
+        return renderPriorAuth();
+      case 'billing_new_payment':
+        return renderNewPayment();
+      case 'billing_credit_cards':
+        return renderCreditCards();
+      case 'billing_write_off':
+        return renderWriteOff();
+      case 'billing_notes':
+        return renderBillingNotes();
+      default:
+        return renderBillingOverview();
+    }
+  };
+
+  return (
+    <>
+      {renderContent()}
+
+      {/* Billing Note Edit Dialog */}
+      <Dialog open={isNoteDialogOpen} onOpenChange={setIsNoteDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Billing Note</DialogTitle>
+            <DialogDescription>
+              Update the billing note for this patient. This note will be visible in the billing overview.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={editedNote}
+              onChange={(e) => setEditedNote(e.target.value)}
+              className="min-h-[150px] text-sm"
+              placeholder="Enter billing note..."
+              autoFocus
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Use this note to document important billing information, insurance status, or payment arrangements.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelNoteDialog}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveNoteDialog}
+            >
+              Save Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }; 
