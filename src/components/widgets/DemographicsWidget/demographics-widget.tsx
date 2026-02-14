@@ -121,7 +121,7 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
               <div className="flex items-center gap-1">
                 <ExclamationTriangleIcon className="w-3 h-3 text-yellow-600 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-medium text-yellow-800">
+                  <p className="text-xs font-medium text-yellow-800">
                     {currentDemographicData.alerts.join(' • ')}
                   </p>
                 </div>
@@ -141,64 +141,64 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Primary Tabs Row */}
-        <TabsList className="bg-gray-100/80 p-0.5 h-8 rounded-lg grid w-full grid-cols-7 gap-0.5 sticky top-0 z-10 mb-1">
-          <TabsTrigger value="who" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">WHO</TabsTrigger>
-          <TabsTrigger value="contact" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">CONTACT</TabsTrigger>
-          <TabsTrigger value="choices" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">CHOICES</TabsTrigger>
-          <TabsTrigger value="employer" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">EMPLOYER</TabsTrigger>
-          <TabsTrigger value="stats" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">STATS</TabsTrigger>
-          <TabsTrigger value="misc" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">MISC</TabsTrigger>
-          <TabsTrigger value="pregnancy" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">PREGNANCY</TabsTrigger>
+        <TabsList className="bg-gray-100/80 p-0.5 h-9 rounded-lg grid w-full grid-cols-7 gap-0.5 sticky top-0 z-10 mb-1">
+          <TabsTrigger value="who" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">WHO</TabsTrigger>
+          <TabsTrigger value="contact" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">CONTACT</TabsTrigger>
+          <TabsTrigger value="choices" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">CHOICES</TabsTrigger>
+          <TabsTrigger value="employer" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">EMPLOYER</TabsTrigger>
+          <TabsTrigger value="stats" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">STATS</TabsTrigger>
+          <TabsTrigger value="misc" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">MISC</TabsTrigger>
+          <TabsTrigger value="pregnancy" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">PREGNANCY</TabsTrigger>
         </TabsList>
 
         {/* Secondary Tabs Row */}
-        <TabsList className="bg-gray-100/80 p-0.5 h-8 rounded-lg grid w-full grid-cols-6 gap-0.5 sticky top-9 z-10 mb-2">
-          <TabsTrigger value="duii2" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">DUII2</TabsTrigger>
-          <TabsTrigger value="legal" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">LEGAL</TabsTrigger>
-          <TabsTrigger value="other_contacts" className="text-[10px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">OTHER CONTACTS</TabsTrigger>
-          <TabsTrigger value="birth_history" className="text-[10px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">BIRTH HISTORY</TabsTrigger>
-          <TabsTrigger value="screening_tool" className="text-[10px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">SCREENING TOOL</TabsTrigger>
-          <TabsTrigger value="roads" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">ROADS</TabsTrigger>
+        <TabsList className="bg-gray-100/80 p-0.5 h-9 rounded-lg grid w-full grid-cols-6 gap-0.5 sticky top-10 z-10 mb-2">
+          <TabsTrigger value="duii2" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">DUII2</TabsTrigger>
+          <TabsTrigger value="legal" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">LEGAL</TabsTrigger>
+          <TabsTrigger value="other_contacts" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">OTHER CONTACTS</TabsTrigger>
+          <TabsTrigger value="birth_history" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">BIRTH HISTORY</TabsTrigger>
+          <TabsTrigger value="screening_tool" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">SCREENING TOOL</TabsTrigger>
+          <TabsTrigger value="roads" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">ROADS</TabsTrigger>
         </TabsList>
 
         {/* Additional Tab */}
-        <TabsList className="bg-gray-100/80 p-0.5 h-8 rounded-lg grid w-full grid-cols-1 gap-0.5 sticky top-18 z-10 mb-2">
-          <TabsTrigger value="mcrt" className="text-[11px] px-1 rounded data-[state=active]:bg-blue-500 data-[state=active]:text-white">MCRT</TabsTrigger>
+        <TabsList className="bg-gray-100/80 p-0.5 h-9 rounded-lg grid w-full grid-cols-1 gap-0.5 sticky top-20 z-10 mb-2">
+          <TabsTrigger value="mcrt" className="text-xs px-1 rounded data-[state=active]:bg-primary data-[state=active]:text-white">MCRT</TabsTrigger>
         </TabsList>
 
         <TabsContent value="who" className="mt-1.5">
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
             {/* Personal Information Section */}
             <div className="col-span-2 mb-1">
-              <p className="text-[10px] font-medium text-gray-600 mb-1">Personal Information</p>
+              <p className="text-xs font-medium text-gray-600 mb-1">Personal Information</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
                   <div className="flex items-center gap-0.5">
                     <UserIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Name</p>
+                    <p className="text-xs text-gray-500">Name</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.name}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">Preferred: {currentDemographicData.preferredName}</p>
+                  <p className="text-xs pl-3 text-gray-500">Preferred: {currentDemographicData.preferredName}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <CalendarIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">DOB</p>
+                    <p className="text-xs text-gray-500">DOB</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.dob}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">Age: {currentDemographicData.age}</p>
+                  <p className="text-xs pl-3 text-gray-500">Age: {currentDemographicData.age}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <GlobeAltIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Place of Birth</p>
+                    <p className="text-xs text-gray-500">Place of Birth</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.placeOfBirth}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <IdentificationIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Citizenship</p>
+                    <p className="text-xs text-gray-500">Citizenship</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.citizenship}</p>
                 </div>
@@ -207,59 +207,59 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
 
             {/* Gender & Identity Section */}
             <div className="col-span-2">
-              <p className="text-[10px] font-medium text-gray-600 mb-1">Gender & Identity</p>
+              <p className="text-xs font-medium text-gray-600 mb-1">Gender & Identity</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
                   <div className="flex items-center gap-0.5">
                     <IdentificationIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Birth Sex</p>
+                    <p className="text-xs text-gray-500">Birth Sex</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.birthSex}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <IdentificationIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Gender</p>
+                    <p className="text-xs text-gray-500">Gender</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.gender}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <BuildingOfficeIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Gender Identity</p>
+                    <p className="text-xs text-gray-500">Gender Identity</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.genderIdentity}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">Pronouns: {currentDemographicData.pronouns}</p>
+                  <p className="text-xs pl-3 text-gray-500">Pronouns: {currentDemographicData.pronouns}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <GlobeAmericasIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Race/Ethnicity</p>
+                    <p className="text-xs text-gray-500">Race/Ethnicity</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.race}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">{currentDemographicData.ethnicity}</p>
+                  <p className="text-xs pl-3 text-gray-500">{currentDemographicData.ethnicity}</p>
                 </div>
               </div>
             </div>
 
             {/* Language & Culture Section */}
             <div className="col-span-2">
-              <p className="text-[10px] font-medium text-gray-600 mb-1">Language & Culture</p>
+              <p className="text-xs font-medium text-gray-600 mb-1">Language & Culture</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
                   <div className="flex items-center gap-0.5">
                     <LanguageIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Language</p>
+                    <p className="text-xs text-gray-500">Language</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.language}</p>
                   {currentDemographicData.preferredLanguage !== currentDemographicData.language && (
-                    <p className="text-[10px] pl-3 text-gray-500">Preferred: {currentDemographicData.preferredLanguage}</p>
+                    <p className="text-xs pl-3 text-gray-500">Preferred: {currentDemographicData.preferredLanguage}</p>
                   )}
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <HeartIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Religion</p>
+                    <p className="text-xs text-gray-500">Religion</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.religion}</p>
                 </div>
@@ -268,66 +268,66 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
 
             {/* Social Status Section */}
             <div className="col-span-2">
-              <p className="text-[10px] font-medium text-gray-600 mb-1">Social Status</p>
+              <p className="text-xs font-medium text-gray-600 mb-1">Social Status</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
                   <div className="flex items-center gap-0.5">
                     <HeartIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Marital Status</p>
+                    <p className="text-xs text-gray-500">Marital Status</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.maritalStatus}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <HomeIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Living Arrangement</p>
+                    <p className="text-xs text-gray-500">Living Arrangement</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.livingArrangement}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">Family Size: {currentDemographicData.familySize}</p>
+                  <p className="text-xs pl-3 text-gray-500">Family Size: {currentDemographicData.familySize}</p>
                 </div>
               </div>
             </div>
 
             {/* Employment & Education Section */}
             <div className="col-span-2">
-              <p className="text-[10px] font-medium text-gray-600 mb-1">Employment & Education</p>
+              <p className="text-xs font-medium text-gray-600 mb-1">Employment & Education</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
                   <div className="flex items-center gap-0.5">
                     <BriefcaseIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Employment</p>
+                    <p className="text-xs text-gray-500">Employment</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.employmentStatus}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">{currentDemographicData.occupation}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">{currentDemographicData.employer}</p>
+                  <p className="text-xs pl-3 text-gray-500">{currentDemographicData.occupation}</p>
+                  <p className="text-xs pl-3 text-gray-500">{currentDemographicData.employer}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <AcademicCapIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Education</p>
+                    <p className="text-xs text-gray-500">Education</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.educationLevel}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">{currentDemographicData.schoolName}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">Class of {currentDemographicData.graduationYear}</p>
+                  <p className="text-xs pl-3 text-gray-500">{currentDemographicData.schoolName}</p>
+                  <p className="text-xs pl-3 text-gray-500">Class of {currentDemographicData.graduationYear}</p>
                 </div>
               </div>
             </div>
 
             {/* Care Team Section */}
             <div className="col-span-2">
-              <p className="text-[10px] font-medium text-gray-600 mb-1">Care Preferences</p>
+              <p className="text-xs font-medium text-gray-600 mb-1">Care Preferences</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
                   <div className="flex items-center gap-0.5">
                     <UserIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Preferred Provider</p>
+                    <p className="text-xs text-gray-500">Preferred Provider</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.preferredProvider}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <BuildingOfficeIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Preferred Pharmacy</p>
+                    <p className="text-xs text-gray-500">Preferred Pharmacy</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.preferredPharmacy}</p>
                 </div>
@@ -336,20 +336,20 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
 
             {/* Emergency Contact Section */}
             <div className="col-span-2">
-              <p className="text-[10px] font-medium text-gray-600 mb-1">Emergency Contact</p>
+              <p className="text-xs font-medium text-gray-600 mb-1">Emergency Contact</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
                   <div className="flex items-center gap-0.5">
                     <UserIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Name & Relationship</p>
+                    <p className="text-xs text-gray-500">Name & Relationship</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.emergencyContact.name}</p>
-                  <p className="text-[10px] pl-3 text-gray-500">{currentDemographicData.emergencyContact.relationship}</p>
+                  <p className="text-xs pl-3 text-gray-500">{currentDemographicData.emergencyContact.relationship}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-0.5">
                     <PhoneIcon className="w-2.5 h-2.5 text-gray-400" />
-                    <p className="text-[10px] text-gray-500">Phone</p>
+                    <p className="text-xs text-gray-500">Phone</p>
                   </div>
                   <p className="text-xs pl-3">{currentDemographicData.emergencyContact.phone}</p>
                 </div>
@@ -361,7 +361,7 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
               <div className="col-span-2">
                 <div className="flex items-center gap-0.5">
                   <ExclamationTriangleIcon className="w-2.5 h-2.5 text-red-500" />
-                  <p className="text-[10px] text-red-500">Firearm Restriction until {currentDemographicData.restrictions.restrictionDate}</p>
+                  <p className="text-xs text-red-500">Firearm Restriction until {currentDemographicData.restrictions.restrictionDate}</p>
                 </div>
               </div>
             )}
@@ -371,57 +371,57 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="contact" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1">
+              <h4 className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
                 <HomeIcon className="w-3 h-3" />
                 Address Information
               </h4>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <p className="text-[9px] text-gray-500">Street Address</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.address}</p>
+                  <p className="text-xs text-gray-500">Street Address</p>
+                  <p className="text-xs font-medium">{currentDemographicData.address}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">City</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.city}</p>
+                  <p className="text-xs text-gray-500">City</p>
+                  <p className="text-xs font-medium">{currentDemographicData.city}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">State</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.state}</p>
+                  <p className="text-xs text-gray-500">State</p>
+                  <p className="text-xs font-medium">{currentDemographicData.state}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">ZIP Code</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.zipCode}</p>
+                  <p className="text-xs text-gray-500">ZIP Code</p>
+                  <p className="text-xs font-medium">{currentDemographicData.zipCode}</p>
                 </div>
               </div>
             </div>
             
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1">
+              <h4 className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
                 <PhoneIcon className="w-3 h-3" />
                 Phone Numbers
               </h4>
               <div className="grid grid-cols-1 gap-1.5">
                 <div className="flex justify-between">
-                  <span className="text-[9px] text-gray-500">Mobile:</span>
-                  <span className="text-[10px] font-medium">{currentDemographicData.phone.mobile}</span>
+                  <span className="text-xs text-gray-500">Mobile:</span>
+                  <span className="text-xs font-medium">{currentDemographicData.phone.mobile}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[9px] text-gray-500">Home:</span>
-                  <span className="text-[10px] font-medium">{currentDemographicData.phone.home}</span>
+                  <span className="text-xs text-gray-500">Home:</span>
+                  <span className="text-xs font-medium">{currentDemographicData.phone.home}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[9px] text-gray-500">Work:</span>
-                  <span className="text-[10px] font-medium">{currentDemographicData.phone.work}</span>
+                  <span className="text-xs text-gray-500">Work:</span>
+                  <span className="text-xs font-medium">{currentDemographicData.phone.work}</span>
                 </div>
               </div>
             </div>
             
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1">
+              <h4 className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
                 <EnvelopeIcon className="w-3 h-3" />
                 Email
               </h4>
-              <p className="text-[10px] font-medium">{currentDemographicData.email}</p>
+              <p className="text-xs font-medium">{currentDemographicData.email}</p>
             </div>
           </div>
         </TabsContent>
@@ -429,23 +429,23 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="choices" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">Personal Choices & Preferences</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Personal Choices & Preferences</h4>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <p className="text-[9px] text-gray-500">Preferred Language</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.preferredLanguage}</p>
+                  <p className="text-xs text-gray-500">Preferred Language</p>
+                  <p className="text-xs font-medium">{currentDemographicData.preferredLanguage}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Religion</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.religion}</p>
+                  <p className="text-xs text-gray-500">Religion</p>
+                  <p className="text-xs font-medium">{currentDemographicData.religion}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Preferred Pharmacy</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.preferredPharmacy}</p>
+                  <p className="text-xs text-gray-500">Preferred Pharmacy</p>
+                  <p className="text-xs font-medium">{currentDemographicData.preferredPharmacy}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Preferred Provider</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.preferredProvider}</p>
+                  <p className="text-xs text-gray-500">Preferred Provider</p>
+                  <p className="text-xs font-medium">{currentDemographicData.preferredProvider}</p>
                 </div>
               </div>
             </div>
@@ -455,26 +455,26 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="employer" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1">
+              <h4 className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
                 <BriefcaseIcon className="w-3 h-3" />
                 Employment Information
               </h4>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <p className="text-[9px] text-gray-500">Employment Status</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.employmentStatus}</p>
+                  <p className="text-xs text-gray-500">Employment Status</p>
+                  <p className="text-xs font-medium">{currentDemographicData.employmentStatus}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Occupation</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.occupation}</p>
+                  <p className="text-xs text-gray-500">Occupation</p>
+                  <p className="text-xs font-medium">{currentDemographicData.occupation}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Employer</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.employer}</p>
+                  <p className="text-xs text-gray-500">Employer</p>
+                  <p className="text-xs font-medium">{currentDemographicData.employer}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Work Status</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.workStatus}</p>
+                  <p className="text-xs text-gray-500">Work Status</p>
+                  <p className="text-xs font-medium">{currentDemographicData.workStatus}</p>
                 </div>
               </div>
             </div>
@@ -484,31 +484,31 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="stats" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">Demographics & Statistics</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Demographics & Statistics</h4>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <p className="text-[9px] text-gray-500">Race</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.race}</p>
+                  <p className="text-xs text-gray-500">Race</p>
+                  <p className="text-xs font-medium">{currentDemographicData.race}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Ethnicity</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.ethnicity}</p>
+                  <p className="text-xs text-gray-500">Ethnicity</p>
+                  <p className="text-xs font-medium">{currentDemographicData.ethnicity}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Marital Status</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.maritalStatus}</p>
+                  <p className="text-xs text-gray-500">Marital Status</p>
+                  <p className="text-xs font-medium">{currentDemographicData.maritalStatus}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Family Size</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.familySize}</p>
+                  <p className="text-xs text-gray-500">Family Size</p>
+                  <p className="text-xs font-medium">{currentDemographicData.familySize}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Housing Status</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.housingStatus}</p>
+                  <p className="text-xs text-gray-500">Housing Status</p>
+                  <p className="text-xs font-medium">{currentDemographicData.housingStatus}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Veteran Status</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.veteranStatus}</p>
+                  <p className="text-xs text-gray-500">Veteran Status</p>
+                  <p className="text-xs font-medium">{currentDemographicData.veteranStatus}</p>
                 </div>
               </div>
             </div>
@@ -518,23 +518,23 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="misc" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">Miscellaneous Information</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Miscellaneous Information</h4>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <p className="text-[9px] text-gray-500">Place of Birth</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.placeOfBirth}</p>
+                  <p className="text-xs text-gray-500">Place of Birth</p>
+                  <p className="text-xs font-medium">{currentDemographicData.placeOfBirth}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Citizenship</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.citizenship}</p>
+                  <p className="text-xs text-gray-500">Citizenship</p>
+                  <p className="text-xs font-medium">{currentDemographicData.citizenship}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Education Level</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.educationLevel}</p>
+                  <p className="text-xs text-gray-500">Education Level</p>
+                  <p className="text-xs font-medium">{currentDemographicData.educationLevel}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">School Name</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.schoolName}</p>
+                  <p className="text-xs text-gray-500">School Name</p>
+                  <p className="text-xs font-medium">{currentDemographicData.schoolName}</p>
                 </div>
               </div>
             </div>
@@ -542,13 +542,13 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
             {/* Alerts Section */}
             {currentDemographicData.alerts.length > 0 && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <h4 className="text-[10px] font-medium text-yellow-800 mb-2 flex items-center gap-1">
+                <h4 className="text-xs font-medium text-yellow-800 mb-2 flex items-center gap-1">
                   <ExclamationTriangleIcon className="w-3 h-3" />
                   Active Alerts
                 </h4>
                 <div className="space-y-1">
                   {currentDemographicData.alerts.map((alert, index) => (
-                    <Badge key={index} variant="outline" className="text-[9px] bg-yellow-100 text-yellow-800 border-yellow-300">
+                    <Badge key={index} variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
                       {alert}
                     </Badge>
                   ))}
@@ -561,13 +561,13 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="pregnancy" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1">
+              <h4 className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
                 <HeartIcon className="w-3 h-3" />
                 Pregnancy Information
               </h4>
               <div className="text-center py-4">
-                <p className="text-[10px] text-gray-500">No pregnancy information available</p>
-                <p className="text-[9px] text-gray-400 mt-1">Patient gender: {currentDemographicData.gender}</p>
+                <p className="text-xs text-gray-500">No pregnancy information available</p>
+                <p className="text-xs text-gray-400 mt-1">Patient gender: {currentDemographicData.gender}</p>
               </div>
             </div>
           </div>
@@ -576,9 +576,9 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="duii2" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">DUII Assessment</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">DUII Assessment</h4>
               <div className="text-center py-4">
-                <p className="text-[10px] text-gray-500">No DUII assessment data available</p>
+                <p className="text-xs text-gray-500">No DUII assessment data available</p>
               </div>
             </div>
           </div>
@@ -587,21 +587,21 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="legal" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">Legal Information</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Legal Information</h4>
               <div className="grid grid-cols-1 gap-1.5">
                 {currentDemographicData.restrictions?.hasFirearmRestriction && (
                   <div className="bg-red-50 border border-red-200 rounded p-2">
                     <div className="flex items-center gap-2">
                       <ExclamationTriangleIcon className="w-3 h-3 text-red-600" />
                       <div>
-                        <p className="text-[10px] font-medium text-red-800">Firearm Restriction</p>
-                        <p className="text-[9px] text-red-600">Until: {currentDemographicData.restrictions.restrictionDate}</p>
+                        <p className="text-xs font-medium text-red-800">Firearm Restriction</p>
+                        <p className="text-xs text-red-600">Until: {currentDemographicData.restrictions.restrictionDate}</p>
                       </div>
                     </div>
                   </div>
                 )}
                 <div className="text-center py-2">
-                  <p className="text-[10px] text-gray-500">No additional legal information</p>
+                  <p className="text-xs text-gray-500">No additional legal information</p>
                 </div>
               </div>
             </div>
@@ -611,30 +611,30 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="other_contacts" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">Emergency Contact</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Emergency Contact</h4>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <p className="text-[9px] text-gray-500">Name</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.emergencyContact.name}</p>
+                  <p className="text-xs text-gray-500">Name</p>
+                  <p className="text-xs font-medium">{currentDemographicData.emergencyContact.name}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Relationship</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.emergencyContact.relationship}</p>
+                  <p className="text-xs text-gray-500">Relationship</p>
+                  <p className="text-xs font-medium">{currentDemographicData.emergencyContact.relationship}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-[9px] text-gray-500">Phone</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.emergencyContact.phone}</p>
+                  <p className="text-xs text-gray-500">Phone</p>
+                  <p className="text-xs font-medium">{currentDemographicData.emergencyContact.phone}</p>
                 </div>
               </div>
             </div>
             
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">Care Team</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Care Team</h4>
               <div className="space-y-1">
-                {currentDemographicData.careTeam.map((member, index) => (
+                {(currentDemographicData.careTeam || []).map((member, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <UserIcon className="w-3 h-3 text-gray-400" />
-                    <p className="text-[10px]">{member}</p>
+                    <p className="text-xs">{member}</p>
                   </div>
                 ))}
               </div>
@@ -645,23 +645,23 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="birth_history" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">Birth History</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Birth History</h4>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <p className="text-[9px] text-gray-500">Date of Birth</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.dob}</p>
+                  <p className="text-xs text-gray-500">Date of Birth</p>
+                  <p className="text-xs font-medium">{currentDemographicData.dob}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Place of Birth</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.placeOfBirth}</p>
+                  <p className="text-xs text-gray-500">Place of Birth</p>
+                  <p className="text-xs font-medium">{currentDemographicData.placeOfBirth}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Birth Sex</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.birthSex}</p>
+                  <p className="text-xs text-gray-500">Birth Sex</p>
+                  <p className="text-xs font-medium">{currentDemographicData.birthSex}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Current Age</p>
-                  <p className="text-[10px] font-medium">{currentDemographicData.age} years</p>
+                  <p className="text-xs text-gray-500">Current Age</p>
+                  <p className="text-xs font-medium">{currentDemographicData.age} years</p>
                 </div>
               </div>
             </div>
@@ -671,10 +671,10 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="screening_tool" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">Screening Tools</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Screening Tools</h4>
               <div className="text-center py-4">
-                <p className="text-[10px] text-gray-500">No screening assessments completed</p>
-                <p className="text-[9px] text-gray-400 mt-1">Available tools: PHQ-9, GAD-7, AUDIT</p>
+                <p className="text-xs text-gray-500">No screening assessments completed</p>
+                <p className="text-xs text-gray-400 mt-1">Available tools: PHQ-9, GAD-7, AUDIT</p>
               </div>
             </div>
           </div>
@@ -683,9 +683,9 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="roads" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">ROADS Assessment</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">ROADS Assessment</h4>
               <div className="text-center py-4">
-                <p className="text-[10px] text-gray-500">No ROADS assessment data available</p>
+                <p className="text-xs text-gray-500">No ROADS assessment data available</p>
               </div>
             </div>
           </div>
@@ -694,9 +694,9 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
         <TabsContent value="mcrt" className="mt-1.5">
           <div className="space-y-2">
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <h4 className="text-[10px] font-medium text-gray-600 mb-2">MCRT Information</h4>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">MCRT Information</h4>
               <div className="text-center py-4">
-                <p className="text-[10px] text-gray-500">No MCRT data available</p>
+                <p className="text-xs text-gray-500">No MCRT data available</p>
               </div>
             </div>
           </div>
@@ -707,7 +707,7 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
             <div>
               <div className="flex items-center gap-0.5">
                 <HomeIcon className="w-2.5 h-2.5 text-gray-400" />
-                <p className="text-[10px] text-gray-500">Address</p>
+                <p className="text-xs text-gray-500">Address</p>
               </div>
               <p className="text-xs pl-3">{currentDemographicData.address}</p>
               <p className="text-xs pl-3">{`${currentDemographicData.city}, ${currentDemographicData.state} ${currentDemographicData.zipCode}`}</p>
@@ -716,19 +716,19 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
             <div>
               <div className="flex items-center gap-0.5">
                 <PhoneIcon className="w-2.5 h-2.5 text-gray-400" />
-                <p className="text-[10px] text-gray-500">Phone</p>
+                <p className="text-xs text-gray-500">Phone</p>
               </div>
               <div className="grid grid-cols-3 gap-x-2 pl-3">
                 <div>
-                  <p className="text-[9px] text-gray-500">Mobile</p>
+                  <p className="text-xs text-gray-500">Mobile</p>
                   <p className="text-xs">{currentDemographicData.phone.mobile}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Home</p>
+                  <p className="text-xs text-gray-500">Home</p>
                   <p className="text-xs">{currentDemographicData.phone.home}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500">Work</p>
+                  <p className="text-xs text-gray-500">Work</p>
                   <p className="text-xs">{currentDemographicData.phone.work}</p>
                 </div>
               </div>
@@ -736,7 +736,7 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
             <div>
               <div className="flex items-center gap-0.5">
                 <EnvelopeIcon className="w-2.5 h-2.5 text-gray-400" />
-                <p className="text-[10px] text-gray-500">Email</p>
+                <p className="text-xs text-gray-500">Email</p>
               </div>
               <p className="text-xs pl-3">{currentDemographicData.email}</p>
             </div>
@@ -748,21 +748,21 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
             <div>
               <div className="flex items-center gap-0.5">
                 <HashtagIcon className="w-2.5 h-2.5 text-gray-400" />
-                <p className="text-[10px] text-gray-500">MRN</p>
+                <p className="text-xs text-gray-500">MRN</p>
               </div>
               <p className="text-xs pl-3 font-medium">{currentDemographicData.identifiers.mrn}</p>
             </div>
             <div>
               <div className="flex items-center gap-0.5">
                 <IdentificationIcon className="w-2.5 h-2.5 text-gray-400" />
-                <p className="text-[10px] text-gray-500">SSN</p>
+                <p className="text-xs text-gray-500">SSN</p>
               </div>
               <p className="text-xs pl-3 font-medium">{currentDemographicData.identifiers.ssn}</p>
             </div>
             <div>
               <div className="flex items-center gap-0.5">
                 <BriefcaseIcon className="w-2.5 h-2.5 text-gray-400" />
-                <p className="text-[10px] text-gray-500">Medicaid ID</p>
+                <p className="text-xs text-gray-500">Medicaid ID</p>
               </div>
               <p className="text-xs pl-3 font-medium">{currentDemographicData.identifiers.medicaidId}</p>
             </div>
@@ -1108,7 +1108,7 @@ export const DemographicsWidget: FC<DemographicsWidgetProps> = ({ isFullscreen =
               <div>
                 <h4 className="text-lg font-medium mb-3">Care Team</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  {currentDemographicData.careTeam.map((member: string, index: number) => (
+                  {(currentDemographicData.careTeam || []).map((member: string, index: number) => (
                     <div key={index} className="p-4 border border-gray-200 rounded-lg">
                       <p className="font-medium">{member}</p>
                       <p className="text-sm text-gray-500">Healthcare Provider</p>

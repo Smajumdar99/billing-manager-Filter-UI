@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  MagnifyingGlassIcon, BellIcon, QuestionMarkCircleIcon, EnvelopeIcon
+  MagnifyingGlassIcon, BellIcon, QuestionMarkCircleIcon, EnvelopeIcon, UserPlusIcon
 } from '@heroicons/react/24/outline';
 import Avatar from '@/components/atoms/Avatar/avatar';
 import { PatientSnapshot } from '@/components/molecules/PatientSnapshot/patient-snapshot';
@@ -137,6 +137,9 @@ const TopNavigationBar: React.FC<TopNavigationBarProps> = ({
         </button>
         <button className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full transition-colors hidden md:block">
           <EnvelopeIcon className="h-5 w-5 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-slate-600 hover:text-slate-800 transition-colors" />
+        </button>
+        <button className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full transition-colors hidden md:block" title="Add New Client">
+          <UserPlusIcon className="h-5 w-5 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-slate-600 hover:text-slate-800 transition-colors" />
         </button>
         
         {/* Modern User Profile Section */}

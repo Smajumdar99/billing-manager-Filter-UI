@@ -200,6 +200,14 @@ export const BillingPage: FC = () => {
     // Navigate to specific pages based on sidebar item selection
     if (itemLabel === 'Billing Manager') {
       navigate('/billing-manager')
+    } else if (itemLabel === 'Claims & Denials') {
+      navigate('/claims-denials')
+    } else if (itemLabel === 'ERA Process') {
+      navigate('/era-process')
+    } else if (itemLabel === 'Payments') {
+      navigate('/payments')
+    } else if (itemLabel === 'Fee Sheet') {
+      navigate('/fee-sheet')
     }
     // Add more navigation logic here for other sidebar items as needed
   }

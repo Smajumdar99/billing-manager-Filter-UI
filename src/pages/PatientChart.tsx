@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Rnd, RndDragCallback, RndResizeCallback } from 'react-rnd';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -861,7 +861,7 @@ const PatientChart: FC = () => {
                 Payments Receipts
               </Button>
               <Button
-                onClick={() => console.log('Statement')}
+                onClick={() => navigate('/statements')}
                 variant="link"
                 size="sm"
                 className="gap-1.5 shrink-0"

@@ -146,7 +146,7 @@ export const NotificationCard: FC<NotificationCardProps> = ({
           </div>
           {type !== 'task' && (
             <h3 className={cn(
-              "text-xs font-medium mb-0.5",
+              "text-sm font-medium mb-0.5",
               type === 'golden-thread' 
                 ? "text-yellow-600 font-semibold"
                 : "text-gray-900"
@@ -180,18 +180,18 @@ export const NotificationCard: FC<NotificationCardProps> = ({
               <div className="space-y-1 mb-1">
                 <div className="flex items-start gap-1">
                   <span className="text-[10px] font-medium text-gray-700">Subject:</span>
-                  <span className="text-xs text-gray-600">{subject}</span>
+                  <span className="text-sm text-gray-600">{subject}</span>
                 </div>
                 <div className="flex items-start gap-1">
                   <span className="text-[10px] font-medium text-gray-700">Message:</span>
-                  <span className="text-xs text-gray-600">{message}</span>
+                  <span className="text-sm text-gray-600">{message}</span>
                 </div>
               </div>
             </>
           )}
           {type !== 'message' && (
             <p className={cn(
-              "text-xs text-gray-600 mb-1.5"
+              "text-sm text-gray-600 mb-1.5"
             )}>{message}</p>
           )}
           <div className="flex items-center justify-between gap-2">

@@ -95,7 +95,13 @@ import {
   faCheckCircle,
   faBars,
   faXmark,
-  faPaperPlane
+  faPaperPlane,
+  faSkull,
+  faExpand,
+  faCompress,
+  faExpandArrowsAlt,
+  faCompressArrowsAlt,
+  faTh
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to library
@@ -185,7 +191,13 @@ library.add(
   faCheckCircle,
   faBars,
   faXmark,
-  faPaperPlane
+  faPaperPlane,
+  faSkull,
+  faExpand,
+  faCompress,
+  faExpandArrowsAlt,
+  faCompressArrowsAlt,
+  faTh
 );
 
 // Pro Icons - Ready to activate once packages are installed

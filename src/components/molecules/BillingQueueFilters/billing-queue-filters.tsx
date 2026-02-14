@@ -905,7 +905,7 @@ export const BillingFiltersPanel: FC<BillingQueueFiltersProps> = ({
       <div className="h-16" />
       
       {/* Apply Filters Button - Sticky at Bottom */}
-      <div className="sticky bottom-0 left-0 right-0 pt-3 pb-3 bg-white border-t border-gray-200 mt-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+      <div className="sticky bottom-0 left-0 right-0 pt-3 pb-3 mt-4">
         <Button
           onClick={handleApplyFilters}
           className="w-full"

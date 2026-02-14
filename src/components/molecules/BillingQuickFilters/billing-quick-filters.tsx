@@ -95,55 +95,6 @@ export const BillingQuickFilters: FC<BillingQuickFiltersProps> = ({
     }
   ]
 
-  // Status-based quick filters with encounter counts
-  const statusFilters: FilterCard[] = [
-    {
-      id: 'ready-to-bill',
-      title: 'Ready to Bill',
-      description: 'No errors, ready for claims',
-      icon: "check-circle",
-      color: 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50',
-      filters: {
-        statuses: ['ready_to_bill' as BillingStatus],
-        hasErrors: false
-      },
-      count: 243
-    },
-    {
-      id: 'with-errors',
-      title: 'Need Attention',
-      description: 'Encounters with errors',
-      icon: "exclamation-triangle",
-      color: 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50',
-      filters: {
-        hasErrors: true
-      },
-      count: 87
-    },
-    {
-      id: 'unauthorized',
-      title: 'Need Authorization',
-      description: 'Pending pre-auth',
-      icon: "clock",
-      color: 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50',
-      filters: {
-        statuses: ['unauthorized' as BillingStatus]
-      },
-      count: 156
-    },
-    {
-      id: 'high-value',
-      title: 'High Value',
-      description: 'Claims > $50,000',
-      icon: "money-bill-wave",
-      color: 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50',
-      filters: {
-        payers: ['high-value' as PayerType] // Special flag for high value filtering
-      },
-      count: 23
-    }
-  ]
-
   // Major US behavioral health payers with encounter counts
   const payerFilters: FilterCard[] = [
     {
@@ -353,7 +304,7 @@ export const BillingQuickFilters: FC<BillingQuickFiltersProps> = ({
       color: 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50',
       filters: {
         hasErrors: true,
-        errorTypes: ['Documentation Missing']
+        errorTypes: ['documentation']
       },
       count: 67
     },
@@ -365,7 +316,7 @@ export const BillingQuickFilters: FC<BillingQuickFiltersProps> = ({
       color: 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50',
       filters: {
         hasErrors: true,
-        errorTypes: ['Documentation Missing']
+        errorTypes: ['documentation']
       },
       count: 43
     },
@@ -509,49 +460,6 @@ export const BillingQuickFilters: FC<BillingQuickFiltersProps> = ({
               onClick={() => handleFilterClick(card)}
               className={`p-3 text-left transition-colors duration-150 relative ${
                 index < dateFilters.length - 1 ? 'border-b border-gray-200' : ''
-              } ${
-                isFilterActive(card.id) 
-                  ? `bg-blue-50 border-blue-200 text-blue-700` 
-                  : `${card.color}`
-              }`}
-            >
-              {/* Selected Tick Mark - Bottom Position */}
-              {isFilterActive(card.id) && (
-                <div className="absolute bottom-2 right-2 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
-                  <Icon icon="check" className="w-2.5 h-2.5 text-white" />
-                </div>
-              )}
-              
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm text-gray-900">{card.title}</span>
-                </div>
-                {card.count && (
-                  <div className="px-2 py-1 bg-gray-200/80 text-gray-600 rounded-full text-xs font-semibold">
-                    {card.count.toLocaleString()}
-                  </div>
-                )}
-              </div>
-              <p className="text-sm text-gray-600 leading-relaxed mt-1">{card.description}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Status Filters */}
-      <div className="bg-green-100/40 rounded-lg p-3 border border-green-200">
-        <h4 className="text-sm font-semibold text-green-800 mb-3">
-          Billing Status
-        </h4>
-        <div className="grid grid-cols-2 border border-gray-200 rounded-lg overflow-hidden bg-white">
-          {statusFilters.map((card, index) => (
-            <button
-              key={card.id}
-              onClick={() => handleFilterClick(card)}
-              className={`p-3 text-left transition-colors duration-150 relative ${
-                index % 2 === 0 && index < statusFilters.length - 1 ? 'border-r border-gray-200' : ''
-              } ${
-                index < statusFilters.length - 2 ? 'border-b border-gray-200' : ''
               } ${
                 isFilterActive(card.id) 
                   ? `bg-blue-50 border-blue-200 text-blue-700` 

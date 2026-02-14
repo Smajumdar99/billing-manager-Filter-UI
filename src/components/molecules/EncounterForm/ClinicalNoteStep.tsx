@@ -1,6 +1,5 @@
 import React from 'react';
 import { Label } from '@/components/atoms/Label/label';
-import { PaperClipIcon } from '@heroicons/react/24/outline';
 
 interface ClinicalNoteStepProps {
     data: any;
@@ -78,16 +77,6 @@ export const ClinicalNoteStep: React.FC<ClinicalNoteStepProps> = ({ data, update
                     className="w-full min-h-[80px] p-3 rounded-md border border-gray-200 bg-gray-50 text-sm focus:bg-white transition-all focus:border-primary"
                     placeholder="E.g., Take medication as prescribed, return in 2 weeks..."
                 />
-            </div>
-
-            {/* Document Upload Placeholder */}
-            <div className="space-y-2">
-                <Label className="text-base font-semibold text-gray-700">Documents</Label>
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                    <PaperClipIcon className="h-8 w-8 text-gray-400 mb-2" />
-                    <span className="text-sm font-medium text-gray-600">Drop files here or click to upload</span>
-                    <span className="text-xs text-gray-400 mt-1">PDF, JPG, PNG (Max 10MB)</span>
-                </div>
             </div>
         </div>
     );

@@ -365,11 +365,19 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                       )}
                     </div>
 
-                      {/* Patient Name - Always visible on first row */}
-                      <div className="flex flex-col flex-shrink-0 relative group z-50">
-                        <h3 className="text-sm font-semibold text-gray-900 cursor-pointer hover:text-blue-700 transition-colors">
-                          {encounter.patientName}
-                        </h3>
+                      {/* Patient Avatar & Name - Always visible on first row */}
+                      <div className="flex items-center gap-2.5 flex-shrink-0 relative group z-50">
+                        {/* Patient Avatar */}
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm flex-shrink-0">
+                          {encounter.patientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        
+                        <div className="flex flex-col">
+                          <h3 className="text-sm font-semibold text-gray-900 cursor-pointer hover:text-blue-700 transition-colors">
+                            {encounter.patientName}
+                          </h3>
+                          <span className="text-xs text-gray-500">MRN: {encounter.patientId ? `${Math.floor(Math.random() * 9000000) + 1000000}-${Math.floor(Math.random() * 900000) + 100000}` : encounter.patientMrn}</span>
+                        </div>
                         
                         {/* Hover Overlay Menu - Desktop only */}
                         <div className="hidden lg:block absolute left-0 top-full mt-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
@@ -396,8 +404,6 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </div>
                           </div>
                         </div>
-                        
-                        <span className="text-xs text-gray-500">MRN: {encounter.patientId ? `${Math.floor(Math.random() * 9000000) + 1000000}-${Math.floor(Math.random() * 900000) + 100000}` : encounter.patientMrn}</span>
                       </div>
                     </div>
 

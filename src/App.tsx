@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/dashboard'
 import OldUIDashboard from '@/pages/OldUIDashboard'
 import BillingPage from '@/pages/BillingPage'
 import BillingManagerPage from '@/pages/BillingManagerPage'
+import ClaimsDenialsPage from '@/pages/ClaimsDenialsPage'
 import BillingReportsPage from '@/pages/BillingReportsPage'
 import InvoiceManagerPage from '@/pages/InvoiceManagerPage'
 import EncounterDetailsPage from '@/pages/EncounterDetailsPage'
@@ -16,6 +17,7 @@ import ProcessERAPage from '@/pages/ProcessERAPage'
 import PaymentsPage from '@/pages/PaymentsPage'
 import NewPaymentPage from '@/pages/NewPaymentPage'
 import PaymentAllocationPage from '@/pages/PaymentAllocationPage'
+import StatementPage from '@/pages/StatementPage'
 import PracticePage from '@/pages/PracticePage'
 import ReportsPage from '@/pages/ReportsPage'
 import AdministrationPage from '@/pages/AdministrationPage'
@@ -49,6 +51,11 @@ import AddConditionMobilePage from './pages/AddConditionMobilePage'
 import ProblemsManagementPage from './pages/ProblemsManagementPage'
 import FaxCenterPage from './pages/FaxCenterPage'
 import AddEncounterPage from './pages/AddEncounterPage'
+import FeeSheetPage from './pages/FeeSheetPage'
+import FeeSheetDetailsPage from './pages/FeeSheetDetailsPage'
+import FacesheetPage from './pages/FacesheetPage'
+import AdmitPauseDischargePage from './pages/AdmitPauseDischargePage'
+import ETARPage from './pages/ETARPage'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -151,6 +158,30 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/facesheet/:patientId"
+        element={
+          <ProtectedRoute>
+            <FacesheetPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admit-pause-discharge/:patientId"
+        element={
+          <ProtectedRoute>
+            <AdmitPauseDischargePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/etar/:patientId"
+        element={
+          <ProtectedRoute>
+            <ETARPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/add-encounter"
         element={
           <ProtectedRoute>
@@ -183,10 +214,34 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/claims-denials"
+        element={
+          <ProtectedRoute>
+            <ClaimsDenialsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/era-process"
         element={
           <ProtectedRoute>
             <ERAProcessPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/fee-sheet"
+        element={
+          <ProtectedRoute>
+            <FeeSheetPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/fee-sheet/:feeSheetId"
+        element={
+          <ProtectedRoute>
+            <FeeSheetDetailsPage />
           </ProtectedRoute>
         }
       />
@@ -227,6 +282,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <PaymentAllocationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/statements"
+        element={
+          <ProtectedRoute>
+            <StatementPage />
           </ProtectedRoute>
         }
       />

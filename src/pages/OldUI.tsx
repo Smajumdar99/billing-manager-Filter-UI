@@ -7,12 +7,14 @@ import {
   UsersIcon, BeakerIcon, BanknotesIcon, ChartBarIcon, Cog8ToothIcon, InboxIcon, WrenchScrewdriverIcon,
   ChartPieIcon, DocumentTextIcon, EnvelopeOpenIcon, DocumentCheckIcon, PencilSquareIcon,
   BeakerIcon as LabIcon, ArrowTrendingUpIcon, DocumentPlusIcon, ClipboardIcon,
-  ClipboardDocumentListIcon, Square3Stack3DIcon as MedicationIcon, AcademicCapIcon, CheckCircleIcon,
+  ClipboardDocumentListIcon, Square3Stack3DIcon as MedicationIcon, AcademicCapIcon,
   UserGroupIcon as GroupIcon, FolderIcon,
   DocumentDuplicateIcon, PresentationChartBarIcon, PencilIcon, TrashIcon,
   ChatBubbleLeftRightIcon, GlobeAltIcon, ChevronDownIcon, ChevronRightIcon,
-  XMarkIcon, PrinterIcon, ArrowDownTrayIcon, PlusIcon, EllipsisVerticalIcon, CubeIcon
+  XMarkIcon, PrinterIcon, ArrowDownTrayIcon, PlusIcon, EllipsisVerticalIcon, CubeIcon,
+  Squares2X2Icon, XCircleIcon
 } from '@heroicons/react/24/outline'
+import { CheckCircleIcon, Cog6ToothIcon as Cog6ToothIconSolid } from '@heroicons/react/24/solid'
 import { TopNavigationBar, MainNavigationBar, Sidebar } from '../components/old-ui'
 import PastEncountersManager from '../components/organisms/PastEncountersManager'
 import { Breadcrumb, BreadcrumbItem } from '@/components/atoms/Breadcrumb'
@@ -29,6 +31,10 @@ import PlanSettingsPage from './PlanSettingsPage'
 import PlanSettingsAuthDialog from '../components/molecules/PlanSettingsAuthDialog'
 import { useOngoingPlanCheck } from '../hooks/useOngoingPlanCheck'
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog/confirm-dialog'
+import { FeeSheet } from '@/components/organisms/FeeSheet'
+import { Icon } from '@/components/atoms/Icon'
+import { Tooltip } from '@/components/ui/tooltip'
+import { Switch } from '@/components/atoms/Switch/switch'
 
 // Widget configuration for dashboard
 interface WidgetConfig {
@@ -89,6 +95,13 @@ const availableWidgets: WidgetConfig[] = [
     title: 'Problems',
     component: () => null, // Placeholder - actual component imported in ClientSummaryChartPage
     defaultSize: { w: 6, h: 8 }
+  },
+  {
+    id: 'billing',
+    type: 'billing',
+    title: 'Billing',
+    component: () => null, // Placeholder - actual component imported in ClientSummaryChartPage
+    defaultSize: { w: 6, h: 8 }
   }
 ]
 
@@ -101,6 +114,7 @@ interface EncounterStats {
 }
 
 const OldUI: FC = () => {
+  const navigate = useNavigate()
   const [selectedMenu, setSelectedMenu] = useState('Patient Forms')
   // Patient-related state moved to PatientFormsManager component
   const [selectedPatient, setSelectedPatient] = useState<{ id: string } | null>(null)
@@ -120,6 +134,9 @@ const OldUI: FC = () => {
   
   // Dashboard controls state for Client Summary Chart
   const [dashboardEditMode, setDashboardEditMode] = useState(false)
+  const [widgetsExpanded, setWidgetsExpanded] = useState(true)
+  const chartPageRef = useRef<{ toggleExpandAll: () => void } | null>(null)
+  const [isTestPatient, setIsTestPatient] = useState(false)
   
   // Ongoing plan check hook for New Plan warning
   const {
@@ -163,8 +180,6 @@ const OldUI: FC = () => {
     }
     // This will be populated with full data when the child component initializes
   ])
-  const [dashboardShowWidgetSelector, setDashboardShowWidgetSelector] = useState(false)
-  
   // Active widgets state for dashboard
   const [activeWidgets, setActiveWidgets] = useState<string[]>([
     'notification-center',
@@ -172,8 +187,7 @@ const OldUI: FC = () => {
     'diagnosis',
     'demographics',
     'insurance',
-    'medications',
-    'problems'
+    'billing'
   ])
   
   // Widget management functions
@@ -186,8 +200,6 @@ const OldUI: FC = () => {
   const removeWidget = (widgetId: string) => {
     setActiveWidgets(activeWidgets.filter(id => id !== widgetId))
   }
-  
-  const navigate = useNavigate();
 
   // Load patient from sessionStorage on component mount
   useEffect(() => {
@@ -221,7 +233,10 @@ const OldUI: FC = () => {
           programAuditor: 'Dr. Johnson',
           auditorTimestamp: '2 hours ago',
           primaryCareProvider: 'Dr. Brown',
-          nickname: patient.name.split(' ')[0]
+          nickname: patient.name.split(' ')[0],
+          status: patient.status,
+          dateOfDeath: patient.dateOfDeath,
+          deceasedDate: patient.deceasedDate
         });
       } catch (error) {
         console.error('Error loading patient from session:', error);
@@ -309,7 +324,7 @@ const OldUI: FC = () => {
   // Handle action buttons for Past Encounters
   const handleNewEncounter = () => {
     console.log('Creating new encounter for patient:', selectedPatient?.id);
-    // Add new encounter logic here
+    navigate('/add-encounter');
   };
 
   const handlePrint = () => {
@@ -320,6 +335,624 @@ const OldUI: FC = () => {
     console.log('Exporting encounters for patient:', selectedPatient?.id);
     // Add export logic here
   };
+
+  // Helper function to calculate patient status
+  const getPatientStatus = (patient: any) => {
+    if (!patient) return null
+    
+    const deceasedDate = patient.dateOfDeath || patient.deceasedDate;
+    const isDeceased = deceasedDate !== undefined && deceasedDate !== null;
+    
+    let daysSinceDeath: number | null = null;
+    if (isDeceased && deceasedDate) {
+      const deathDate = new Date(deceasedDate);
+      const today = new Date();
+      const diffTime = Math.abs(today.getTime() - deathDate.getTime());
+      daysSinceDeath = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    const showDeceasedIndicator = isDeceased && daysSinceDeath !== null && daysSinceDeath >= 14;
+    const isDeceasedStatus = isDeceased || patient.status?.toLowerCase() === 'deceased';
+    const isActive = !isDeceasedStatus && patient.status?.toLowerCase() === 'active';
+    const isInactive = isDeceasedStatus || patient.status?.toLowerCase() === 'inactive' || !patient.status;
+
+    const formatDate = (dateString: string) => {
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      } catch {
+        return dateString;
+      }
+    };
+
+    return {
+      showDeceasedIndicator,
+      deceasedDate,
+      daysSinceDeath,
+      isDeceasedStatus,
+      isActive,
+      isInactive,
+      formatDate
+    }
+  }
+
+  // Widget Actions Menu Component - Consolidates widget management actions
+  const WidgetActionsMenu: React.FC<{
+    widgetsExpanded: boolean
+    onToggleWidgets: () => void
+    availableWidgets: WidgetConfig[]
+    activeWidgets: string[]
+    onAddWidget: (widgetId: string) => void
+    onRemoveWidget: (widgetId: string) => void
+    editMode: boolean
+    onToggleEditMode: () => void
+  }> = ({ widgetsExpanded, onToggleWidgets, availableWidgets, activeWidgets, onAddWidget, onRemoveWidget, editMode, onToggleEditMode }) => {
+    const [isOpen, setIsOpen] = useState(false)
+    const [showWidgetSelector, setShowWidgetSelector] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [activeTab, setActiveTab] = useState<'active' | 'available'>('active')
+    const dropdownRef = useRef<HTMLDivElement>(null)
+    const buttonRef = useRef<HTMLButtonElement>(null)
+    const widgetSelectorRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+            buttonRef.current && !buttonRef.current.contains(event.target as Node) &&
+            widgetSelectorRef.current && !widgetSelectorRef.current.contains(event.target as Node)) {
+          setIsOpen(false)
+          setShowWidgetSelector(false)
+        }
+      }
+
+      if (isOpen || showWidgetSelector) {
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }, [isOpen, showWidgetSelector])
+
+    const getDropdownPosition = () => {
+      if (!buttonRef.current) return { top: 0, right: 0 }
+      const rect = buttonRef.current.getBoundingClientRect()
+      return {
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right
+      }
+    }
+
+    const filteredWidgets = availableWidgets.filter(widget => {
+      if (!searchQuery.trim()) return true
+      return widget.title.toLowerCase().includes(searchQuery.toLowerCase())
+    })
+
+    const activeWidgetsList = filteredWidgets.filter(widget => activeWidgets.includes(widget.id))
+    const availableWidgetsList = filteredWidgets.filter(widget => !activeWidgets.includes(widget.id))
+
+    const dropdownMenu = isOpen ? (
+      <div
+        ref={dropdownRef}
+        className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px]"
+        style={{
+          ...getDropdownPosition(),
+          zIndex: 999999
+        }}
+      >
+        <button
+          onClick={() => {
+            setShowWidgetSelector(!showWidgetSelector)
+          }}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <PlusIcon className="h-4 w-4 text-gray-500" />
+          Add Widget
+        </button>
+
+        <button
+          onClick={() => {
+            onToggleEditMode()
+            setIsOpen(false)
+          }}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <Cog6ToothIcon className="h-4 w-4 text-gray-500" />
+          {editMode ? 'Exit Edit' : 'Edit Layout'}
+        </button>
+
+        <button
+          onClick={() => {
+            onToggleWidgets()
+            setIsOpen(false)
+          }}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+        >
+          <Icon
+            icon={widgetsExpanded ? "compress" : "expand"}
+            className="h-4 w-4"
+            size="sm"
+          />
+          {widgetsExpanded ? 'Collapse All' : 'Expand All'}
+        </button>
+      </div>
+    ) : null
+
+    const widgetSelectorMenu = showWidgetSelector ? (
+      <div
+        ref={widgetSelectorRef}
+        className="fixed bg-white rounded-xl border border-gray-200 shadow-xl w-96 overflow-hidden"
+        style={{
+          top: (buttonRef.current?.getBoundingClientRect().bottom || 0) + 4,
+          right: window.innerWidth - (buttonRef.current?.getBoundingClientRect().right || 0),
+          zIndex: 9999999
+        }}
+      >
+        <div className="px-5 pt-4 pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-gray-900">Manage Widgets</h3>
+            <button
+              onClick={() => {
+                setShowWidgetSelector(false)
+                setSearchQuery('')
+              }}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <XMarkIcon className="h-4 w-4" />
+            </button>
+          </div>
+          
+          <div className="relative mb-2">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search widgets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
+            />
+          </div>
+        </div>
+        
+        <div className="px-5">
+          <div className="grid grid-cols-2 bg-gray-100/50 h-10 rounded-lg p-1 mb-3">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`text-sm font-medium py-1.5 rounded-md transition-colors ${
+                activeTab === 'active' ? 'bg-white shadow-sm text-primary' : 'text-gray-600'
+              }`}
+            >
+              Active ({activeWidgetsList.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('available')}
+              className={`text-sm font-medium py-1.5 rounded-md transition-colors ${
+                activeTab === 'available' ? 'bg-white shadow-sm text-primary' : 'text-gray-600'
+              }`}
+            >
+              Available ({availableWidgetsList.length})
+            </button>
+          </div>
+        </div>
+
+        {activeTab === 'active' ? (
+          <div className="px-5 pb-4">
+            {activeWidgetsList.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-500">
+                {searchQuery ? 'No active widgets match your search' : 'No active widgets'}
+              </div>
+            ) : (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                  {activeWidgetsList.map((widget, index) => (
+                    <div
+                      key={widget.id}
+                      className={`flex items-center justify-between px-4 py-3 transition-colors group ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                      } hover:bg-gray-100`}
+                    >
+                      <span className="text-sm font-medium text-gray-900 flex-1">{widget.title}</span>
+                      <button
+                        onClick={() => {
+                          onRemoveWidget?.(widget.id)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all"
+                        title="Remove widget"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="px-5 pb-4">
+            {availableWidgetsList.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-500">
+                {searchQuery ? 'No available widgets match your search' : 'All widgets are active'}
+              </div>
+            ) : (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                  {availableWidgetsList.map((widget, index) => (
+                    <div
+                      key={widget.id}
+                      className={`flex items-center justify-between px-4 py-3 transition-colors group ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                      } hover:bg-gray-100`}
+                    >
+                      <span className="text-sm font-medium text-gray-900 flex-1">{widget.title}</span>
+                      <button
+                        onClick={() => {
+                          onAddWidget?.(widget.id)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-all"
+                        title="Add widget"
+                      >
+                        <PlusIcon className="h-4 w-4" />
+                        <span>Add</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    ) : null
+
+    return (
+      <div className="relative">
+        <Tooltip content="Widget Actions" side="bottom">
+          <button
+            ref={buttonRef}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setIsOpen(!isOpen)
+            }}
+            className={`flex items-center justify-center px-4 py-2 h-9 rounded-lg border transition-colors shadow-none ${
+              isOpen
+                ? 'bg-gray-100 border-gray-300 text-gray-800'
+                : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <Cog6ToothIconSolid className="h-4 w-4" />
+          </button>
+        </Tooltip>
+        {createPortal(dropdownMenu, document.body)}
+        {createPortal(widgetSelectorMenu, document.body)}
+      </div>
+    )
+  }
+
+  // Patient Actions Menu Component - Consolidates all patient actions
+  const PatientActionsMenu: React.FC<{
+    patient: any
+    isTestPatient: boolean
+    onTestPatientChange: (checked: boolean) => void
+    onPrescribe: () => void
+    onAddEncounter: () => void
+    onEdit: () => void
+    onNavigate?: (path: string) => void
+  }> = ({ patient, isTestPatient, onTestPatientChange, onPrescribe, onAddEncounter, onEdit, onNavigate }) => {
+    const [isOpen, setIsOpen] = useState(false)
+    const [clientInfoSubMenuOpen, setClientInfoSubMenuOpen] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+    const buttonRef = useRef<HTMLButtonElement>(null)
+    const clientInfoRef = useRef<HTMLButtonElement>(null)
+    const subMenuRef = useRef<HTMLDivElement>(null)
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+            buttonRef.current && !buttonRef.current.contains(event.target as Node) &&
+            subMenuRef.current && !subMenuRef.current.contains(event.target as Node)) {
+          setIsOpen(false)
+          setClientInfoSubMenuOpen(false)
+        }
+      }
+
+      if (isOpen) {
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }, [isOpen])
+
+    const getDropdownPosition = () => {
+      if (!buttonRef.current) return { top: 0, left: 0 }
+      const rect = buttonRef.current.getBoundingClientRect()
+      return {
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right
+      }
+    }
+
+    const handleAction = (action: string, event?: React.MouseEvent) => {
+      if (event) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      
+      switch (action) {
+        case 'Prescribe':
+          onPrescribe()
+          break
+        case 'Add Encounter':
+          onAddEncounter()
+          break
+        case 'Edit':
+          onEdit()
+          break
+        default:
+          break
+      }
+      setIsOpen(false)
+    }
+
+    const handleMenuAction = (action: string, event?: React.MouseEvent) => {
+      if (event) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      console.log(`Menu action: ${action}`)
+      // Handle menu actions here
+      setIsOpen(false)
+      setClientInfoSubMenuOpen(false)
+    }
+
+    const handleClientInfoSubMenuAction = (action: string, event?: React.MouseEvent) => {
+      if (event) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      console.log(`Client Info sub-menu action: ${action}`)
+      
+      // Handle Facesheet navigation
+      if (action === 'Facesheet' && patient && onNavigate) {
+        let patientId = patient.id || patient.name || ''
+        if (typeof patientId === 'string' && patientId.includes(' (')) {
+          patientId = patientId.split(' (')[1].replace(')', '')
+        } else if (!patientId && patient.name) {
+          patientId = patient.name
+        }
+        if (patientId) {
+          onNavigate(`/facesheet/${encodeURIComponent(patientId)}`)
+        }
+      }
+
+      // Handle Admit / Pause / Discharge navigation
+      if (action === 'Admit / Pause / Discharge' && patient && onNavigate) {
+        let patientId = patient.id || patient.name || ''
+        if (typeof patientId === 'string' && patientId.includes(' (')) {
+          patientId = patientId.split(' (')[1].replace(')', '')
+        } else if (!patientId && patient.name) {
+          patientId = patient.name
+        }
+        if (patientId) {
+          onNavigate(`/admit-pause-discharge/${encodeURIComponent(patientId)}`)
+        }
+      }
+      
+      setIsOpen(false)
+      setClientInfoSubMenuOpen(false)
+    }
+
+    const getSubMenuPosition = () => {
+      if (!clientInfoRef.current || !dropdownRef.current) return { top: 0, right: 0 }
+      const clientInfoRect = clientInfoRef.current.getBoundingClientRect()
+      const dropdownRect = dropdownRef.current.getBoundingClientRect()
+      // Position sub-menu on the left side, aligning its right edge with the main menu's left edge
+      return {
+        top: clientInfoRect.top,
+        right: window.innerWidth - dropdownRect.left + 4
+      }
+    }
+
+    const clientInfoSubMenu = clientInfoSubMenuOpen && isOpen ? (
+      <div
+        ref={subMenuRef}
+        className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[200px]"
+        style={{
+          ...getSubMenuPosition(),
+          zIndex: 999999
+        }}
+        onMouseEnter={() => setClientInfoSubMenuOpen(true)}
+        onMouseLeave={() => setClientInfoSubMenuOpen(false)}
+      >
+        <button
+          onClick={(e) => handleClientInfoSubMenuAction('Level of Care', e)}
+          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+        >
+          Level of Care
+        </button>
+        <button
+          onClick={(e) => handleClientInfoSubMenuAction('Admit / Pause / Discharge', e)}
+          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+        >
+          Admit / Pause / Discharge
+        </button>
+        <button
+          onClick={(e) => handleClientInfoSubMenuAction('Facesheet', e)}
+          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+        >
+          Facesheet
+        </button>
+        <button
+          onClick={(e) => handleClientInfoSubMenuAction('Manage eSignature', e)}
+          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+        >
+          Manage eSignature
+        </button>
+      </div>
+    ) : null
+
+    const dropdownMenu = isOpen ? (
+      <div
+        ref={dropdownRef}
+        className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[200px]"
+        style={{
+          ...getDropdownPosition(),
+          zIndex: 999999
+        }}
+      >
+        {/* Test Patient Toggle */}
+        <div className="px-3 py-2 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <label htmlFor="menu-test-patient-switch" className="text-sm font-medium text-gray-700 cursor-pointer">
+              Test Patient
+            </label>
+            <Switch
+              id="menu-test-patient-switch"
+              checked={isTestPatient}
+              onCheckedChange={(checked) => {
+                onTestPatientChange(checked)
+                console.log('Test patient status changed:', checked)
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Menu Items */}
+        <div className="py-1">
+          {/* Client Info with Sub-menu */}
+          <div 
+            className="relative"
+            onMouseEnter={() => setClientInfoSubMenuOpen(true)}
+            onMouseLeave={() => setClientInfoSubMenuOpen(false)}
+          >
+            <button
+              ref={clientInfoRef}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setClientInfoSubMenuOpen(!clientInfoSubMenuOpen)
+              }}
+              className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <UsersIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span>Client Info</span>
+              </div>
+              <ChevronRightIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            </button>
+
+          </div>
+
+          {/* Resident Info */}
+          <button
+            onClick={(e) => handleMenuAction('Resident Info', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <UsersIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>Resident Info</span>
+          </button>
+
+          {/* Clinical */}
+          <button
+            onClick={(e) => handleMenuAction('Clinical', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <BeakerIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>Clinical</span>
+          </button>
+
+          {/* Billing */}
+          <button
+            onClick={(e) => handleMenuAction('Billing', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <BanknotesIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>Billing</span>
+          </button>
+
+          {/* Documents */}
+          <button
+            onClick={(e) => handleMenuAction('Documents', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <DocumentTextIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>Documents</span>
+          </button>
+
+          {/* Reports */}
+          <button
+            onClick={(e) => handleMenuAction('Reports', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <ChartBarIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>Reports</span>
+          </button>
+
+          {/* Other */}
+          <button
+            onClick={(e) => handleMenuAction('Other', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <CubeIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>Other</span>
+          </button>
+
+          {/* EDI */}
+          <button
+            onClick={(e) => handleMenuAction('EDI', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <GlobeAltIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>EDI</span>
+          </button>
+
+          {/* External Links */}
+          <button
+            onClick={(e) => handleMenuAction('External Links', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <GlobeAltIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>External Links</span>
+          </button>
+        </div>
+
+        {/* Separator */}
+        <div className="border-t border-gray-100 my-1"></div>
+
+        {/* More Options Menu Item */}
+        <div className="py-1">
+          <button
+            onClick={(e) => handleMenuAction('More Options', e)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          >
+            <Cog6ToothIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>More Options</span>
+          </button>
+        </div>
+      </div>
+    ) : null
+
+    return (
+      <div className="relative">
+        <Tooltip content="Patient Actions" side="bottom">
+          <button
+            ref={buttonRef}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setIsOpen(!isOpen)
+            }}
+            className={`flex items-center justify-center px-4 py-2 h-9 rounded-lg border transition-colors shadow-none ${
+              isOpen
+                ? 'bg-gray-100 border-gray-300 text-gray-800'
+                : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <Squares2X2Icon className="h-4 w-4" />
+          </button>
+        </Tooltip>
+        {createPortal(dropdownMenu, document.body)}
+        {createPortal(clientInfoSubMenu, document.body)}
+      </div>
+    )
+  }
 
   // Patient Actions Dropdown Component
   const PatientActionsDropdown: React.FC<{ patient: any }> = ({ patient }) => {
@@ -392,24 +1025,6 @@ const OldUI: FC = () => {
           Chart
         </button>
 
-        {/* Add Encounter */}
-        <button
-          onClick={(e) => handleAction('Add Encounter', e)}
-          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-        >
-          <PlusIcon className="h-4 w-4 text-gray-500" />
-          Add Encounter
-        </button>
-
-        {/* Prescribe - Highlighted */}
-        <button
-          onClick={(e) => handleAction('Prescribe', e)}
-          className="w-full px-4 py-2 text-left text-sm text-blue-700 hover:bg-blue-50 flex items-center gap-3 font-medium"
-        >
-          <BeakerIcon className="h-4 w-4 text-blue-600" />
-          Prescribe
-        </button>
-
         {/* Diagnosis */}
         <button
           onClick={(e) => handleAction('Diagnosis', e)}
@@ -426,15 +1041,6 @@ const OldUI: FC = () => {
         >
           <CubeIcon className="h-4 w-4 text-gray-500" />
           ABA Tool
-        </button>
-
-        {/* Edit */}
-        <button
-          onClick={(e) => handleAction('Edit', e)}
-          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-        >
-          <PencilIcon className="h-4 w-4 text-gray-500" />
-          Edit
         </button>
 
         {/* Delete */}
@@ -457,10 +1063,14 @@ const OldUI: FC = () => {
             e.stopPropagation()
             setIsOpen(!isOpen)
           }}
-          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          className={`flex items-center justify-center px-4 py-2 h-9 rounded-lg border transition-colors ${
+            isOpen
+              ? 'bg-gray-100 border-gray-300 text-gray-800'
+              : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+          }`}
           title="Patient Actions"
         >
-          <EllipsisVerticalIcon className="h-5 w-5" />
+          <EllipsisVerticalIcon className="h-4 w-4" />
         </button>
         {createPortal(dropdownMenu, document.body)}
       </div>
@@ -554,10 +1164,12 @@ const OldUI: FC = () => {
       console.log('Rendering Client Summary Chart page');
       return (
         <ClientSummaryChartPage 
+          ref={chartPageRef}
           externalEditMode={dashboardEditMode}
           externalActiveWidgets={activeWidgets}
           externalAddWidget={addWidget}
           externalRemoveWidget={removeWidget}
+          onWidgetExpandStateChange={setWidgetsExpanded}
         />
       );
     }
@@ -568,8 +1180,19 @@ const OldUI: FC = () => {
       return <PlanSettingsPage />;
     }
     
+    // Show Fee Sheet content
+    if (selectedMenu === 'Fee Sheet') {
+      console.log('Rendering Fee Sheet page');
+      return (
+        <FeeSheet 
+          patientId={selectedPatient?.id}
+          patientName={selectedPatient?.id || 'No Patient Selected'}
+        />
+      );
+    }
+    
     // Default fallback for other menu items
-    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline' && selectedMenu !== 'New Incident' && selectedMenu !== 'Interdisciplinary Treatment Plan' && selectedMenu !== 'Client Summary Chart' && selectedMenu !== 'Plan Settings') {
+    if (selectedMenu && selectedMenu !== 'Patient Forms' && selectedMenu !== 'Past Encounters' && selectedMenu !== 'Timeline' && selectedMenu !== 'New Incident' && selectedMenu !== 'Interdisciplinary Treatment Plan' && selectedMenu !== 'Client Summary Chart' && selectedMenu !== 'Plan Settings' && selectedMenu !== 'Fee Sheet') {
       return (
         <div className="h-full flex flex-col items-center justify-center text-center p-6">
           <DocumentTextIcon className="w-12 h-12 text-gray-400 mb-4" />
@@ -662,6 +1285,60 @@ const OldUI: FC = () => {
                         Draft
                       </span>
                     )}
+                    
+                    {/* Patient Status Badges - Show right after breadcrumb */}
+                    {patientData && (() => {
+                      const status = getPatientStatus(patientData)
+                      if (!status) return null
+                      
+                      return (
+                        <>
+                          {/* Deceased Indicator */}
+                          {status.showDeceasedIndicator && status.deceasedDate && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-lg border border-red-200">
+                              <Icon icon="skull" className="text-red-600 flex-shrink-0" size="sm" />
+                              <span className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                                Deceased
+                              </span>
+                              <span className="text-xs text-red-600">
+                                {status.formatDate(status.deceasedDate)} ({status.daysSinceDeath !== null ? `${status.daysSinceDeath} day${status.daysSinceDeath !== 1 ? 's' : ''} ago` : ''})
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Status Badge - Show Inactive if deceased */}
+                          {status.isDeceasedStatus ? (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-300">
+                              <XCircleIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                Inactive
+                              </span>
+                            </div>
+                          ) : status.isActive ? (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                              <CheckCircleIcon className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                              <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
+                                Active
+                              </span>
+                            </div>
+                          ) : status.isInactive ? (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-300">
+                              <XCircleIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                Inactive
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-200">
+                              <div className="h-4 w-4 rounded-full bg-amber-400 border border-amber-500 flex-shrink-0"></div>
+                              <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
+                                Unknown
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
                   </div>
                   
                   {/* Compact Metrics for Past Encounters */}
@@ -719,88 +1396,36 @@ const OldUI: FC = () => {
                     </>
                   )}
                   
-                  {/* Dashboard Controls for Client Summary Chart */}
-                  {selectedMenu === 'Client Summary Chart' && (
-                    <div className="relative flex items-center gap-3">
-                      <div className="relative">
-                        <Button
-                          onClick={() => setDashboardShowWidgetSelector(!dashboardShowWidgetSelector)}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                        >
-                          <PlusIcon className="w-4 h-4" />
-                          Add Widget
-                        </Button>
-                        
-                        {/* Widget Selector Dropdown */}
-                        {dashboardShowWidgetSelector && (
-                          <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-lg border border-gray-200 shadow-lg w-80">
-                            <div className="p-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-sm font-medium text-gray-900">Manage Widgets</h3>
-                                <button
-                                  onClick={() => setDashboardShowWidgetSelector(false)}
-                                  className="text-gray-400 hover:text-gray-600 p-1"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                              <div className="space-y-2 max-h-64 overflow-y-auto">
-                                {availableWidgets.map(widget => {
-                                  const isActive = activeWidgets.includes(widget.id)
-                                  return (
-                                    <div
-                                      key={widget.id}
-                                      className="flex items-center justify-between p-2 rounded-lg border border-gray-100 hover:bg-gray-50"
-                                    >
-                                      <div className="flex-1">
-                                        <div className="font-medium text-sm text-gray-900">{widget.title}</div>
-                                        <div className="text-xs text-gray-500">
-                                          {isActive ? 'Currently active' : 'Available to add'}
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        {isActive ? (
-                                          <button
-                                            onClick={() => removeWidget(widget.id)}
-                                            className="px-2 py-1 text-xs bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
-                                          >
-                                            Remove
-                                          </button>
-                                        ) : (
-                                          <button
-                                            onClick={() => addWidget(widget.id)}
-                                            className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
-                                          >
-                                            Add
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <Button
-                        onClick={() => setDashboardEditMode(!dashboardEditMode)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                          dashboardEditMode 
-                            ? 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'
-                            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <Cog6ToothIcon className="w-4 h-4" />
-                        {dashboardEditMode ? 'Exit Edit' : 'Edit Layout'}
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {/* Patient Actions Dropdown - Show when patient is selected */}
-                  {patientData && selectedMenu !== 'Past Encounters' && (
-                    <PatientActionsDropdown patient={patientData} />
+                  {/* Patient Actions Menu - Only show on Client Summary Chart */}
+                  {selectedMenu === 'Client Summary Chart' && patientData && (
+                    <>
+                      {/* Widget Actions Menu */}
+                      <WidgetActionsMenu
+                        widgetsExpanded={widgetsExpanded}
+                        onToggleWidgets={() => {
+                          chartPageRef.current?.toggleExpandAll()
+                          setWidgetsExpanded(prev => !prev)
+                        }}
+                        availableWidgets={availableWidgets}
+                        activeWidgets={activeWidgets}
+                        onAddWidget={addWidget}
+                        onRemoveWidget={removeWidget}
+                        editMode={dashboardEditMode}
+                        onToggleEditMode={() => setDashboardEditMode(!dashboardEditMode)}
+                      />
+                      <PatientActionsMenu
+                        patient={patientData}
+                        isTestPatient={isTestPatient}
+                        onTestPatientChange={setIsTestPatient}
+                        onPrescribe={() => setIsPrescriptionModalOpen(true)}
+                        onAddEncounter={handleNewEncounter}
+                        onEdit={() => {
+                          console.log('Edit action clicked for patient:', patientData.name)
+                          // TODO: Implement edit patient functionality
+                        }}
+                        onNavigate={navigate}
+                      />
+                    </>
                   )}
                 </div>
                 
@@ -840,6 +1465,7 @@ const OldUI: FC = () => {
             </div>
           )}
           
+          
           {/* Content Area */}
           <div className={
             selectedMenu === 'Past Encounters' 
@@ -848,7 +1474,9 @@ const OldUI: FC = () => {
                 ? 'h-[calc(100%-4rem)] overflow-hidden'
                 : selectedMenu === 'Plan Settings'
                   ? 'h-[calc(100%-4rem)]' // Full height for Plan Settings
-                  : 'p-6'
+                  : selectedMenu === 'Fee Sheet'
+                    ? 'h-[calc(100%-4rem)]' // Full height for Fee Sheet, no padding
+                    : 'p-6'
           }>
             {renderContent()}
           </div>

@@ -1,4 +1,5 @@
 import { FC, useState, useMemo, useCallback, useEffect } from 'react'
+import { PanelLeft, PanelRight } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useNavigate } from 'react-router-dom'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
@@ -11,7 +12,6 @@ import { BillingActionButtons, type ViewMode } from '@/components/molecules/Bill
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs'
 import { BillingQueueTable } from '@/components/organisms/BillingQueueTable'
 import { BillingViewCardsListing } from '@/components/organisms/BillingViewCardsListing'
-import { BillingBulkActions } from '@/components/molecules/BillingBulkActions'
 import { BillingErrorDialog } from '@/components/molecules/BillingErrorDialog'
 import { OverrideDialog } from '@/components/molecules/OverrideDialog'
 import { Badge } from '@/components/atoms/Badge/badge'
@@ -32,8 +32,7 @@ import {
 import { 
   BillingEncounter, 
   BillingQueueFilters as FilterType, 
-  BulkActionType,
-  BillingQueueStats
+  BulkActionType
 } from '@/types/billing-manager'
 
 /**
@@ -63,6 +62,7 @@ export const BillingManagerPage: FC = () => {
 
   // Desktop filter sidebar state
   const [filtersCollapsed, setFiltersCollapsed] = useState(false)
+  const [filtersTab, setFiltersTab] = useState<'quick' | 'advanced'>('advanced')
 
   // State for billing queue management
   const [encounters, setEncounters] = useState<BillingEncounter[]>(mockBillingEncounters)
@@ -72,7 +72,7 @@ export const BillingManagerPage: FC = () => {
   const [showErrorDialog, setShowErrorDialog] = useState<BillingEncounter | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [currentSort, setCurrentSort] = useState<SortOption | undefined>(undefined)
-  const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [viewMode] = useState<ViewMode>('card')
   const [activeTab, setActiveTab] = useState<'ready' | 'blocked' | 'with_errors' | 'pending_submit'>('ready')
   const [billingTypeFilter, setBillingTypeFilter] = useState<string>('all')
   const [showOverrideDialog, setShowOverrideDialog] = useState(false)
@@ -490,6 +490,12 @@ export const BillingManagerPage: FC = () => {
     } else if (itemLabel === 'Billing Manager') {
       // Already on this page, no need to navigate
       return
+    } else if (itemLabel === 'Claims & Denials') {
+      navigate('/claims-denials')
+    } else if (itemLabel === 'ERA Process') {
+      navigate('/era-process')
+    } else if (itemLabel === 'Payments') {
+      navigate('/payments')
     }
     // Add more navigation logic here for other sidebar items as needed
   }
@@ -507,11 +513,6 @@ export const BillingManagerPage: FC = () => {
         ? [...prev, encounterId]
         : prev.filter(id => id !== encounterId)
     )
-  }, [])
-
-  // Handle clear selection
-  const handleClearSelection = useCallback(() => {
-    setSelectedEncounters([])
   }, [])
 
   // Handle quick filter changes from filter cards
@@ -635,15 +636,19 @@ export const BillingManagerPage: FC = () => {
       )
 
       const hasActiveErrors = updatedErrors.some(e => !e.overriddenBy && e.severity === 'critical')
+      const newErrorSeverity = updatedErrors
+        .filter(e => !e.overriddenBy)
+        .reduce<'info' | 'warning' | 'critical'>((max, e) => {
+          if (max === 'critical' || e.severity === 'critical') return 'critical'
+          if (max === 'warning' || e.severity === 'warning') return 'warning'
+          return 'info'
+        }, 'info')
 
       return {
         ...encounter,
         errors: updatedErrors,
         hasErrors: hasActiveErrors,
-        errorSeverity: hasActiveErrors 
-          ? updatedErrors.filter(e => !e.overriddenBy).reduce((max, e) => 
-              e.severity === 'critical' ? 'critical' : max === 'critical' ? 'critical' : e.severity, 'info' as const)
-          : undefined,
+        errorSeverity: updatedErrors.some(e => !e.overriddenBy) ? newErrorSeverity : undefined,
         canGenerateClaim: !hasActiveErrors && encounter.status === 'ready_to_bill',
         lastModified: new Date().toISOString()
       }
@@ -891,7 +896,7 @@ export const BillingManagerPage: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => console.log('Encounter Details clicked')}
+                          onClick={() => navigate('/encounter-details')}
                           className="flex items-center gap-1.5 text-xs px-3 py-2"
                         >
                           <Icon icon="file-medical" className="w-3.5 h-3.5" />
@@ -1042,7 +1047,7 @@ export const BillingManagerPage: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => console.log('Encounter Details clicked')}
+                          onClick={() => navigate('/encounter-details')}
                           className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
                         >
                           <Icon icon="file-medical" className="w-3.5 h-3.5" />
@@ -1146,10 +1151,10 @@ export const BillingManagerPage: FC = () => {
                             variant="ghost"
                             size="sm"
                             onClick={handleFiltersToggle}
-                            className="p-1 h-6 w-6"
+                            className="p-1 h-6 w-6 hover:bg-gray-100"
                             title="Collapse filters"
                           >
-                            <Icon icon="chevron-left" className="w-4 h-4" />
+                            <PanelLeft className="w-4 h-4 text-gray-500" />
                           </Button>
                         </div>
 
@@ -1166,31 +1171,31 @@ export const BillingManagerPage: FC = () => {
                             />
                           </div>
                         </div>
-
-                        <Tabs defaultValue="quick" className="w-full">
-                          <div className="mb-4">
-                            <TabsList className="grid w-full grid-cols-2">
-                              <TabsTrigger value="quick" className="gap-2 text-xs">
-                                <Icon icon="filter" className="w-3 h-3" />
-                                Quick Filters
+                        
+                        <div className="flex items-center rounded-md p-1 mb-4">
+                          <Tabs value={filtersTab} onValueChange={(value) => setFiltersTab(value as 'quick' | 'advanced')} className="w-full" defaultValue="advanced">
+                            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 gap-1">
+                              <TabsTrigger 
+                                value="advanced" 
+                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filtersTab === 'advanced' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Icon icon="filter" className="w-3.5 h-3.5" />
+                                  Filters
+                                </div>
                               </TabsTrigger>
-                              <TabsTrigger value="advanced" className="gap-2 text-xs">
-                                <Icon icon="cog" className="w-3 h-3" />
-                                Advanced
+                              <TabsTrigger 
+                                value="quick" 
+                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filtersTab === 'quick' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Icon icon="eye" className="w-3.5 h-3.5" />
+                                  At Glance
+                                </div>
                               </TabsTrigger>
                             </TabsList>
-                          </div>
 
-                          <TabsContent value="quick" className="mt-0">
-                            <BillingQuickFilters
-                              onFilterChange={handleQuickFilterChange}
-                              onClearFilters={handleClearAllFilters}
-                              activeFilters={activeFilterCards}
-                              encounterCount={filteredEncounters.length}
-                            />
-                          </TabsContent>
-
-                          <TabsContent value="advanced" className="mt-0">
+                          <TabsContent value="advanced" className="mt-3">
                             <BillingFiltersPanel
                               filters={filters}
                               onFiltersChange={setFilters}
@@ -1200,8 +1205,18 @@ export const BillingManagerPage: FC = () => {
                               onSortChange={handleSortChange}
                             />
                           </TabsContent>
+
+                          <TabsContent value="quick" className="mt-3">
+                            <BillingQuickFilters
+                              onFilterChange={handleQuickFilterChange}
+                              onClearFilters={handleClearAllFilters}
+                              activeFilters={activeFilterCards}
+                              encounterCount={filteredEncounters.length}
+                            />
+                          </TabsContent>
                         </Tabs>
                       </div>
+                    </div>
                     ) : (
                       /* Collapsed State */
                       <div className="flex flex-col items-center p-2">
@@ -1209,10 +1224,10 @@ export const BillingManagerPage: FC = () => {
                           variant="ghost"
                           size="sm"
                           onClick={handleFiltersToggle}
-                          className="p-2 h-8 w-8 mb-2"
+                          className="p-2 h-8 w-8 mb-2 hover:bg-gray-100"
                           title="Expand filters"
                         >
-                          <Icon icon="chevron-right" className="w-4 h-4" />
+                          <PanelRight className="w-4 h-4 text-gray-500" />
                         </Button>
                         
                         {/* Active Filters Indicator */}
@@ -1231,47 +1246,39 @@ export const BillingManagerPage: FC = () => {
                     {/* Tab Bar with Billing Type Filter */}
                     <div className="bg-white border-b border-gray-200">
                       <div className="flex items-center justify-between px-4">
-                        <div className="flex items-center">
-                          <button
-                            onClick={() => setActiveTab('ready')}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                              activeTab === 'ready'
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                            }`}
+                        <div className="py-3 flex-1">
+                          <Tabs
+                            value={activeTab}
+                            onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+                            className="w-full"
                           >
-                            Ready to Bill ({encounters.filter(e => e.status === 'ready_to_bill' && !e.hasErrors).length})
-                          </button>
-                          <button
-                            onClick={() => setActiveTab('blocked')}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                              activeTab === 'blocked'
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                            }`}
-                          >
-                            Blocked ({encounters.filter(e => e.hasErrors && e.errorSeverity === 'critical').length})
-                          </button>
-                          <button
-                            onClick={() => setActiveTab('with_errors')}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                              activeTab === 'with_errors'
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                            }`}
-                          >
-                            With Errors ({encounters.filter(e => e.hasErrors).length})
-                          </button>
-                          <button
-                            onClick={() => setActiveTab('pending_submit')}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                              activeTab === 'pending_submit'
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                            }`}
-                          >
-                            Pending Submit ({encounters.filter(e => e.status === 'in_review' || e.status === 'authorized').length})
-                          </button>
+                            <TabsList className="h-10 items-center justify-center rounded-lg p-1 text-muted-foreground grid w-full max-w-2xl grid-cols-4 bg-gray-100">
+                              <TabsTrigger
+                                value="ready"
+                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                              >
+                                Ready to Bill ({encounters.filter(e => e.status === 'ready_to_bill' && !e.hasErrors).length})
+                              </TabsTrigger>
+                              <TabsTrigger
+                                value="blocked"
+                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                              >
+                                Blocked ({encounters.filter(e => e.hasErrors && e.errorSeverity === 'critical').length})
+                              </TabsTrigger>
+                              <TabsTrigger
+                                value="with_errors"
+                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                              >
+                                With Errors ({encounters.filter(e => e.hasErrors).length})
+                              </TabsTrigger>
+                              <TabsTrigger
+                                value="pending_submit"
+                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                              >
+                                Pending Submit ({encounters.filter(e => e.status === 'in_review' || e.status === 'authorized').length})
+                              </TabsTrigger>
+                            </TabsList>
+                          </Tabs>
                         </div>
                         
                         {/* Billing Type Filter */}
@@ -1298,8 +1305,6 @@ export const BillingManagerPage: FC = () => {
                     <BillingActionButtons
                       selectedEncounters={selectedEncounterObjects}
                       onAction={handleActionButtonClick}
-                      viewMode={viewMode}
-                      onViewModeChange={setViewMode}
                       totalEncounters={filteredEncounters.length}
                       onSelectAll={() => {
                         const allSelected = filteredEncounters.every(enc => selectedEncounters.includes(enc.id))
@@ -1391,65 +1396,75 @@ export const BillingManagerPage: FC = () => {
                           </div>
                         </div>
 
-                        <Tabs defaultValue="quick" className="w-full">
-                        <div className="mb-4">
-                          <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="quick" className="gap-2 text-xs">
-                              <Icon icon="filter" className="w-3 h-3" />
-                              Quick Filters
-                            </TabsTrigger>
-                              <TabsTrigger value="advanced" className="gap-2 text-xs">
-                                <Icon icon="cog" className="w-3 h-3" />
-                                Advanced
+                        <div className="flex items-center rounded-md p-1 mb-4">
+                          <Tabs value={filtersTab} onValueChange={(value) => setFiltersTab(value as 'quick' | 'advanced')} className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 gap-1">
+                              <TabsTrigger 
+                                value="advanced" 
+                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filtersTab === 'advanced' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Icon icon="filter" className="w-3.5 h-3.5" />
+                                  Filters
+                                </div>
+                              </TabsTrigger>
+                              <TabsTrigger 
+                                value="quick" 
+                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filtersTab === 'quick' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Icon icon="eye" className="w-3.5 h-3.5" />
+                                  At Glance
+                                </div>
                               </TabsTrigger>
                             </TabsList>
-                          </div>
 
-                          <TabsContent value="quick" className="mt-0">
-                            <BillingQuickFilters
-                              onFilterChange={handleQuickFilterChange}
-                              onClearFilters={handleClearAllFilters}
-                              activeFilters={activeFilterCards}
-                              encounterCount={filteredEncounters.length}
-                            />
-                          </TabsContent>
+                            <TabsContent value="advanced" className="mt-3">
+                              <BillingFiltersPanel
+                                filters={filters}
+                                onFiltersChange={setFilters}
+                                onClearFilters={handleClearAllFilters}
+                                encounterCount={filteredEncounters.length}
+                              />
+                            </TabsContent>
 
-                          <TabsContent value="advanced" className="mt-0">
-                            <BillingFiltersPanel
-                              filters={filters}
-                              onFiltersChange={setFilters}
-                              onClearFilters={handleClearAllFilters}
-                              encounterCount={filteredEncounters.length}
-                            />
-                          </TabsContent>
-                        </Tabs>
+                            <TabsContent value="quick" className="mt-3">
+                              <BillingQuickFilters
+                                onFilterChange={handleQuickFilterChange}
+                                onClearFilters={handleClearAllFilters}
+                                activeFilters={activeFilterCards}
+                                encounterCount={filteredEncounters.length}
+                              />
+                            </TabsContent>
+                          </Tabs>
+                        </div>
                       </div>
                     )}
                   </div>
 
                   {/* Mobile Tab Bar - Queue Type Selection */}
                   <div className="bg-white border-b border-gray-200">
-                    <div className="flex items-center px-3">
-                      <button
-                        onClick={() => setActiveTab('ready')}
-                        className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                          activeTab === 'ready'
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                        }`}
+                    <div className="px-3 py-2">
+                      <Tabs
+                        value={activeTab}
+                        onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+                        className="w-full"
                       >
-                        Ready to Bill
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('blocked')}
-                        className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                          activeTab === 'blocked'
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                        }`}
-                      >
-                        Blocked
-                      </button>
+                        <TabsList className="h-10 items-center justify-center rounded-lg p-1 text-muted-foreground grid w-full grid-cols-2 bg-gray-100">
+                          <TabsTrigger
+                            value="ready"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                          >
+                            Ready to Bill
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="blocked"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                          >
+                            Blocked
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
                     </div>
                   </div>
 

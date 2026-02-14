@@ -1,6 +1,6 @@
-import { FC, useState, useCallback } from 'react'
+import { FC, useState, useCallback, useEffect } from 'react'
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import TopNavigationBar from '@/components/old-ui/TopNavigationBar'
@@ -9,6 +9,7 @@ import { Sidebar } from '@/components/atoms/Sidebar/sidebar'
 import { Button } from '@/components/atoms/Button/button'
 import { Input } from '@/components/atoms/Input/input'
 import { Label } from '@/components/atoms/Label/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select'
 import { Icon } from '@/components/atoms/Icon/Icon'
 import {
   TooltipProvider,
@@ -574,6 +575,123 @@ const mockERAData: ERA[] = [
         note: 'Awaiting additional documentation'
       }
     ]
+  },
+  {
+    id: 'ERA-007',
+    insurance: 'Blue Cross Blue Shield',
+    processedOn: '2024-10-29',
+    processedBy: 'System',
+    notes: 'Automatically processed via EDI integration',
+    totalChecks: 2,
+    eraFileName: 'BCBS_835_20241029_SYSTEM.txt',
+    checks: [
+      {
+        id: 'CHK-020',
+        insurance: 'Blue Cross Blue Shield',
+        checkDate: '2024-10-28',
+        checkNumber: '00012348',
+        checkAmount: 18200.00,
+        checkProcessed: true,
+        totalClaimCount: 30,
+        processedClaimCount: 30,
+        partialProcessedClaimCount: 0,
+        unprocessedClaimCount: 0,
+        note: 'System processed',
+        claims: []
+      },
+      {
+        id: 'CHK-021',
+        insurance: 'Blue Cross Blue Shield',
+        checkDate: '2024-10-29',
+        checkNumber: '00012349',
+        checkAmount: 15400.00,
+        checkProcessed: true,
+        totalClaimCount: 22,
+        processedClaimCount: 22,
+        partialProcessedClaimCount: 0,
+        unprocessedClaimCount: 0,
+        note: 'System processed',
+        claims: []
+      }
+    ]
+  },
+  {
+    id: 'ERA-008',
+    insurance: 'UnitedHealthcare',
+    processedOn: '2024-10-30',
+    processedBy: 'System',
+    notes: 'Automated processing completed successfully',
+    totalChecks: 3,
+    eraFileName: 'UHC_835_20241030_SYSTEM.txt',
+    checks: [
+      {
+        id: 'CHK-022',
+        insurance: 'UnitedHealthcare',
+        checkDate: '2024-10-28',
+        checkNumber: 'UHC45683',
+        checkAmount: 11200.00,
+        checkProcessed: true,
+        totalClaimCount: 18,
+        processedClaimCount: 18,
+        partialProcessedClaimCount: 0,
+        unprocessedClaimCount: 0,
+        note: 'System processed',
+        claims: []
+      },
+      {
+        id: 'CHK-023',
+        insurance: 'UnitedHealthcare',
+        checkDate: '2024-10-29',
+        checkNumber: 'UHC45684',
+        checkAmount: 9800.00,
+        checkProcessed: true,
+        totalClaimCount: 15,
+        processedClaimCount: 15,
+        partialProcessedClaimCount: 0,
+        unprocessedClaimCount: 0,
+        note: 'System processed',
+        claims: []
+      },
+      {
+        id: 'CHK-024',
+        insurance: 'UnitedHealthcare',
+        checkDate: '2024-10-30',
+        checkNumber: 'UHC45685',
+        checkAmount: 13400.00,
+        checkProcessed: true,
+        totalClaimCount: 20,
+        processedClaimCount: 20,
+        partialProcessedClaimCount: 0,
+        unprocessedClaimCount: 0,
+        note: 'System processed',
+        claims: []
+      }
+    ]
+  },
+  {
+    id: 'ERA-009',
+    insurance: 'Aetna',
+    processedOn: '2024-10-31',
+    processedBy: 'System',
+    notes: 'EDI auto-processing - all checks validated',
+    totalChecks: 1,
+    eraFileName: 'AETNA_835_20241031_SYSTEM.txt',
+    checks: [
+      {
+        id: 'CHK-025',
+        insurance: 'Aetna',
+        checkDate: '2024-10-30',
+        checkNumber: 'AET98767',
+        checkAmount: 28700.00,
+        checkProcessed: true,
+        totalClaimCount: 45,
+        processedClaimCount: 45,
+        partialProcessedClaimCount: 0,
+        unprocessedClaimCount: 0,
+        note: 'System processed',
+        claims: []
+      }
+    ]
   }
 ]
 
@@ -757,6 +875,7 @@ const getCheckColumnDefs = (onCountClick?: (check: ERACheck, filterType: 'total'
  */
 export const ERAProcessPage: FC = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   
   // Set document title for better UX
   useDocumentTitle('ERA Process')
@@ -772,11 +891,22 @@ export const ERAProcessPage: FC = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Filter states
-  const [dateFrom, setDateFrom] = useState('2024-10-30')
-  const [dateTo, setDateTo] = useState('2025-10-30')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [insurance, setInsurance] = useState('')
   const [checkNumber, setCheckNumber] = useState('')
   const [claimId, setClaimId] = useState('')
+  const [processedByType, setProcessedByType] = useState<'All' | 'System' | 'Manual'>('All')
+
+  // Check for initial filter from navigation
+  useEffect(() => {
+    const filter = searchParams.get('filter')
+    if (filter === 'manual') {
+      setProcessedByType('Manual')
+    } else if (filter === 'system') {
+      setProcessedByType('System')
+    }
+  }, [searchParams])
 
   // Expanded ERA cards state
   const [expandedERAIds, setExpandedERAIds] = useState<Set<string>>(new Set())
@@ -787,6 +917,7 @@ export const ERAProcessPage: FC = () => {
   // Dialog state for claim details
   const [claimDialogOpen, setClaimDialogOpen] = useState(false)
   const [selectedCheck, setSelectedCheck] = useState<ERACheck | null>(null)
+  const [selectedERA, setSelectedERA] = useState<ERA | null>(null)
   const [claimFilterType, setClaimFilterType] = useState<'total' | 'processed' | 'partial' | 'unprocessed'>('total')
   const [expandedClaimIds, setExpandedClaimIds] = useState<Set<string>>(new Set())
 
@@ -816,7 +947,10 @@ export const ERAProcessPage: FC = () => {
 
   // Handle count link click to show claim details dialog
   const handleCountClick = (check: ERACheck, filterType: 'total' | 'processed' | 'partial' | 'unprocessed') => {
+    // Find the ERA that contains this check
+    const parentERA = eraData.find(era => era.checks.some(c => c.id === check.id))
     setSelectedCheck(check)
+    setSelectedERA(parentERA || null)
     setClaimFilterType(filterType)
     setClaimDialogOpen(true)
   }
@@ -889,11 +1023,15 @@ export const ERAProcessPage: FC = () => {
       navigate('/billing')
     } else if (itemLabel === 'Billing Manager') {
       navigate('/billing-manager')
+    } else if (itemLabel === 'Claims & Denials') {
+      navigate('/claims-denials')
     } else if (itemLabel === 'ERA Process') {
       // Already on this page, no need to navigate
       return
     } else if (itemLabel === 'Payments') {
       navigate('/payments')
+    } else if (itemLabel === 'Fee Sheet') {
+      navigate('/fee-sheet')
     }
   }
 
@@ -907,6 +1045,68 @@ export const ERAProcessPage: FC = () => {
     setMobileSidebarOpen(prev => !prev)
   }, [])
 
+  // Determine if ERA is System or Manual processed
+  const isSystemProcessed = (processedBy: string): boolean => {
+    // Only entries containing "System" are considered system-processed
+    // Everything else (including Admin, person names) is Manual
+    return processedBy.toLowerCase().includes('system')
+  }
+
+  // Filter ERAs based on all filter criteria
+  const getFilteredERAData = (): ERA[] => {
+    let filtered = eraData
+
+    if (processedByType === 'System') {
+      filtered = filtered.filter(era => isSystemProcessed(era.processedBy))
+    } else if (processedByType === 'Manual') {
+      filtered = filtered.filter(era => !isSystemProcessed(era.processedBy))
+    }
+
+    // Apply other filters
+    if (insurance) {
+      filtered = filtered.filter(era => 
+        era.insurance.toLowerCase().includes(insurance.toLowerCase())
+      )
+    }
+
+    if (checkNumber) {
+      filtered = filtered.filter(era =>
+        era.checks.some(check => 
+          check.checkNumber.toLowerCase().includes(checkNumber.toLowerCase())
+        )
+      )
+    }
+
+    if (claimId) {
+      filtered = filtered.filter(era =>
+        era.checks.some(check =>
+          check.claims.some(claim =>
+            claim.claimNumber.toLowerCase().includes(claimId.toLowerCase()) ||
+            claim.id.toLowerCase().includes(claimId.toLowerCase())
+          )
+        )
+      )
+    }
+
+    if (dateFrom) {
+      filtered = filtered.filter(era => {
+        const eraDate = new Date(era.processedOn)
+        const fromDate = new Date(dateFrom)
+        return eraDate >= fromDate
+      })
+    }
+
+    if (dateTo) {
+      filtered = filtered.filter(era => {
+        const eraDate = new Date(era.processedOn)
+        const toDate = new Date(dateTo)
+        return eraDate <= toDate
+      })
+    }
+
+    return filtered
+  }
+
   // Handle search/filter
   const handleSearchFilter = () => {
     console.log('Searching ERA with filters:', {
@@ -914,9 +1114,10 @@ export const ERAProcessPage: FC = () => {
       dateTo,
       insurance,
       checkNumber,
-      claimId
+      claimId,
+      processedByType
     })
-    // Filter logic will be implemented here
+    // Filter logic is handled by getFilteredERAData
   }
 
   return (
@@ -1055,7 +1256,7 @@ export const ERAProcessPage: FC = () => {
               <div className="bg-white border-b border-gray-200 px-4 py-4">
                 <div className="space-y-4">
                   {/* Filter Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <div>
                       <Label htmlFor="dateFrom" className="text-xs font-medium text-gray-700 mb-1">
                         From:
@@ -1131,6 +1332,21 @@ export const ERAProcessPage: FC = () => {
                         className="text-sm"
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="processedByType" className="text-xs font-medium text-gray-700 mb-1">
+                        Processed By:
+                      </Label>
+                      <Select value={processedByType} onValueChange={(value: 'All' | 'System' | 'Manual') => setProcessedByType(value)}>
+                        <SelectTrigger className="text-sm h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="All">All</SelectItem>
+                          <SelectItem value="System">System</SelectItem>
+                          <SelectItem value="Manual">Manual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {/* Search Button Row */}
@@ -1144,11 +1360,12 @@ export const ERAProcessPage: FC = () => {
                     </Button>
                     <Button
                       onClick={() => {
-                        setDateFrom('2024-10-30')
-                        setDateTo('2025-10-30')
+                        setDateFrom('')
+                        setDateTo('')
                         setInsurance('')
                         setCheckNumber('')
                         setClaimId('')
+                        setProcessedByType('All')
                       }}
                       variant="outline"
                       size="sm"
@@ -1163,16 +1380,20 @@ export const ERAProcessPage: FC = () => {
               {/* Main Content Area */}
               <div className="flex-1 overflow-auto p-6">
                 <div className="max-w-7xl mx-auto space-y-4">
-                  {eraData.length === 0 ? (
-                    <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                      <Icon icon="inbox" className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No ERA Records Found</h3>
-                      <p className="text-sm text-gray-600">
-                        Try adjusting your filters or upload a new ERA file to get started.
-                      </p>
-                    </div>
-                  ) : (
-                    eraData.map((era) => {
+                  {(() => {
+                    const filteredData = getFilteredERAData()
+                    if (filteredData.length === 0) {
+                      return (
+                        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                          <Icon icon="inbox" className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">No ERA Records Found</h3>
+                          <p className="text-sm text-gray-600">
+                            Try adjusting your filters or upload a new ERA file to get started.
+                          </p>
+                        </div>
+                      )
+                    }
+                    return filteredData.map((era) => {
                       const isExpanded = expandedERAIds.has(era.id)
                       const totalAmount = era.checks.reduce((sum, check) => sum + check.checkAmount, 0)
                       
@@ -1314,7 +1535,7 @@ export const ERAProcessPage: FC = () => {
                         </div>
                       )
                     })
-                  )}
+                  })()}
                 </div>
               </div>
             </div>
@@ -1339,24 +1560,78 @@ export const ERAProcessPage: FC = () => {
             {selectedCheck && (
               <div className="flex-1 overflow-auto">
                 {/* Summary Information */}
-                <div className="bg-gray-50 p-4 mb-4 rounded-lg border border-gray-200">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <Label className="text-xs text-gray-500 mb-1">Insurance</Label>
-                      <p className="font-medium text-gray-900">{selectedCheck.insurance}</p>
+                <div className="bg-gray-50 p-3 mb-4 rounded border border-gray-200 text-sm">
+                  <div className="space-y-2">
+                    {/* Check Information */}
+                    <div className="flex flex-wrap gap-x-6 gap-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Insurance:</span>
+                        <span className="font-medium text-gray-900">{selectedCheck.insurance}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Check Number:</span>
+                        <span className="font-medium text-gray-900">{selectedCheck.checkNumber}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Check Date:</span>
+                        <span className="font-medium text-gray-900">{new Date(selectedCheck.checkDate).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Check Amount:</span>
+                        <span className="font-medium text-gray-900">${selectedCheck.checkAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 mb-1">Check Number</Label>
-                      <p className="font-medium text-gray-900">{selectedCheck.checkNumber}</p>
+                    
+                    {/* Claim Counts */}
+                    <div className="flex flex-wrap gap-x-6 gap-y-1 pt-2 border-t border-gray-300">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Total Claim Count:</span>
+                        <span className="font-medium text-gray-900">{selectedCheck.totalClaimCount}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Processed Claim Count:</span>
+                        <span className="font-medium text-green-700">{selectedCheck.processedClaimCount}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Partial Processed Claim Count:</span>
+                        <span className="font-medium text-amber-700">{selectedCheck.partialProcessedClaimCount}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Unprocessed Claim Count:</span>
+                        <span className="font-medium text-red-700">{selectedCheck.unprocessedClaimCount}</span>
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 mb-1">Check Date</Label>
-                      <p className="font-medium text-gray-900">{new Date(selectedCheck.checkDate).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 mb-1">Check Amount</Label>
-                      <p className="font-medium text-gray-900">${selectedCheck.checkAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-                    </div>
+                    
+                    {/* Processing Info */}
+                    {selectedERA && (
+                      <div className="flex flex-wrap gap-x-6 gap-y-1 pt-2 border-t border-gray-300">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">ERA Settings Used:</span>
+                          <button 
+                            onClick={() => {
+                              console.log('View ERA settings')
+                              // TODO: Open ERA settings dialog
+                            }}
+                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                          >
+                            Default
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">Processed By:</span>
+                          <span className="font-medium text-gray-900">{selectedERA.processedBy}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">Processed On:</span>
+                          <span className="font-medium text-gray-900">
+                            {(() => {
+                              const date = new Date(selectedERA.processedOn)
+                              return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

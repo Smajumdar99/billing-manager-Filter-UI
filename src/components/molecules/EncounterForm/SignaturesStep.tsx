@@ -60,7 +60,7 @@ export const SignaturesStep: React.FC<SignaturesStepProps> = ({ data, updateData
                             <UserIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900">Staff Signature</h3>
+                            <h3 className="text-base font-semibold text-gray-900">Staff Signature</h3>
                             <p className="text-sm text-gray-500">Sign as <strong>Admin, Ensoftek</strong></p>
 
                             {data.staffSignature && (
@@ -74,7 +74,7 @@ export const SignaturesStep: React.FC<SignaturesStepProps> = ({ data, updateData
 
                     <button
                         onClick={handleStaffSign}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${data.staffSignature
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${data.staffSignature
                                 ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
                             }`}
@@ -92,7 +92,7 @@ export const SignaturesStep: React.FC<SignaturesStepProps> = ({ data, updateData
                             <PencilSquareIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900">Patient / Guardian Signature</h3>
+                            <h3 className="text-base font-semibold text-gray-900">Patient / Guardian Signature</h3>
                             <p className="text-sm text-gray-500">Capture patient acknowledgment</p>
 
                             {data.patientSignature && (

@@ -1,7 +1,8 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogTitle, DialogDescription } from '@/components/atoms/Dialog/dialog';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
+import { Switch } from '@/components/atoms/Switch';
 import { 
   Select,
   SelectContent,
@@ -14,7 +15,8 @@ import {
   PhoneIcon,
   BuildingOfficeIcon,
   IdentificationIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/atoms/Tabs/tabs';
 
@@ -72,6 +74,7 @@ interface DemographicData {
     hasFirearmRestriction: boolean;
     restrictionDate: string;
   };
+  careTeam?: string[];
 }
 
 interface DemographicsEditorProps {
@@ -88,6 +91,24 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
   onSave
 }) => {
   const [activeTab, setActiveTab] = useState('who');
+  const [showValidationBar, setShowValidationBar] = useState(false);
+  const [enabledSections, setEnabledSections] = useState({
+    who: true,
+    contact: true,
+    choices: true,
+    employer: true,
+    stats: true,
+    misc: true,
+    pregnancy: true
+  });
+
+  // Toggle section visibility
+  const toggleSection = (section: string) => {
+    setEnabledSections(prev => ({
+      ...prev,
+      [section]: !prev[section as keyof typeof prev]
+    }));
+  };
   const [formData, setFormData] = useState<DemographicData>({
     name: patientData?.name || '',
     preferredName: patientData?.preferredName || '',
@@ -140,7 +161,8 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
     restrictions: {
       hasFirearmRestriction: patientData?.restrictions?.hasFirearmRestriction || false,
       restrictionDate: patientData?.restrictions?.restrictionDate || ''
-    }
+    },
+    careTeam: patientData?.careTeam || []
   });
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -149,6 +171,86 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
     const hasChanged = JSON.stringify(formData) !== JSON.stringify(patientData);
     setHasChanges(hasChanged);
   }, [formData, patientData]);
+
+  // Validation logic - define mandatory fields per tab
+  const tabValidation = useMemo(() => {
+    return {
+      who: {
+        label: 'WHO',
+        fields: [
+          { name: 'name', label: 'Full Name', value: formData.name },
+          { name: 'dob', label: 'Date of Birth', value: formData.dob }
+        ]
+      },
+      contact: {
+        label: 'CONTACT',
+        fields: [
+          { name: 'address', label: 'Address', value: formData.address },
+          { name: 'city', label: 'City', value: formData.city },
+          { name: 'state', label: 'State', value: formData.state },
+          { name: 'zipCode', label: 'ZIP Code', value: formData.zipCode }
+        ]
+      },
+      choices: {
+        label: 'CHOICES',
+        fields: []
+      },
+      employer: {
+        label: 'EMPLOYER',
+        fields: []
+      },
+      stats: {
+        label: 'STATS',
+        fields: []
+      },
+      misc: {
+        label: 'MISC',
+        fields: []
+      },
+      pregnancy: {
+        label: 'PREGNANCY',
+        fields: []
+      }
+    };
+  }, [formData]);
+
+  // Check which tabs have missing mandatory fields
+  const tabsWithErrors = useMemo(() => {
+    const errors: { [key: string]: string[] } = {};
+    
+    Object.entries(tabValidation).forEach(([tabKey, tabData]) => {
+      const missingFields = tabData.fields
+        .filter(field => !field.value || field.value.trim() === '')
+        .map(field => field.label);
+      
+      if (missingFields.length > 0) {
+        errors[tabKey] = missingFields;
+      }
+    });
+    
+    return errors;
+  }, [tabValidation]);
+
+  // Get all missing fields across all tabs
+  const allMissingFields = useMemo(() => {
+    const missing: { tab: string; fields: string[] }[] = [];
+    
+    Object.entries(tabsWithErrors).forEach(([tabKey, fields]) => {
+      if (fields.length > 0) {
+        missing.push({
+          tab: tabValidation[tabKey as keyof typeof tabValidation].label,
+          fields
+        });
+      }
+    });
+    
+    return missing;
+  }, [tabsWithErrors, tabValidation]);
+
+  // Show validation bar when there are missing fields
+  useEffect(() => {
+    setShowValidationBar(allMissingFields.length > 0);
+  }, [allMissingFields]);
 
   // Handle input changes
   const handleInputChange = (field: string, value: string) => {
@@ -264,7 +366,8 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
           restrictions: {
             hasFirearmRestriction: patientData?.restrictions?.hasFirearmRestriction || false,
             restrictionDate: patientData?.restrictions?.restrictionDate || ''
-          }
+          },
+          careTeam: patientData?.careTeam || []
         });
         setHasChanges(false);
         onClose();
@@ -285,54 +388,274 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
         </DialogDescription>
         
         {/* Dialog Title */}
-        <div className="px-4 py-2 rounded-t-xl">
+        <div className="p-4 rounded-t-xl">
           <h2 className="text-base font-semibold text-gray-900 flex items-center gap-3">
             <UserIcon className="w-6 h-6 text-blue-600" />
             Edit Demographics
           </h2>
         </div>
+
+        {/* Universal Validation Notification Bar */}
+        {showValidationBar && (
+          <div className="mx-4 bg-amber-50 border border-amber-200 rounded-lg p-3 animate-in slide-in-from-top-2 duration-300">
+            <div className="flex items-start gap-3">
+              <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-amber-900 mb-1">Missing Required Fields</h4>
+                <div className="space-y-1">
+                  {allMissingFields.map((item, index) => (
+                    <div key={index} className="text-xs text-amber-800">
+                      <span className="font-medium">{item.tab}:</span>{' '}
+                      <span>{item.fields.join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowValidationBar(false)}
+                className="text-amber-600 hover:text-amber-800 transition-colors"
+                aria-label="Dismiss notification"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* Main content */}
-        <div className="flex flex-1 min-h-0 overflow-hidden gap-6 p-4">
-          <div className="min-w-0 p-6 space-y-4 bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col w-full">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            {/* Tab Navigation */}
-            <div className="border-b border-gray-200 bg-gray-50">
-              <TabsList className="bg-transparent p-2 h-auto justify-start gap-2">
-                <TabsTrigger value="who" className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                  <UserIcon className="w-4 h-4 mr-2" />
-                  WHO
-                </TabsTrigger>
-                <TabsTrigger value="contact" className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                  <PhoneIcon className="w-4 h-4 mr-2" />
-                  CONTACT
-                </TabsTrigger>
-                <TabsTrigger value="choices" className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                  <BuildingOfficeIcon className="w-4 h-4 mr-2" />
-                  CHOICES
-                </TabsTrigger>
-                <TabsTrigger value="employer" className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                  <IdentificationIcon className="w-4 h-4 mr-2" />
-                  EMPLOYER
-                </TabsTrigger>
-                <TabsTrigger value="stats" className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                  <ExclamationTriangleIcon className="w-4 h-4 mr-2" />
-                  STATS
-                </TabsTrigger>
-                <TabsTrigger value="misc" className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                  <UserIcon className="w-4 h-4 mr-2" />
-                  MISC
-                </TabsTrigger>
-                <TabsTrigger value="pregnancy" className="px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-                  <PhoneIcon className="w-4 h-4 mr-2" />
-                  PREGNANCY
-                </TabsTrigger>
-              </TabsList>
+        <div className="flex flex-1 min-h-0 overflow-hidden gap-2 px-4 pt-2 pb-2">
+          {/* Sidebar Navigation */}
+          <div className="w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Sections</h3>
             </div>
+            <div className="divide-y divide-gray-200">
+              {/* WHO Section */}
+              <div className="group">
+                <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
+                  activeTab === 'who' && enabledSections.who
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-l-blue-500'
+                    : enabledSections.who
+                    ? 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-400 bg-gray-50'
+                }`}>
+                  <button
+                    onClick={() => enabledSections.who && setActiveTab('who')}
+                    disabled={!enabledSections.who}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
+                    <UserIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">WHO</span>
+                  </button>
+                  {tabsWithErrors.who && enabledSections.who && (
+                    <span className="flex h-2 w-2 mr-1">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  )}
+                  <Switch
+                    checked={enabledSections.who}
+                    onCheckedChange={() => toggleSection('who')}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
 
+              {/* CONTACT Section */}
+              <div className="group">
+                <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
+                  activeTab === 'contact' && enabledSections.contact
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-l-blue-500'
+                    : enabledSections.contact
+                    ? 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-400 bg-gray-50'
+                }`}>
+                  <button
+                    onClick={() => enabledSections.contact && setActiveTab('contact')}
+                    disabled={!enabledSections.contact}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
+                    <PhoneIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">CONTACT</span>
+                  </button>
+                  {tabsWithErrors.contact && enabledSections.contact && (
+                    <span className="flex h-2 w-2 mr-1">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  )}
+                  <Switch
+                    checked={enabledSections.contact}
+                    onCheckedChange={() => toggleSection('contact')}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
+
+              {/* CHOICES Section */}
+              <div className="group">
+                <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
+                  activeTab === 'choices' && enabledSections.choices
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-l-blue-500'
+                    : enabledSections.choices
+                    ? 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-400 bg-gray-50'
+                }`}>
+                  <button
+                    onClick={() => enabledSections.choices && setActiveTab('choices')}
+                    disabled={!enabledSections.choices}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
+                    <BuildingOfficeIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">CHOICES</span>
+                  </button>
+                  {tabsWithErrors.choices && enabledSections.choices && (
+                    <span className="flex h-2 w-2 mr-1">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  )}
+                  <Switch
+                    checked={enabledSections.choices}
+                    onCheckedChange={() => toggleSection('choices')}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
+
+              {/* EMPLOYER Section */}
+              <div className="group">
+                <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
+                  activeTab === 'employer' && enabledSections.employer
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-l-blue-500'
+                    : enabledSections.employer
+                    ? 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-400 bg-gray-50'
+                }`}>
+                  <button
+                    onClick={() => enabledSections.employer && setActiveTab('employer')}
+                    disabled={!enabledSections.employer}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
+                    <IdentificationIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">EMPLOYER</span>
+                  </button>
+                  {tabsWithErrors.employer && enabledSections.employer && (
+                    <span className="flex h-2 w-2 mr-1">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  )}
+                  <Switch
+                    checked={enabledSections.employer}
+                    onCheckedChange={() => toggleSection('employer')}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
+
+              {/* STATS Section */}
+              <div className="group">
+                <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
+                  activeTab === 'stats' && enabledSections.stats
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-l-blue-500'
+                    : enabledSections.stats
+                    ? 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-400 bg-gray-50'
+                }`}>
+                  <button
+                    onClick={() => enabledSections.stats && setActiveTab('stats')}
+                    disabled={!enabledSections.stats}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
+                    <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">STATS</span>
+                  </button>
+                  {tabsWithErrors.stats && enabledSections.stats && (
+                    <span className="flex h-2 w-2 mr-1">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  )}
+                  <Switch
+                    checked={enabledSections.stats}
+                    onCheckedChange={() => toggleSection('stats')}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
+
+              {/* MISC Section */}
+              <div className="group">
+                <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
+                  activeTab === 'misc' && enabledSections.misc
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-l-blue-500'
+                    : enabledSections.misc
+                    ? 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-400 bg-gray-50'
+                }`}>
+                  <button
+                    onClick={() => enabledSections.misc && setActiveTab('misc')}
+                    disabled={!enabledSections.misc}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
+                    <UserIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">MISC</span>
+                  </button>
+                  {tabsWithErrors.misc && enabledSections.misc && (
+                    <span className="flex h-2 w-2 mr-1">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  )}
+                  <Switch
+                    checked={enabledSections.misc}
+                    onCheckedChange={() => toggleSection('misc')}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
+
+              {/* PREGNANCY Section */}
+              <div className="group">
+                <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
+                  activeTab === 'pregnancy' && enabledSections.pregnancy
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-l-blue-500'
+                    : enabledSections.pregnancy
+                    ? 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-400 bg-gray-50'
+                }`}>
+                  <button
+                    onClick={() => enabledSections.pregnancy && setActiveTab('pregnancy')}
+                    disabled={!enabledSections.pregnancy}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
+                    <PhoneIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">PREGNANCY</span>
+                  </button>
+                  {tabsWithErrors.pregnancy && enabledSections.pregnancy && (
+                    <span className="flex h-2 w-2 mr-1">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  )}
+                  <Switch
+                    checked={enabledSections.pregnancy}
+                    onCheckedChange={() => toggleSection('pregnancy')}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 min-w-0 p-6 space-y-4 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto">
               {/* WHO Tab - Personal Information */}
+              {enabledSections.who && (
               <TabsContent value="who" className="space-y-6 mt-0">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
@@ -477,8 +800,10 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
                   </div>
                 </div>
               </TabsContent>
+              )}
 
               {/* Contact Information Tab */}
+              {enabledSections.contact && (
               <TabsContent value="contact" className="space-y-6 mt-0">
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
@@ -596,8 +921,10 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
                   </div>
                 </div>
               </TabsContent>
+              )}
 
               {/* Employment Tab */}
+              {enabledSections.employer && (
               <TabsContent value="employer" className="space-y-6 mt-0">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
@@ -674,8 +1001,10 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
                   </div>
                 </div>
               </TabsContent>
+              )}
 
               {/* Identifiers Tab */}
+              {enabledSections.choices && (
               <TabsContent value="choices" className="space-y-6 mt-0">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
@@ -724,8 +1053,10 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
                   </div>
                 </div>
               </TabsContent>
+              )}
 
               {/* Alerts Tab */}
+              {enabledSections.stats && (
               <TabsContent value="stats" className="space-y-6 mt-0">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -789,8 +1120,10 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
                   </div>
                 </div>
               </TabsContent>
+              )}
 
               {/* MISC Tab */}
+              {enabledSections.misc && (
               <TabsContent value="misc" className="space-y-6 mt-0">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
@@ -805,8 +1138,8 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
                     <label className="block text-sm font-medium text-gray-700 mb-2">Birth Place</label>
                     <Input
                       type="text"
-                      value={formData.birthPlace}
-                      onChange={(e) => handleInputChange('birthPlace', e.target.value)}
+                      value={formData.placeOfBirth}
+                      onChange={(e) => handleInputChange('placeOfBirth', e.target.value)}
                     />
                   </div>
                   <div>
@@ -827,8 +1160,10 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
                   </div>
                 </div>
               </TabsContent>
+              )}
 
               {/* PREGNANCY Tab */}
+              {enabledSections.pregnancy && (
               <TabsContent value="pregnancy" className="space-y-6 mt-0">
                 <div className="space-y-4">
                   <h4 className="text-lg font-medium text-gray-900">Pregnancy Information</h4>
@@ -862,13 +1197,14 @@ export const DemographicsEditor: FC<DemographicsEditorProps> = ({
                   </div>
                 </div>
               </TabsContent>
+              )}
             </div>
           </Tabs>
           </div>
         </div>
 
         {/* Footer */}
-        <DialogFooter className="py-2.5 px-4">
+        <DialogFooter className="p-4">
           <Button variant="ghost" onClick={handleCancel} className="px-3 h-9 font-normal border-gray-200 text-sm">Cancel</Button>
           <Button variant="default" onClick={handleSave} disabled={!hasChanges}>Save Changes</Button>
         </DialogFooter>

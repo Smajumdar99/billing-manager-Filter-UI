@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useImperativeHandle, forwardRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout'
 import { PlusIcon, Cog6ToothIcon, PlusCircleIcon, ArrowsPointingOutIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { NotificationCenter } from '@/components/widgets/NotificationCenter/notification-center';
@@ -8,7 +9,10 @@ import { DemographicsWidget } from '@/components/widgets/DemographicsWidget/demo
 import { InsuranceWidget } from '@/components/widgets/InsuranceWidget/insurance-widget';
 import { MedicationsWidget } from '@/components/widgets/MedicationsWidget/medications-widget';
 import { ProblemsWidget } from '@/components/widgets/ProblemsWidget/problems-widget';
+import { BillingWidget } from '@/components/widgets/BillingWidget/billing-widget';
 import AddProblemDialog from '@/components/molecules/AddProblemDialog/AddProblemDialog';
+import { NewPaymentDialog } from '@/components/molecules/NewPaymentDialog/NewPaymentDialog';
+import { CreditCardsDialog } from '@/components/molecules/CreditCardsDialog/CreditCardsDialog';
 import { Button } from '@/components/atoms/Button/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/atoms/Dialog/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -82,6 +86,13 @@ const availableWidgets: WidgetConfig[] = [
     title: 'Problems',
     component: ProblemsWidget,
     defaultSize: { w: 6, h: 8 } // 6 columns wide, 8 rows tall
+  },
+  {
+    id: 'billing',
+    type: 'billing',
+    title: 'Billing',
+    component: BillingWidget,
+    defaultSize: { w: 6, h: 8 } // 6 columns wide, 8 rows tall
   }
 ]
 
@@ -93,6 +104,7 @@ interface ClientSummaryChartPageProps {
   externalActiveWidgets?: string[];
   externalAddWidget?: (widgetId: string) => void;
   externalRemoveWidget?: (widgetId: string) => void;
+  onWidgetExpandStateChange?: (expanded: boolean) => void;
 }
 
 /**
@@ -102,15 +114,22 @@ interface ClientSummaryChartPageProps {
  * Allows users to add, remove, and rearrange widgets in a responsive grid.
  * Follows Apple-style design principles with clean, professional layout.
  */
-const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
+const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSummaryChartPageProps>(({
   externalEditMode = false,
   externalActiveWidgets,
   externalAddWidget,
-  externalRemoveWidget
-}) => {
+  externalRemoveWidget,
+  onWidgetExpandStateChange
+}, ref) => {
+  const navigate = useNavigate()
+  
   // Use external active widgets if provided, otherwise fallback to internal state
-  const [internalActiveWidgets, setInternalActiveWidgets] = useState<string[]>(['notification-center', 'functional-status', 'diagnosis', 'demographics', 'insurance'])
+  const [internalActiveWidgets, setInternalActiveWidgets] = useState<string[]>(['notification-center', 'functional-status', 'diagnosis', 'demographics', 'insurance', 'billing'])
   const activeWidgets = externalActiveWidgets || internalActiveWidgets
+  
+  // State for widget expand/collapse
+  const [widgetsExpanded, setWidgetsExpanded] = useState<boolean>(true)
+  const [collapsedWidgets, setCollapsedWidgets] = useState<Set<string>>(new Set())
   
   // State for grid layouts (responsive breakpoints)
   // Updated to use 3 columns instead of 4 for wider widgets
@@ -123,8 +142,9 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
       { i: 'diagnosis', x: 6, y: 0, w: 3, h: 8, minW: 3, minH: 6 },
       { i: 'demographics', x: 0, y: 8, w: 6, h: 8, minW: 4, minH: 6 },
       { i: 'insurance', x: 6, y: 8, w: 3, h: 8, minW: 3, minH: 6 },
-      { i: 'medications', x: 0, y: 16, w: 4, h: 8, minW: 4, minH: 6 },
-      { i: 'problems', x: 4, y: 16, w: 5, h: 8, minW: 4, minH: 6 }
+      { i: 'billing', x: 0, y: 16, w: 3, h: 8, minW: 3, minH: 6 },
+      { i: 'medications', x: 3, y: 16, w: 3, h: 8, minW: 3, minH: 6 },
+      { i: 'problems', x: 6, y: 16, w: 3, h: 8, minW: 3, minH: 6 }
     ],
     md: [
       { i: 'notification-center', x: 0, y: 0, w: 4, h: 8, minW: 3, minH: 6 },
@@ -132,8 +152,9 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
       { i: 'diagnosis', x: 8, y: 0, w: 4, h: 8, minW: 3, minH: 6 },
       { i: 'demographics', x: 0, y: 8, w: 8, h: 8, minW: 4, minH: 6 },
       { i: 'insurance', x: 8, y: 8, w: 4, h: 8, minW: 3, minH: 6 },
-      { i: 'medications', x: 0, y: 16, w: 6, h: 8, minW: 4, minH: 6 },
-      { i: 'problems', x: 6, y: 16, w: 6, h: 8, minW: 4, minH: 6 }
+      { i: 'billing', x: 0, y: 16, w: 4, h: 8, minW: 3, minH: 6 },
+      { i: 'medications', x: 4, y: 16, w: 4, h: 8, minW: 3, minH: 6 },
+      { i: 'problems', x: 8, y: 16, w: 4, h: 8, minW: 3, minH: 6 }
     ],
     sm: [
       { i: 'notification-center', x: 0, y: 0, w: 9, h: 8, minW: 9, minH: 6 },
@@ -141,8 +162,9 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
       { i: 'diagnosis', x: 0, y: 16, w: 9, h: 8, minW: 9, minH: 6 },
       { i: 'demographics', x: 0, y: 24, w: 9, h: 8, minW: 9, minH: 6 },
       { i: 'insurance', x: 0, y: 32, w: 9, h: 8, minW: 9, minH: 6 },
-      { i: 'medications', x: 0, y: 40, w: 9, h: 8, minW: 9, minH: 6 },
-      { i: 'problems', x: 0, y: 48, w: 9, h: 8, minW: 9, minH: 6 }
+      { i: 'billing', x: 0, y: 40, w: 9, h: 8, minW: 9, minH: 6 },
+      { i: 'medications', x: 0, y: 48, w: 9, h: 8, minW: 9, minH: 6 },
+      { i: 'problems', x: 0, y: 56, w: 9, h: 8, minW: 9, minH: 6 }
     ]
   })
 
@@ -150,10 +172,57 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
   const [internalEditMode] = useState(false)
   const [maximizedWidget, setMaximizedWidget] = useState<string | null>(null)
   
+  // Toggle expand/collapse all widgets
+  const toggleExpandAll = () => {
+    const newExpanded = !widgetsExpanded
+    setWidgetsExpanded(newExpanded)
+    
+    if (newExpanded) {
+      // Expand all - clear collapsed widgets
+      setCollapsedWidgets(new Set())
+    } else {
+      // Collapse all - add all active widgets to collapsed set
+      setCollapsedWidgets(new Set(activeWidgets))
+    }
+    
+    // Notify parent component
+    onWidgetExpandStateChange?.(newExpanded)
+  }
+  
+  // Expose toggle function to parent via ref
+  useImperativeHandle(ref, () => ({
+    toggleExpandAll
+  }))
+  
+  // Update layouts when widgets are collapsed/expanded
+  const getAdjustedLayouts = () => {
+    const adjustedLayouts: { [key: string]: Layout[] } = {}
+    
+    Object.keys(layouts).forEach(breakpoint => {
+      adjustedLayouts[breakpoint] = layouts[breakpoint].map(layout => {
+        const isCollapsed = collapsedWidgets.has(layout.i)
+        return {
+          ...layout,
+          h: isCollapsed ? 1 : layout.h // Collapsed widgets have height of 1
+        }
+      })
+    })
+    
+    return adjustedLayouts
+  }
+  
+  const adjustedLayouts = getAdjustedLayouts()
+  
   // State for AddProblemDialog
   const [isAddProblemDialogOpen, setIsAddProblemDialogOpen] = useState(false)
   const [problems, setProblems] = useState<any[]>([])
   const [editingProblem, setEditingProblem] = useState<any | null>(null)
+  
+  // State for NewPaymentDialog
+  const [isNewPaymentDialogOpen, setIsNewPaymentDialogOpen] = useState(false)
+  
+  // State for CreditCardsDialog
+  const [isCreditCardsDialogOpen, setIsCreditCardsDialogOpen] = useState(false)
   
   // Use external props if provided, otherwise use internal state
   const isEditMode = externalEditMode || internalEditMode
@@ -318,44 +387,40 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
     switch (widgetType) {
       case 'notification_center':
         return (
-          <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50">
             <Button
               onClick={() => console.log('New Task')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
-              <PlusCircleIcon className="w-4 h-4" />
+              <PlusCircleIcon className="w-5 h-5" />
               New Task
             </Button>
             <Button
               onClick={() => console.log('New Reminder')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
-              <PlusCircleIcon className="w-4 h-4" />
+              <PlusCircleIcon className="w-5 h-5" />
               New Reminder
             </Button>
           </div>
         )
       case 'diagnosis':
         return (
-          <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50">
             <Button
               onClick={() => console.log('Add Diagnosis')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
-              <PlusCircleIcon className="w-4 h-4" />
+              <PlusCircleIcon className="w-5 h-5" />
               Add Diagnosis
             </Button>
             <Button
               onClick={() => console.log('View History')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
               View History
             </Button>
@@ -363,7 +428,7 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
         )
       case 'demographics':
         return (
-          <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50">
             <Button
               onClick={() => {
                 // Find the Edit Demographics button in the widget and click it
@@ -375,17 +440,15 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
                 }
               }}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
-              <PlusCircleIcon className="w-4 h-4" />
+              <PlusCircleIcon className="w-5 h-5" />
               Edit Demographics
             </Button>
             <Button
               onClick={() => console.log('View Full Profile')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
               View Full Profile
             </Button>
@@ -393,21 +456,19 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
         )
       case 'insurance':
         return (
-          <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50">
             <Button
               onClick={() => console.log('Add Insurance')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
-              <PlusCircleIcon className="w-4 h-4" />
+              <PlusCircleIcon className="w-5 h-5" />
               Add Insurance
             </Button>
             <Button
               onClick={() => console.log('Verify Coverage')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
               Verify Coverage
             </Button>
@@ -415,21 +476,19 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
         )
       case 'medications':
         return (
-          <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50">
             <Button
               onClick={() => console.log('Add Medication')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
-              <PlusCircleIcon className="w-4 h-4" />
+              <PlusCircleIcon className="w-5 h-5" />
               Add Medication
             </Button>
             <Button
               onClick={() => console.log('Refill Request')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
               Refill Request
             </Button>
@@ -437,32 +496,80 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
         )
       case 'problems':
         return (
-          <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50">
             <Button
               onClick={handleAddProblem}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
-              <PlusCircleIcon className="w-4 h-4" />
+              <PlusCircleIcon className="w-5 h-5" />
               Add Problem
             </Button>
             <Button
               onClick={handleViewEditAllProblems}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
               View/Edit All
             </Button>
             <Button
               onClick={() => console.log('Preview & Print Problems')}
               variant="link"
-              size="sm"
-              className="gap-1.5 shrink-0 text-blue-600 hover:text-blue-700"
+              className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal"
             >
               Preview & Print
             </Button>
+          </div>
+        )
+      case 'billing':
+        const billingLinks = [
+          { label: 'Payments Receipts', onClick: () => console.log('Payments Receipts') },
+          { label: 'Statement', onClick: () => navigate('/statements') },
+          { label: 'Prior Authorization', onClick: () => console.log('Prior Authorization') },
+          { label: 'New Payment', onClick: () => setIsNewPaymentDialogOpen(true) },
+          { label: 'Credit cards on file', onClick: () => setIsCreditCardsDialogOpen(true) },
+          { label: 'Write Off', onClick: () => console.log('Write Off') },
+        ];
+        
+        // Show first 2-3 links directly, rest in "More" dropdown
+        const visibleLinks = billingLinks.slice(0, 2);
+        const hiddenLinks = billingLinks.slice(2);
+        
+        return (
+          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50 flex-wrap min-w-0">
+            {visibleLinks.map((link) => (
+              <Button
+                key={link.label}
+                onClick={link.onClick}
+                variant="link"
+                className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal whitespace-nowrap"
+              >
+                {link.label}
+              </Button>
+            ))}
+            {hiddenLinks.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="link"
+                    className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal whitespace-nowrap"
+                  >
+                    More
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {hiddenLinks.map((link) => (
+                    <DropdownMenuItem
+                      key={link.label}
+                      onClick={link.onClick}
+                      className="cursor-pointer"
+                    >
+                      {link.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         )
       default:
@@ -478,6 +585,7 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
     if (!widget) return null
 
     const WidgetComponent = widget.component
+    const isCollapsed = collapsedWidgets.has(widgetId)
 
     return (
       <div 
@@ -487,7 +595,10 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
           isEditMode && "ring-2 ring-blue-500 ring-opacity-50 rounded-lg"
         )}
       >
-        <div className="h-full flex flex-col bg-white rounded-lg border shadow-sm">
+        <div className={cn(
+          "h-full flex flex-col bg-white rounded-lg border shadow-sm transition-all duration-300",
+          isCollapsed && "overflow-hidden"
+        )}>
           {/* Widget Header with actions */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2">
@@ -545,18 +656,20 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
           </div>
           
           {/* Widget Content */}
-          <div className="flex-1 p-4 overflow-hidden">
-            <WidgetComponent 
-              patientId="demo-patient" 
-              className="h-full"
-              userRole="clinician"
-              isFullscreen={false}
-              {...(widget.type === 'problems' && {
-                onEditProblem: handleEditProblemFromWidget,
-                onDeleteProblem: handleDeleteProblemFromWidget
-              })}
-            />
-          </div>
+          {!isCollapsed && (
+            <div className="flex-1 p-4 overflow-hidden">
+              <WidgetComponent 
+                patientId="demo-patient" 
+                className="h-full"
+                userRole="clinician"
+                isFullscreen={false}
+                {...(widget.type === 'problems' && {
+                  onEditProblem: handleEditProblemFromWidget,
+                  onDeleteProblem: handleDeleteProblemFromWidget
+                })}
+              />
+            </div>
+          )}
           
           {/* Widget Footer Actions */}
           {renderWidgetFooter(widget.type)}
@@ -601,7 +714,7 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
           // Grid layout with widgets
           <ResponsiveGridLayout
             className="layout"
-            layouts={layouts}
+            layouts={adjustedLayouts}
             onLayoutChange={handleLayoutChange}
             breakpoints={breakpoints}
             cols={cols}
@@ -654,8 +767,24 @@ const ClientSummaryChartPage: React.FC<ClientSummaryChartPageProps> = ({
         existingProblems={problems}
         editingProblem={editingProblem}
       />
+
+      {/* New Payment Dialog */}
+      <NewPaymentDialog
+        isOpen={isNewPaymentDialogOpen}
+        onClose={() => setIsNewPaymentDialogOpen(false)}
+        patientId="1003619"
+      />
+
+      {/* Credit Cards Dialog */}
+      <CreditCardsDialog
+        isOpen={isCreditCardsDialogOpen}
+        onClose={() => setIsCreditCardsDialogOpen(false)}
+        patientId="1003619"
+      />
     </div>
   )
-}
+})
+
+ClientSummaryChartPage.displayName = 'ClientSummaryChartPage'
 
 export default ClientSummaryChartPage

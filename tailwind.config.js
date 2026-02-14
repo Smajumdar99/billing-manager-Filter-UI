@@ -21,6 +21,9 @@ module.exports = {
   		}
   	},
   	extend: {
+  		maxWidth: {
+  			'8xl': '1536px',
+  		},
   		fontFamily: {
   			sans: ['Euclid Circular B', 'sans-serif'],
   			euclid: ['Euclid Circular B', 'sans-serif'],

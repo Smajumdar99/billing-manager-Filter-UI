@@ -129,7 +129,9 @@ const mockPatients = [
     levelOfCare: 'Outpatient',
     email: 'john.smith@email.com',
     nextAppointment: '2024-02-01',
-    status: 'Active',
+    status: 'Inactive',
+    deceasedDate: '2026-01-06',
+    dateOfDeath: '2026-01-06',
   },
   {
     id: '2',
@@ -1859,7 +1861,9 @@ const ClientsList: React.FC<ClientsListProps> = ({
       insurance: patient.insurance,
       encounterCount: patient.encounterCount,
       diagnosis: patient.diagnosis,
-      levelOfCare: patient.levelOfCare
+      levelOfCare: patient.levelOfCare,
+      dateOfDeath: patient.dateOfDeath,
+      deceasedDate: patient.deceasedDate
     }));
 
     // Store the desired menu tab to navigate directly to Client Summary Chart

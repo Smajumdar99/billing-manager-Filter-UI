@@ -6,7 +6,7 @@ import {
   Square3Stack3DIcon as MedicationIcon, DocumentCheckIcon, AcademicCapIcon, 
   CheckCircleIcon, ExclamationCircleIcon, UserGroupIcon as GroupIcon,
   FolderIcon, DocumentDuplicateIcon, PresentationChartBarIcon,
-  ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon
+  ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, BanknotesIcon
 } from '@heroicons/react/24/outline';
 import { 
   TooltipProvider, 
@@ -149,6 +149,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
 const defaultSidebarItems = [
   { icon: <ChartPieIcon />, label: "Client Summary Chart" },
   { icon: <DocumentTextIcon />, label: "Past Encounters" },
+  { icon: <BanknotesIcon />, label: "Fee Sheet" },
   { icon: <ArrowTrendingUpIcon />, label: "Timeline" },
   { icon: <EnvelopeOpenIcon />, label: "Message Patient" },
   { icon: <ChartBarIcon />, label: "ROI Dashboard", badge: "1" },

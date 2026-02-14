@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 export interface AutocompleteOption {
   value: string;
   label: string;
+  code?: string;
+  address?: string;
 }
 
 interface AutocompleteProps {
@@ -133,7 +135,17 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
                 "border-b border-gray-100 last:border-b-0"
               )}
             >
-              {option.label}
+              <div className="font-medium text-gray-900">{option.label}</div>
+              {(option.code || option.address) && (
+                <div className="mt-1 space-y-0.5">
+                  {option.code && (
+                    <div className="text-xs text-gray-600">Code: {option.code}</div>
+                  )}
+                  {option.address && (
+                    <div className="text-xs text-gray-600">{option.address}</div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

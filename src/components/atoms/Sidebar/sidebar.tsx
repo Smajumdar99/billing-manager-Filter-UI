@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
+import { PanelLeft, PanelRight } from 'lucide-react';
 import { 
   TooltipProvider, 
   TooltipRoot, 
@@ -51,8 +52,8 @@ const getIconColor = (label: string, isActive?: boolean): string => {
   if (label.includes('Report') || label.includes('Error') || label.includes('Statement')) {
     return 'text-purple-600 bg-purple-50/50';
   }
-  // Claims/Insurance - Orange
-  if (label.includes('Claims') || label.includes('ERA') || label.includes('Eligibility')) {
+  // Claims/Insurance - Orange (excluding Claims & Denials which uses default gray)
+  if ((label.includes('Claims') && label !== 'Claims & Denials') || label.includes('ERA') || label.includes('Eligibility')) {
     return 'text-orange-600 bg-orange-50/50';
   }
   // Data/Processing - Gray
@@ -192,8 +193,8 @@ const billingNavItems: Array<{
       { label: "Level of Care" }
     ]
   },
-  { icon: "exclamation-triangle", label: "Denials Manager" },
-  { icon: "clipboard-list", label: "Claims Manager" },
+  { icon: "clipboard-list", label: "Claims & Denials" },
+  { icon: "exchange-alt", label: "ERA Process" },
   { icon: "file-contract", label: "Fee Sheet" },
   { icon: "dollar-sign", label: "Charges" },
   { icon: "receipt", label: "Checkout" },
@@ -213,7 +214,6 @@ const billingNavItems: Array<{
     ]
   },
   { icon: "credit-card", label: "Payments" },
-  { icon: "exchange-alt", label: "ERA Process" },
   { icon: "chart-pie", label: "Report" },
   { 
     icon: "file-signature", 
@@ -394,9 +394,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="p-1.5 hover:bg-gray-100 rounded-lg ml-2 transition-colors"
                 >
                   {collapsed ? (
-                    <FontAwesomeIcon icon="chevron-right" className="h-4 w-4 text-gray-500" />
+                    <PanelRight className="h-4 w-4 text-gray-500" />
                   ) : (
-                    <FontAwesomeIcon icon="chevron-left" className="h-4 w-4 text-gray-500" />
+                    <PanelLeft className="h-4 w-4 text-gray-500" />
                   )}
                 </button>
               </TooltipTrigger>

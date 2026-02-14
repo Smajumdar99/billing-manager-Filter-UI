@@ -49,7 +49,7 @@ import { useNavigate } from 'react-router-dom';
 import EventTypeBadge from '../../atoms/EventTypeBadge';
 import { Button } from '../../atoms/Button/button';
 import { Switch } from '../../atoms/Switch';
-import { TransferDialog } from '../../molecules/TransferDialog';
+import { TransferDialog } from '../../molecules/TransferDialog/transfer-dialog';
 import { toast } from '../../atoms/Toast/use-toast';
 
 /**

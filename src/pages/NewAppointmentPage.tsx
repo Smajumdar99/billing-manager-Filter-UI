@@ -25,18 +25,103 @@ import {
   CardHeader,
   CardTitle
 } from '../components/atoms/Card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/atoms/Dialog/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/molecules/Tabs/tabs';
 import GroupAppointmentForm from '../components/molecules/GroupAppointmentForm/group-appointment-form';
 import AddressSelectionModal from '../components/molecules/GroupAppointmentForm/AddressSelectionModal';
 import { Breadcrumb } from '../components/atoms/Breadcrumb/breadcrumb';
 import { useParams, useSearchParams } from 'react-router-dom';
 import FindAvailableDialog from '@/components/organisms/FindAvailableDialog/find-available-dialog';
+import ProviderAvailabilityPanel from '@/components/organisms/ProviderAvailabilityPanel/provider-availability-panel';
 import AppointmentEditActions from '../components/molecules/AppointmentEditActions/appointment-edit-actions';
 import { RecurringEditDialog } from '../components/molecules/RecurringEditDialog';
 import RoomAllocationModal from '@/components/molecules/GroupAppointmentForm/RoomAllocationModal';
 import BenefitsTab from '../components/molecules/BenefitsTab/BenefitsTab';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 // Import other atomic components and form sections as needed
 // (Assume Person and Provider form content is modularized or inline for now)
+
+/** Summary row for prior auth (Sessions / Amt / Units with Authorized, Created, Balance) */
+interface PriorAuthSummary {
+  sessionsAuthorized: number;
+  sessionsCreated: number;
+  sessionsBalance: number;
+  amtAuthorized: number;
+  amtCreated: number;
+  amtBalance: number;
+  unitsAuthorized: number;
+  unitsCreated: number;
+  unitsBalance: number;
+}
+
+/** Per-code row for prior auth table */
+interface PriorAuthCodeRow {
+  code: string;
+  authorized: number;
+  created: number;
+  balance: number;
+}
+
+/** Encounter row for prior auth encounter details */
+interface PriorAuthEncounterRow {
+  encounterId: string;
+  dos: string;
+  serviceCodes: string;
+  units: number;
+  amt: number;
+  posted: number;
+  unposted: number;
+}
+
+// Prior auth detail for selected person (shown in popup)
+interface PriorAuthDetail {
+  id: string;
+  requestDate: string;
+  serviceDate: string;
+  expirationDate?: string;
+  status: 'pending' | 'approved' | 'denied' | 'expired' | 'in_review';
+  serviceType: string;
+  cptCodes: string[];
+  unitsRequested: number;
+  unitsApproved?: number;
+  insuranceProvider: string;
+  diagnosis: string;
+  authNumber?: string;
+  denialReason?: string;
+  notes?: string;
+  /** Table data for summary / code / encounter tables (optional; derived from above if missing) */
+  summary?: PriorAuthSummary;
+  codeDetails?: PriorAuthCodeRow[];
+  encounterDetails?: PriorAuthEncounterRow[];
+}
+
+// Extended patient for Person select (PID, phones, insurance, copay, prior auth)
+interface SamplePatientExtended {
+  id: string;
+  name: string;
+  pid: string;
+  externalId: string;
+  homePhone: string;
+  workPhone: string;
+  insurance: string;
+  copayAvailable: boolean;
+  /** Copay amount in dollars when available (e.g. 25 for $25) */
+  copayAmount?: number;
+  /** Balance due in dollars (negative = amount owed) */
+  balanceDue?: number;
+  /** Non-billable balance in dollars */
+  nonBillableBalance?: number;
+  /** Undistributed amount in dollars */
+  undistributedAmount?: number;
+  priorAuthDetails: PriorAuthDetail[];
+}
 
 // Sample providers and patients data for demonstration
 const sampleProviders = [
@@ -45,11 +130,148 @@ const sampleProviders = [
   { id: '3', name: 'Emily Rodriguez, LMFT' },
   { id: '4', name: 'James Taylor, LCDC' }
 ];
-const samplePatients = [
-  { id: '1', name: 'John Doe' },
-  { id: '2', name: 'Jane Smith' },
-  { id: '3', name: 'Robert Johnson' },
-  { id: '4', name: 'Maria Garcia' }
+
+const samplePatients: SamplePatientExtended[] = [
+  {
+    id: '1',
+    name: 'John Doe',
+    pid: '1003594',
+    externalId: '1003594',
+    homePhone: '(555) 123-4567',
+    workPhone: '(555) 123-4569',
+    insurance: 'Blue Cross Blue Shield',
+    copayAvailable: true,
+    copayAmount: 25,
+    balanceDue: -1313,
+    nonBillableBalance: 0,
+    undistributedAmount: 0,
+    priorAuthDetails: [
+      {
+        id: 'PA-2024-001',
+        requestDate: '2024-03-10',
+        serviceDate: '2024-03-15',
+        expirationDate: '2024-06-30',
+        status: 'approved',
+        serviceType: 'Individual Psychotherapy',
+        cptCodes: ['90834'],
+        unitsRequested: 16,
+        unitsApproved: 16,
+        insuranceProvider: 'Blue Cross Blue Shield',
+        diagnosis: 'Major Depressive Disorder',
+        authNumber: 'AUTH-BCBS-78901',
+        notes: 'Continuation of therapy recommended.',
+        summary: {
+          sessionsAuthorized: 5,
+          sessionsCreated: 2,
+          sessionsBalance: 3,
+          amtAuthorized: 1000,
+          amtCreated: 300,
+          amtBalance: 700,
+          unitsAuthorized: 6,
+          unitsCreated: 0,
+          unitsBalance: 6
+        },
+        codeDetails: [
+          { code: 'CPT4:90834', authorized: 4, created: 0, balance: 4 },
+          { code: 'HCPCS:H0004', authorized: 2, created: 0, balance: 2 }
+        ],
+        encounterDetails: [
+          { encounterId: '100206995', dos: '01/11/2025', serviceCodes: 'HCPCS:H0050', units: 1, amt: 150, posted: 0, unposted: 150 },
+          { encounterId: '100206998', dos: '27/11/2025', serviceCodes: 'CPT4:99244', units: 1, amt: 85, posted: 0, unposted: 85 },
+          { encounterId: '', dos: '', serviceCodes: 'CPT4:99355', units: 1, amt: 65, posted: 0, unposted: 65 }
+        ]
+      }
+    ]
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    pid: '1004873',
+    externalId: '1004873',
+    homePhone: '(555) 987-6543',
+    workPhone: '(555) 987-6545',
+    insurance: 'Aetna',
+    copayAvailable: true,
+    copayAmount: 25,
+    balanceDue: 0,
+    nonBillableBalance: 0,
+    undistributedAmount: 0,
+    priorAuthDetails: [
+      {
+        id: 'PA-2024-003',
+        requestDate: '2024-02-28',
+        serviceDate: '2024-03-05',
+        expirationDate: '2024-05-31',
+        status: 'approved',
+        serviceType: 'Group Therapy',
+        cptCodes: ['90853'],
+        unitsRequested: 24,
+        unitsApproved: 20,
+        insuranceProvider: 'Aetna',
+        diagnosis: 'Generalized Anxiety Disorder',
+        authNumber: 'AUTH-AET-45678',
+        summary: {
+          sessionsAuthorized: 24,
+          sessionsCreated: 5,
+          sessionsBalance: 19,
+          amtAuthorized: 2400,
+          amtCreated: 500,
+          amtBalance: 1900,
+          unitsAuthorized: 24,
+          unitsCreated: 5,
+          unitsBalance: 19
+        },
+        codeDetails: [
+          { code: 'CPT4:90853', authorized: 24, created: 5, balance: 19 }
+        ],
+        encounterDetails: [
+          { encounterId: '100206903', dos: '29/08/2025', serviceCodes: 'HCPCS:H0050', units: 5, amt: 750, posted: 0, unposted: 750 }
+        ]
+      }
+    ]
+  },
+  {
+    id: '3',
+    name: 'Robert Johnson',
+    pid: '1002734',
+    externalId: '1002734',
+    homePhone: '(555) 234-5678',
+    workPhone: '(555) 234-5680',
+    insurance: 'Medicare',
+    copayAvailable: false,
+    balanceDue: 85.5,
+    nonBillableBalance: 0,
+    undistributedAmount: 0,
+    priorAuthDetails: [
+      {
+        id: 'PA-2024-004',
+        requestDate: '2024-03-12',
+        serviceDate: '2024-03-18',
+        status: 'denied',
+        serviceType: 'Psychiatric Evaluation',
+        cptCodes: ['90791'],
+        unitsRequested: 1,
+        insuranceProvider: 'Medicare',
+        diagnosis: 'Bipolar I Disorder',
+        denialReason: 'Insufficient documentation of medical necessity.'
+      }
+    ]
+  },
+  {
+    id: '4',
+    name: 'Maria Garcia',
+    pid: '1004132',
+    externalId: '1004132',
+    homePhone: '(555) 345-6789',
+    workPhone: '(555) 345-6791',
+    insurance: 'UnitedHealthcare',
+    copayAvailable: true,
+    copayAmount: 40,
+    balanceDue: 0,
+    nonBillableBalance: 0,
+    undistributedAmount: 0,
+    priorAuthDetails: []
+  }
 ];
 
 const NewAppointmentPage: React.FC = () => {
@@ -73,6 +295,9 @@ const NewAppointmentPage: React.FC = () => {
     }
     return 'person';
   });
+
+  // Determine if availability panel should be shown based on active tab
+  const shouldShowAvailabilityPanel = activeTab === 'person' || activeTab === 'provider' || activeTab === 'group' || activeTab === 'benefits';
   // Form state (copied from modal)
   const [title, setTitle] = useState('');
   const [provider, setProvider] = useState('');
@@ -112,6 +337,10 @@ const NewAppointmentPage: React.FC = () => {
   // Recurring edit dialog state
   const [showRecurringEditDialog, setShowRecurringEditDialog] = useState(false);
   const [showFindAvailableDialog, setShowFindAvailableDialog] = useState(false);
+  const [showAvailabilityMobile, setShowAvailabilityMobile] = useState(false);
+
+  // Prior Authorization details dialog (for selected person)
+  const [showPriorAuthDialog, setShowPriorAuthDialog] = useState(false);
   
   // Check In dropdown state
   const [showCheckInDropdown, setShowCheckInDropdown] = useState(false);
@@ -400,13 +629,53 @@ const NewAppointmentPage: React.FC = () => {
     alert('Benefit request submitted successfully!');
   };
 
+  // Handler for slot selection from availability panel
+  const handleSlotSelect = (date: string, slot: string) => {
+    // Parse the slot time (e.g., "8:00 AM" -> "08:00")
+    const parseTimeSlot = (slotStr: string): string => {
+      const [time, period] = slotStr.split(' ');
+      const [hours, minutes] = time.split(':');
+      let hour24 = parseInt(hours);
+      
+      if (period === 'PM' && hour24 !== 12) {
+        hour24 += 12;
+      } else if (period === 'AM' && hour24 === 12) {
+        hour24 = 0;
+      }
+      
+      return `${hour24.toString().padStart(2, '0')}:${minutes}`;
+    };
+
+    const startTime = parseTimeSlot(slot);
+    setAppointmentStartTime(startTime);
+    
+    // Calculate end time based on duration
+    if (duration) {
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const durationMinutes = parseInt(duration);
+      const endDate = new Date();
+      endDate.setHours(hours, minutes + durationMinutes, 0);
+      const endHours = endDate.getHours().toString().padStart(2, '0');
+      const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
+      setAppointmentEndTime(`${endHours}:${endMinutes}`);
+    }
+    
+    // Set the date if it's different
+    if (date && date !== appointmentDate) {
+      setAppointmentDate(date);
+    }
+    
+    // Close mobile availability panel if open
+    setShowAvailabilityMobile(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-orange-50 to-blue-100">
       {/* Top Navigation Bar */}
       <TopNavigationBar hospitalName="Demo Hospital" userAvatarUrl="/avatar.png" />
       {/* Main Navigation Bar */}
       <MainNavigationBar activeItem="Schedule" />
-      <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col px-2 sm:px-4">
+      <div className="max-w-8xl mx-auto w-full flex-1 flex flex-col px-2 sm:px-4 lg:px-6">
         {/* Breadcrumb */}
         <div className="px-0 pt-4 pb-2">
           <Breadcrumb items={[
@@ -415,12 +684,14 @@ const NewAppointmentPage: React.FC = () => {
           ]} />
         </div>
 
-        {/* Main Content - Scrollable Area */}
-        <form className="flex-1 p-0 pt-0" onSubmit={e => { e.preventDefault(); handleSave(); }}>
-          {/* Card with fixed height and internal scroll, responsive */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mx-auto" style={{ height: '84vh', overflowY: 'auto', maxWidth: '100%' }}>
+        {/* Main Content - 2 Column Layout */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 xl:gap-4 2xl:gap-5 pb-4 items-start lg:items-stretch">
+          {/* Left Column - Form */}
+          <form className="w-full lg:flex-1 lg:max-w-none xl:max-w-4xl 2xl:max-w-5xl p-0 pt-0" onSubmit={e => { e.preventDefault(); handleSave(); }}>
+            {/* Card with fixed height and internal scroll, responsive */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm mx-auto w-full" style={{ height: '84vh', overflowY: 'auto', maxWidth: '100%' }}>
             {/* Appointment Type Selection as Tab Bar and Tab Content */}
-            <div className="p-2 sm:p-4 border-b border-gray-100">
+            <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-100">
                               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'person' | 'provider' | 'group' | 'appointmentInfo' | 'benefits')}>
                                     {/* Show different tab structures based on mode */}
                   {isEditMode && originalAppointmentType !== 'group' ? (
@@ -462,20 +733,20 @@ const NewAppointmentPage: React.FC = () => {
                 <TabsContent value="person">
                   {/* Person Appointment Form Content */}
                   <div>
-                    <div className="p-4 space-y-4">
+                    <div className="p-4 sm:p-6 space-y-4">
                       {/* First Row - For Whom and For What - Side by Side */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Left Column - For Whom */}
-                        <Card className="shadow-none border-gray-200">
-                          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                        {/* Left Column - For Whom - fixed max height, content scrolls inside */}
+                        <Card className="shadow-none border-gray-200 min-w-0 flex flex-col max-h-[280px]">
+                          <CardHeader className="bg-gray-50 border-b border-gray-200 py-2 flex-shrink-0">
                             <CardTitle className="text-sm font-semibold text-gray-800">For Whom</CardTitle>
                           </CardHeader>
-                          <CardContent className="p-4 space-y-3">
+                          <CardContent className="p-4 space-y-3 flex-1 min-h-0 overflow-y-auto">
                             <div className="space-y-1">
-                              <Label htmlFor="patient" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Person:</Label>
+                              <Label htmlFor="patient" className="text-xs font-semibold text-gray-500 uppercase tracking-wide break-words">Person:</Label>
                               <Select value={patient} onValueChange={setPatient}>
-                                <SelectTrigger id="patient" className="h-8 text-sm">
-                                  <SelectValue placeholder="Click to select" />
+                                <SelectTrigger id="patient" className="h-8 text-sm w-full">
+                                  <SelectValue placeholder="Click to select" className="truncate" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {samplePatients.map(p => (
@@ -484,6 +755,70 @@ const NewAppointmentPage: React.FC = () => {
                                 </SelectContent>
                               </Select>
                             </div>
+
+                            {/* Selected person details - compact, only when a person is selected */}
+                            {patient && (() => {
+                              const selectedPersonDetails = samplePatients.find(p => p.name === patient);
+                              if (!selectedPersonDetails) return null;
+                              return (
+                                <div className="rounded-md border border-gray-200 bg-gray-50/80 p-3 space-y-2 text-xs">
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                                    <div>
+                                      <span className="text-gray-500 font-medium">PID:</span>{' '}
+                                      <span className="text-gray-800">{selectedPersonDetails.pid}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500 font-medium">External ID:</span>{' '}
+                                      <span className="text-gray-800">{selectedPersonDetails.externalId}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500 font-medium">Home:</span>{' '}
+                                      <span className="text-gray-800">{selectedPersonDetails.homePhone}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500 font-medium">Work:</span>{' '}
+                                      <span className="text-gray-800">{selectedPersonDetails.workPhone}</span>
+                                    </div>
+                                    <div className="col-span-2">
+                                      <span className="text-gray-500 font-medium">Insurance:</span>{' '}
+                                      <span className="text-gray-800">{selectedPersonDetails.insurance}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500 font-medium">Copay:</span>{' '}
+                                      <span className={selectedPersonDetails.copayAvailable ? 'text-green-700 font-medium' : 'text-amber-700'}>
+                                        {selectedPersonDetails.copayAvailable
+                                          ? selectedPersonDetails.copayAmount != null
+                                            ? `$${selectedPersonDetails.copayAmount.toFixed(2)}`
+                                            : 'Available'
+                                          : 'Not available'}
+                                      </span>
+                                    </div>
+                                    {(selectedPersonDetails.balanceDue != null || selectedPersonDetails.nonBillableBalance != null || selectedPersonDetails.undistributedAmount != null) && (
+                                      <div className="col-span-2">
+                                        <span className="text-gray-500 font-medium">Balance Due:</span>{' '}
+                                        <span className={(selectedPersonDetails.balanceDue ?? 0) < 0 ? 'text-red-600 font-medium' : 'text-gray-800'}>
+                                          {(selectedPersonDetails.balanceDue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                        <span className="text-gray-600 ml-1">
+                                          (Non-Billable Balance: {(selectedPersonDetails.nonBillableBalance ?? 0).toFixed(2)}) (Undistributed Amount: {(selectedPersonDetails.undistributedAmount ?? 0).toFixed(2)})
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="col-span-2 flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowPriorAuthDialog(true)}
+                                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 rounded"
+                                      >
+                                        {selectedPersonDetails.priorAuthDetails.length > 0
+                                          ? `Prior Authorization (${selectedPersonDetails.priorAuthDetails.length})`
+                                          : 'Prior Authorization'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             <div className="space-y-1">
                               <Label htmlFor="title" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Title:</Label>
@@ -499,7 +834,7 @@ const NewAppointmentPage: React.FC = () => {
                         </Card>
                         
                         {/* Right Column - For What */}
-                        <Card className="shadow-none border-gray-200">
+                        <Card className="shadow-none border-gray-200 min-w-0">
                           <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                             <CardTitle className="text-sm font-semibold text-gray-800">For What</CardTitle>
                           </CardHeader>
@@ -537,35 +872,36 @@ const NewAppointmentPage: React.FC = () => {
                       </div>
                       
                       {/* Second Row - When and Where - Side by Side */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                         {/* Left Column - When */}
-                        <Card className="shadow-none border-gray-200">
+                        <Card className="shadow-none border-gray-200 min-w-0">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                           <CardTitle className="text-sm font-semibold text-gray-800">When</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
+                        <CardContent className="p-4 min-w-0 overflow-hidden">
+                          <div className="space-y-3 min-w-0">
                             {/* Date and All Day Event Row - Matches Group form layout */}
-                            <div className="space-y-2">
+                            <div className="space-y-2 min-w-0">
                               <Label htmlFor="appointmentDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date:</Label>
-                              <div className="flex items-center gap-4">
-                                <div className="relative">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+                                <div className="relative flex-shrink-0">
                                   <Input 
                                     id="appointmentDate" 
                                     type="date" 
                                     value={appointmentDate}
                                     onChange={(e) => setAppointmentDate(e.target.value)}
-                                    className="h-9 text-sm w-44 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    className="h-9 text-sm w-full sm:w-44 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                     required
                                   />
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
                                   <Switch 
                                     id="allDayEvent"
                                     checked={isAllDay}
                                     onCheckedChange={setIsAllDay}
+                                    className="flex-shrink-0"
                                   />
-                                  <label htmlFor="allDayEvent" className="text-sm text-gray-700 font-medium cursor-pointer">
+                                  <label htmlFor="allDayEvent" className="text-sm text-gray-700 font-medium cursor-pointer whitespace-nowrap flex-shrink-0">
                                     All day event
                                   </label>
                                 </div>
@@ -671,7 +1007,7 @@ const NewAppointmentPage: React.FC = () => {
                         </Card>
                         
                         {/* Right Column - Where */}
-                        <Card className="shadow-none border-gray-200">
+                        <Card className="shadow-none border-gray-200 min-w-0">
                           <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                             <CardTitle className="text-sm font-semibold text-gray-800">Where</CardTitle>
                           </CardHeader>
@@ -765,11 +1101,11 @@ const NewAppointmentPage: React.FC = () => {
                       </div>
                       
                       {/* Third Row - With Whom - Full Width */}
-                      <Card className="shadow-none border-gray-200">
+                      <Card className="shadow-none border-gray-200 min-w-0">
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                           <CardTitle className="text-sm font-semibold text-gray-800">With Whom</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                        <CardContent className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                           <div className="space-y-1">
                             <Label htmlFor="provider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Provider:</Label>
                             <Select value={provider} onValueChange={setProvider}>
@@ -914,7 +1250,7 @@ const NewAppointmentPage: React.FC = () => {
                         <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                           <CardTitle className="text-sm font-semibold text-gray-800">With Whom</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                        <CardContent className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                           <div className="space-y-1">
                             <Label htmlFor="provider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Provider:</Label>
                             <Select value={provider} onValueChange={setProvider}>
@@ -996,24 +1332,24 @@ const NewAppointmentPage: React.FC = () => {
                             {/* Date and All Day Event Row - Matches Group form layout */}
                             <div className="space-y-2">
                               <Label htmlFor="appointmentDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date:</Label>
-                              <div className="flex items-center gap-4">
-                                <div className="relative">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                                <div className="relative flex-shrink-0">
                                   <Input 
                                     id="appointmentDate" 
                                     type="date" 
                                     value={appointmentDate}
                                     onChange={(e) => setAppointmentDate(e.target.value)}
-                                    className="h-9 text-sm w-44 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    className="h-9 text-sm w-full sm:w-44 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                     required
                                   />
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
                                   <Switch 
                                     id="allDayEvent"
                                     checked={isAllDay}
                                     onCheckedChange={setIsAllDay}
                                   />
-                                  <label htmlFor="allDayEvent" className="text-sm text-gray-700 font-medium cursor-pointer">
+                                  <label htmlFor="allDayEvent" className="text-sm text-gray-700 font-medium cursor-pointer whitespace-nowrap">
                                     All day event
                                   </label>
                                 </div>
@@ -1168,12 +1504,12 @@ const NewAppointmentPage: React.FC = () => {
                       <div className="p-4 space-y-4">
                         {/* First Row - For Whom and For What - Side by Side */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Left Column - For Whom */}
-                          <Card className="shadow-none border-gray-200">
-                            <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
+                          {/* Left Column - For Whom - fixed max height, content scrolls inside */}
+                          <Card className="shadow-none border-gray-200 flex flex-col max-h-[280px]">
+                            <CardHeader className="bg-gray-50 border-b border-gray-200 py-2 flex-shrink-0">
                               <CardTitle className="text-sm font-semibold text-gray-800">For Whom</CardTitle>
                             </CardHeader>
-                            <CardContent className="p-4 space-y-3">
+                            <CardContent className="p-4 space-y-3 flex-1 min-h-0 overflow-y-auto">
                               <div className="space-y-1">
                                 <Label htmlFor="patient" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Person:</Label>
                                 <Select value={patient} onValueChange={setPatient}>
@@ -1187,6 +1523,70 @@ const NewAppointmentPage: React.FC = () => {
                                   </SelectContent>
                                 </Select>
                               </div>
+
+                              {/* Selected person details - compact, only when a person is selected (edit mode) */}
+                              {patient && (() => {
+                                const selectedPersonDetails = samplePatients.find(p => p.name === patient);
+                                if (!selectedPersonDetails) return null;
+                                return (
+                                  <div className="rounded-md border border-gray-200 bg-gray-50/80 p-3 space-y-2 text-xs">
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                                      <div>
+                                        <span className="text-gray-500 font-medium">PID:</span>{' '}
+                                        <span className="text-gray-800">{selectedPersonDetails.pid}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500 font-medium">External ID:</span>{' '}
+                                        <span className="text-gray-800">{selectedPersonDetails.externalId}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500 font-medium">Home:</span>{' '}
+                                        <span className="text-gray-800">{selectedPersonDetails.homePhone}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500 font-medium">Work:</span>{' '}
+                                        <span className="text-gray-800">{selectedPersonDetails.workPhone}</span>
+                                      </div>
+                                      <div className="col-span-2">
+                                        <span className="text-gray-500 font-medium">Insurance:</span>{' '}
+                                        <span className="text-gray-800">{selectedPersonDetails.insurance}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500 font-medium">Copay:</span>{' '}
+                                        <span className={selectedPersonDetails.copayAvailable ? 'text-green-700 font-medium' : 'text-amber-700'}>
+                                          {selectedPersonDetails.copayAvailable
+                                            ? selectedPersonDetails.copayAmount != null
+                                              ? `$${selectedPersonDetails.copayAmount.toFixed(2)}`
+                                              : 'Available'
+                                            : 'Not available'}
+                                        </span>
+                                      </div>
+                                      {(selectedPersonDetails.balanceDue != null || selectedPersonDetails.nonBillableBalance != null || selectedPersonDetails.undistributedAmount != null) && (
+                                        <div className="col-span-2">
+                                          <span className="text-gray-500 font-medium">Balance Due:</span>{' '}
+                                          <span className={(selectedPersonDetails.balanceDue ?? 0) < 0 ? 'text-red-600 font-medium' : 'text-gray-800'}>
+                                            {(selectedPersonDetails.balanceDue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                          <span className="text-gray-600 ml-1">
+                                            (Non-Billable Balance: {(selectedPersonDetails.nonBillableBalance ?? 0).toFixed(2)}) (Undistributed Amount: {(selectedPersonDetails.undistributedAmount ?? 0).toFixed(2)})
+                                          </span>
+                                        </div>
+                                      )}
+                                      <div className="col-span-2 flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowPriorAuthDialog(true)}
+                                          className="text-blue-600 hover:text-blue-800 hover:underline font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 rounded"
+                                        >
+                                          {selectedPersonDetails.priorAuthDetails.length > 0
+                                            ? `Prior Authorization (${selectedPersonDetails.priorAuthDetails.length})`
+                                            : 'Prior Authorization'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
 
                               <div className="space-y-1">
                                 <Label htmlFor="title" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Title:</Label>
@@ -1472,7 +1872,7 @@ const NewAppointmentPage: React.FC = () => {
                           <CardHeader className="bg-gray-50 border-b border-gray-200 py-2">
                             <CardTitle className="text-sm font-semibold text-gray-800">With Whom</CardTitle>
                           </CardHeader>
-                          <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                          <CardContent className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                             <div className="space-y-1">
                               <Label htmlFor="provider" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Provider:</Label>
                               <Select value={provider} onValueChange={setProvider}>
@@ -1702,9 +2102,16 @@ const NewAppointmentPage: React.FC = () => {
                   <>
                     <div className="flex flex-row gap-2 w-full">
                       <Button type="button" variant="outline" className="text-sm h-10 text-blue-600 border-blue-400 flex-1">Cancel</Button>
-                      {/* Only show Find Available for person or benefits tab */}
-                      {(activeTab === 'person' || activeTab === 'benefits') && (
-                        <Button type="button" variant="outline" className="text-sm h-10 text-blue-600 border-blue-400 flex-1">Find Available</Button>
+                      {/* Show Find Available for all appointment tabs */}
+                      {shouldShowAvailabilityPanel && (
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="text-sm h-10 text-blue-600 border-blue-400 flex-1"
+                          onClick={() => setShowAvailabilityMobile(true)}
+                        >
+                          Find Available
+                        </Button>
                       )}
                       <Button type="button" variant="outline" className="text-sm h-10 text-red-600 border-red-400 p-2 flex-1" aria-label="Delete">
                         <FontAwesomeIcon icon={faTrash} className="w-4 h-4 mx-auto" />
@@ -1789,13 +2196,13 @@ const NewAppointmentPage: React.FC = () => {
                   /* Create Mode Actions */
                   <div className="flex flex-row gap-2 justify-end">
                     <Button type="button" variant="outline" className="text-sm h-8">Cancel</Button>
-                    {/* Only show Find Available for person or benefits tab */}
-                    {(activeTab === 'person' || activeTab === 'benefits') && (
+                    {/* Show Find Available for all appointment tabs - Mobile shows panel, Desktop is always visible */}
+                    {shouldShowAvailabilityPanel && (
                       <Button 
                         type="button" 
                         variant="outline" 
-                        className="text-sm h-8"
-                        onClick={() => setShowFindAvailableDialog(true)}
+                        className="text-sm h-8 lg:hidden"
+                        onClick={() => setShowAvailabilityMobile(true)}
                       >
                         Find Available
                       </Button>
@@ -1812,6 +2219,23 @@ const NewAppointmentPage: React.FC = () => {
             </div>
           </div>
         </form>
+
+          {/* Right Column - Availability Panel (Desktop) */}
+          {shouldShowAvailabilityPanel && (
+            <div className="hidden lg:block lg:flex-none lg:w-96 xl:w-[480px] 2xl:w-[520px] lg:max-w-md xl:max-w-[480px] 2xl:max-w-[520px]">
+              <div className="w-full h-full rounded-xl overflow-hidden bg-white border border-gray-200 shadow-sm" style={{ height: '84vh', overflowY: 'auto' }}>
+                <ProviderAvailabilityPanel
+                  date={appointmentDate}
+                  appointmentType={encounterType}
+                  provider={provider}
+                  patient={activeTab === 'provider' ? undefined : patient}
+                  appointmentTab={activeTab}
+                  onSlotSelect={handleSlotSelect}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Recurring Edit Dialog */}
@@ -1822,12 +2246,218 @@ const NewAppointmentPage: React.FC = () => {
         onEditAll={handleEditAllOccurrences}
         appointmentTitle={title || 'Untitled Appointment'}
       />
+
+      {/* Prior Authorization details dialog for selected person - matches NewTaskDialog popup style */}
+      <Dialog open={showPriorAuthDialog} onOpenChange={setShowPriorAuthDialog}>
+        <DialogContent
+          aria-describedby="prior-auth-dialog-desc"
+          className="sm:max-w-[720px] p-0 flex flex-col max-h-[90vh] overflow-auto bg-gradient-to-br from-orange-50 to-blue-100"
+        >
+          <DialogTitle className="sr-only">Prior Authorization — {patient || 'Person'}</DialogTitle>
+          <DialogDescription id="prior-auth-dialog-desc" className="sr-only">
+            View prior authorization details for the selected person
+          </DialogDescription>
+          {/* Visible title bar - matches NewTaskDialog */}
+          <div className="px-4 py-2 rounded-t-xl">
+            <h2 className="text-base font-semibold text-gray-900">Prior Authorization — {patient || 'Person'}</h2>
+          </div>
+          {/* Main content in white card - data table layout */}
+          <div className="flex-1 min-h-0 overflow-hidden p-4">
+            <div className="min-h-0 h-full overflow-y-auto p-4 sm:p-6 space-y-6 bg-white rounded-xl border border-gray-200 shadow-sm">
+              {!patient ? (
+                <p className="text-sm text-gray-500">Select a person to view prior authorization.</p>
+              ) : (() => {
+                const selectedPersonDetails = samplePatients.find(p => p.name === patient);
+                if (!selectedPersonDetails?.priorAuthDetails?.length) {
+                  return <p className="text-sm text-gray-500">No prior authorization records.</p>;
+                }
+                const asOfDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/');
+                return (
+                  <>
+                    <h3 className="text-sm font-semibold text-gray-800">
+                      Active Prior Authorizations as on {asOfDate}
+                    </h3>
+                    {selectedPersonDetails.priorAuthDetails.map((auth) => (
+                      <div key={auth.id} className="rounded-lg border border-gray-200 bg-gray-50/30 overflow-hidden">
+                        {/* Auth header */}
+                        <div className="px-3 py-2 border-b border-gray-200 bg-white flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-gray-800">{auth.serviceType}</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            auth.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            auth.status === 'denied' ? 'bg-red-100 text-red-800' :
+                            auth.status === 'pending' || auth.status === 'in_review' ? 'bg-amber-100 text-amber-800' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {auth.status.replace('_', ' ')}
+                          </span>
+                          {auth.authNumber && (
+                            <span className="text-gray-600 text-sm">
+                              Authorization #: {auth.authNumber} Valid From: {auth.requestDate} To: {auth.expirationDate ?? '—'}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="p-3 space-y-4">
+                          {/* Summary table */}
+                          {(auth.summary || auth.unitsRequested != null) && (
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-gray-200 hover:bg-transparent">
+                                  <TableHead className="w-[100px] text-xs font-semibold text-gray-600 bg-gray-50">Summary:</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Authorized</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Created</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Balance</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {auth.summary ? (
+                                  <>
+                                    <TableRow className="border-gray-200">
+                                      <TableCell className="text-xs font-medium text-gray-700 py-1.5">Sessions:</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.sessionsAuthorized}</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.sessionsCreated}</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.sessionsBalance}</TableCell>
+                                    </TableRow>
+                                    <TableRow className="border-gray-200">
+                                      <TableCell className="text-xs font-medium text-gray-700 py-1.5">Amt:</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.amtAuthorized.toFixed(2)}</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.amtCreated.toFixed(2)}</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.amtBalance.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                    <TableRow className="border-gray-200">
+                                      <TableCell className="text-xs font-medium text-gray-700 py-1.5">Units:</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.unitsAuthorized}</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.unitsCreated}</TableCell>
+                                      <TableCell className="text-xs text-right py-1.5">{auth.summary.unitsBalance}</TableCell>
+                                    </TableRow>
+                                  </>
+                                ) : (
+                                  <TableRow className="border-gray-200">
+                                    <TableCell className="text-xs font-medium text-gray-700 py-1.5">Units:</TableCell>
+                                    <TableCell className="text-xs text-right py-1.5">{auth.unitsRequested}</TableCell>
+                                    <TableCell className="text-xs text-right py-1.5">—</TableCell>
+                                    <TableCell className="text-xs text-right py-1.5">{auth.unitsApproved ?? auth.unitsRequested}</TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          )}
+
+                          {/* Code details table */}
+                          {(auth.codeDetails?.length || auth.cptCodes?.length) && (
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-gray-200 hover:bg-transparent">
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50">Code</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Authorized</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Created</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Balance</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {auth.codeDetails?.length
+                                  ? auth.codeDetails.map((row, i) => (
+                                      <TableRow key={i} className="border-gray-200">
+                                        <TableCell className="text-xs py-1.5">{row.code}</TableCell>
+                                        <TableCell className="text-xs text-right py-1.5">{row.authorized}</TableCell>
+                                        <TableCell className="text-xs text-right py-1.5">{row.created}</TableCell>
+                                        <TableCell className="text-xs text-right py-1.5">{row.balance}</TableCell>
+                                      </TableRow>
+                                    ))
+                                  : auth.cptCodes?.map((code, i) => (
+                                      <TableRow key={i} className="border-gray-200">
+                                        <TableCell className="text-xs py-1.5">CPT4:{code}</TableCell>
+                                        <TableCell className="text-xs text-right py-1.5">{auth.unitsApproved ?? auth.unitsRequested}</TableCell>
+                                        <TableCell className="text-xs text-right py-1.5">—</TableCell>
+                                        <TableCell className="text-xs text-right py-1.5">{auth.unitsApproved ?? auth.unitsRequested}</TableCell>
+                                      </TableRow>
+                                    ))}
+                              </TableBody>
+                            </Table>
+                          )}
+
+                          {/* Encounter details table */}
+                          {auth.encounterDetails?.length > 0 && (
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-gray-200 hover:bg-transparent">
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50">Encounter (DOS)</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50">Service Code(s)</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Units</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Amt</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Posted</TableHead>
+                                  <TableHead className="text-xs font-semibold text-gray-600 bg-gray-50 text-right">Unposted</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {auth.encounterDetails.map((row, i) => (
+                                  <TableRow key={i} className="border-gray-200">
+                                    <TableCell className="text-xs py-1.5">
+                                      {row.encounterId && row.dos ? `${row.encounterId} (${row.dos})` : row.serviceCodes || '—'}
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5">{row.encounterId ? (row.serviceCodes || '—') : '—'}</TableCell>
+                                    <TableCell className="text-xs text-right py-1.5">{row.units}</TableCell>
+                                    <TableCell className="text-xs text-right py-1.5">{row.amt.toFixed(2)}</TableCell>
+                                    <TableCell className="text-xs text-right py-1.5">{row.posted.toFixed(2)}</TableCell>
+                                    <TableCell className="text-xs text-right py-1.5">{row.unposted.toFixed(2)}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          )}
+
+                          {/* Diagnosis / notes */}
+                          {(auth.diagnosis || auth.denialReason || auth.notes) && (
+                            <div className="text-xs text-gray-600 space-y-1 pt-1 border-t border-gray-100">
+                              {auth.diagnosis && <p><span className="font-medium text-gray-700">Diagnosis:</span> {auth.diagnosis}</p>}
+                              {auth.denialReason && <p className="text-amber-700">{auth.denialReason}</p>}
+                              {auth.notes && <p className="italic text-gray-500">{auth.notes}</p>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+          <DialogFooter className="py-2.5 px-4">
+            <Button variant="ghost" onClick={() => setShowPriorAuthDialog(false)} className="px-3 h-9 font-normal border-gray-200 text-sm">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
-      {/* Find Available Dialog */}
+      {/* Find Available Dialog - Legacy (kept for backward compatibility) */}
       <FindAvailableDialog
         open={showFindAvailableDialog}
         onClose={() => setShowFindAvailableDialog(false)}
       />
+      
+      {/* Mobile Availability Panel Modal */}
+      {shouldShowAvailabilityPanel && (
+        <Dialog open={showAvailabilityMobile} onOpenChange={setShowAvailabilityMobile}>
+          <DialogContent className="max-w-full h-[90vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
+              <DialogTitle>Provider Availability</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden px-6 pb-6 min-h-0">
+              <div className="h-full">
+                <ProviderAvailabilityPanel
+                  date={appointmentDate}
+                  appointmentType={encounterType}
+                  provider={provider}
+                  patient={activeTab === 'provider' ? undefined : patient}
+                  appointmentTab={activeTab}
+                  onSlotSelect={handleSlotSelect}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
       
       {/* Room Allocation Modal */}
       <RoomAllocationModal

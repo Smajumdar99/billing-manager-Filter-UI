@@ -1,1 +1,2 @@
-export { TransferDialog } from './transfer-dialog'; 
+export { default } from './TransferDialog'
+export type { TransferFormData, AdmissionForTransfer } from './TransferDialog'

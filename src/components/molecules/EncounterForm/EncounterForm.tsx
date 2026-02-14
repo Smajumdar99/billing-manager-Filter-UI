@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VisitDetailsStep } from './VisitDetailsStep';
+import { VitalsStep } from './VitalsStep';
 import { ClinicalNoteStep } from './ClinicalNoteStep';
+import { DocumentsStep } from './DocumentsStep';
 import { DiagnosisAllergiesStep } from './DiagnosisAllergiesStep';
 import { BillingStep } from './BillingStep';
+import { AdditionalInfoStep } from './AdditionalInfoStep';
 import { SignaturesStep } from './SignaturesStep';
 import { ReviewStep } from './ReviewStep';
+import { RunningHistory } from '@/components/molecules/RunningHistory/RunningHistory';
 import { Button } from '@/components/atoms/Button';
 import {
     CheckIcon,
@@ -14,19 +18,23 @@ import {
     CalendarIcon,
     DocumentTextIcon,
     CurrencyDollarIcon,
-    PencilSquareIcon,
     ClipboardDocumentCheckIcon,
-    HeartIcon
+    HeartIcon,
+    ListBulletIcon,
+    BeakerIcon,
+    FolderIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
 const steps = [
-    { id: 'visit', title: 'Logistics', description: 'Date, time, program & location', icon: CalendarIcon },
-    { id: 'note', title: 'Clinical Note', description: 'SOAP & instructions', icon: DocumentTextIcon },
+    { id: 'visit', title: 'Visit Details', description: 'Session scheduling & location', icon: CalendarIcon },
+    { id: 'vitals', title: 'Vitals', description: 'Record vital signs', icon: BeakerIcon },
+    { id: 'note', title: 'Progress Note', description: 'Session documentation', icon: DocumentTextIcon },
+    { id: 'documents', title: 'Documents', description: 'Attach clinical files', icon: FolderIcon },
     { id: 'diagnosis', title: 'Diagnosis & Allergies', description: 'Manage conditions & allergies', icon: HeartIcon },
     { id: 'billing', title: 'Billing & Coding', description: 'Codes & payor info', icon: CurrencyDollarIcon },
-    { id: 'signatures', title: 'Signatures', description: 'Staff & patient sign-off', icon: PencilSquareIcon },
-    { id: 'review', title: 'Review', description: 'Verify and submit', icon: ClipboardDocumentCheckIcon },
+    { id: 'additional', title: 'Additional Info', description: 'Optional screening questions', icon: ListBulletIcon },
+    { id: 'review', title: 'Review & Sign', description: 'Verify, sign & submit', icon: ClipboardDocumentCheckIcon },
 ];
 
 export const EncounterForm: React.FC = () => {
@@ -61,6 +69,9 @@ export const EncounterForm: React.FC = () => {
         instructions: '',
         serviceNote: '',
 
+        // Documents
+        documents: [],
+
         // Billing
         notBillable: false,
         billTo: 'insurance',
@@ -74,6 +85,34 @@ export const EncounterForm: React.FC = () => {
         // Diagnosis & Allergies
         diagnosisAllergies: [],
 
+        // Vitals
+        vitals: {
+            bloodPressureSystolic: '',
+            bloodPressureDiastolic: '',
+            heartRate: '',
+            temperature: '',
+            temperatureUnit: 'F',
+            respiratoryRate: '',
+            oxygenSaturation: '',
+            weight: '',
+            weightUnit: 'kg',
+            height: '',
+            heightUnit: 'cm',
+            bmi: '',
+            painScale: '',
+            notes: '',
+        },
+
+        // Additional Info (Ambulatory Screening)
+        additionalInfo: {
+            newAllergies: null,
+            medicationsChange: null,
+            newMedicalProblems: null,
+            seenOtherProvider: null,
+            hospitalized: null,
+            newSurgeries: null,
+        },
+
         // Signatures
         staffSignature: null,
         signedDate: null,
@@ -85,14 +124,16 @@ export const EncounterForm: React.FC = () => {
         switch (stepId) {
             case 'visit':
                 return !!formData.date && !!formData.time && !!formData.program;
+            case 'vitals':
+                return !!formData.vitals?.bloodPressureSystolic && !!formData.vitals?.heartRate;
             case 'note':
                 return !!formData.subjective || !!formData.assessment;
             case 'billing':
                 return formData.notBillable || formData.cptCodes.length > 0;
-            case 'signatures':
-                return formData.staffSignature;
+            case 'additional':
+                return false; // Optional step, not auto-completed
             case 'review':
-                return false;
+                return formData.staffSignature;
             default:
                 return false;
         }
@@ -154,15 +195,26 @@ export const EncounterForm: React.FC = () => {
             case 0:
                 return <VisitDetailsStep data={formData} updateData={setFormData} />;
             case 1:
-                return <ClinicalNoteStep data={formData} updateData={setFormData} />;
+                return <VitalsStep data={formData} updateData={setFormData} />;
             case 2:
-                return <DiagnosisAllergiesStep data={formData} updateData={setFormData} />;
+                return <ClinicalNoteStep data={formData} updateData={setFormData} />;
             case 3:
-                return <BillingStep data={formData} updateData={setFormData} />;
+                return <DocumentsStep data={formData} updateData={setFormData} />;
             case 4:
-                return <SignaturesStep data={formData} updateData={setFormData} />;
+                return <DiagnosisAllergiesStep data={formData} updateData={setFormData} />;
             case 5:
-                return <ReviewStep data={formData} />;
+                return <BillingStep data={formData} updateData={setFormData} />;
+            case 6:
+                return <AdditionalInfoStep data={formData} updateData={setFormData} />;
+            case 7:
+                return (
+                    <div className="space-y-6">
+                        <SignaturesStep data={formData} updateData={setFormData} />
+                        <div className="border-t border-gray-200 pt-6">
+                            <ReviewStep data={formData} />
+                        </div>
+                    </div>
+                );
             default:
                 return null;
         }
@@ -172,11 +224,6 @@ export const EncounterForm: React.FC = () => {
         <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row h-full">
             {/* Vertical Tabs Sidebar */}
             <div className="w-full md:w-72 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col shrink-0">
-                <div className="p-6 border-b border-gray-100">
-                    <h3 className="font-semibold text-gray-900">Encounter Details</h3>
-                    <p className="text-xs text-gray-500 mt-1">Navigate sections freely</p>
-                </div>
-
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {steps.map((step, index) => {
                         const isActive = currentStep === index;
@@ -287,6 +334,9 @@ export const EncounterForm: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Running History - Floating sticky button */}
+            <RunningHistory />
         </div>
     );
 };
