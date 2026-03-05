@@ -21,7 +21,7 @@ export const Widget: FC<WidgetProps> = ({
   const [isMaximized, setIsMaximized] = useState(false)
 
   const content = (
-    <div className="p-4 h-[calc(100%-65px)] overflow-hidden">
+    <div className="p-3 sm:p-4 h-[calc(100%-56px)] sm:h-[calc(100%-65px)] overflow-hidden min-h-0">
       {children}
     </div>
   )
@@ -29,23 +29,24 @@ export const Widget: FC<WidgetProps> = ({
   return (
     <>
       <div className={cn(
-        "h-full bg-card rounded-lg border shadow-sm select-none",
+        "h-full min-h-0 bg-card rounded-lg border shadow-sm select-none flex flex-col",
+        "w-full max-w-full",
         className
       )}>
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
-            <div className="widget-drag-handle cursor-move p-1 hover:bg-accent/50 rounded-md">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b shrink-0 min-h-[52px] sm:min-h-[65px]">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="widget-drag-handle cursor-move p-1 hover:bg-accent/50 rounded-md touch-manipulation shrink-0">
               <GripVertical className="w-4 h-4 text-muted-foreground" />
             </div>
-            <h4 className="font-semibold">{title}</h4>
+            <h4 className="font-semibold text-sm sm:text-base truncate">{title}</h4>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2 shrink-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={onSettingsClick}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground h-8 w-8 sm:h-9 sm:w-9"
               aria-label="Widget settings"
             >
               <Cog6ToothIcon className="w-4 h-4" />
@@ -54,7 +55,7 @@ export const Widget: FC<WidgetProps> = ({
               variant="ghost"
               size="icon"
               onClick={() => setIsMaximized(true)}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground h-8 w-8 sm:h-9 sm:w-9"
               aria-label="Maximize widget"
             >
               <ArrowsPointingOutIcon className="w-4 h-4" />

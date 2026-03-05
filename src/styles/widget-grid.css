@@ -39,5 +39,32 @@
 
 .layout {
   min-width: 100%;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.layout--responsive .react-grid-item {
+  min-height: 0;
+  touch-action: pan-y;
+}
+
+@media (max-width: 768px) {
+  .layout--responsive {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .layout--responsive .react-grid-item > .react-resizable-handle {
+    width: 24px;
+    height: 24px;
+    right: 2px;
+    bottom: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .layout--responsive .react-grid-item {
+    min-height: 200px;
+  }
 } 

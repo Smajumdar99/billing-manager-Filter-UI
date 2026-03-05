@@ -16,11 +16,13 @@ export const WidgetGrid: FC<WidgetGridProps> = ({ children, layouts, onLayoutCha
   return (
     <div className="min-h-full w-full">
       <ResponsiveGridLayout
-        className="layout"
+        className="layout layout--responsive"
         layouts={layouts}
-        breakpoints={{ lg: 1200, md: 996, sm: 768 }}
-        cols={{ lg: 12, md: 10, sm: 6 }}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4 }}
         rowHeight={50}
+        useCSSTransforms
+        transformScale={1}
         onLayoutChange={(_, allLayouts) => onLayoutChange?.(_, allLayouts)}
         isDraggable={true}
         isResizable={true}

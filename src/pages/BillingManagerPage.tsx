@@ -1,20 +1,18 @@
 import { FC, useState, useMemo, useCallback, useEffect } from 'react'
-import { PanelLeft, PanelRight } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useNavigate } from 'react-router-dom'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import TopNavigationBar from '@/components/old-ui/TopNavigationBar'
 import MainNavigationBar from '@/components/old-ui/MainNavigationBar'
 import { Sidebar } from '@/components/atoms/Sidebar/sidebar'
-import { BillingQuickFilters } from '@/components/molecules/BillingQuickFilters'
-import { BillingFiltersPanel, type SortOption } from '@/components/molecules/BillingQueueFilters'
+import { BillingFilterToolbar, type FilterValues } from '@/components/molecules/BillingFilterToolbar'
+import { type SortOption } from '@/components/molecules/BillingQueueFilters'
 import { BillingActionButtons, type ViewMode } from '@/components/molecules/BillingActionButtons'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/molecules/Tabs/tabs'
 import { BillingQueueTable } from '@/components/organisms/BillingQueueTable'
 import { BillingViewCardsListing } from '@/components/organisms/BillingViewCardsListing'
 import { BillingErrorDialog } from '@/components/molecules/BillingErrorDialog'
 import { OverrideDialog } from '@/components/molecules/OverrideDialog'
-import { Badge } from '@/components/atoms/Badge/badge'
 import { Button } from '@/components/atoms/Button/button'
 import {
   TooltipProvider,
@@ -57,12 +55,13 @@ export const BillingManagerPage: FC = () => {
 
   // Mobile-specific states
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [showMetrics, setShowMetrics] = useState(false)
 
-  // Desktop filter sidebar state
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false)
-  const [filtersTab, setFiltersTab] = useState<'quick' | 'advanced'>('advanced')
+  // Toolbar filter state (selected filter category IDs from the popover)
+  const [toolbarSelectedFilters, setToolbarSelectedFilters] = useState<string[]>([
+    'authorization_status',
+    'current_billed_insurance',
+  ])
 
   // State for billing queue management
   const [encounters, setEncounters] = useState<BillingEncounter[]>(mockBillingEncounters)
@@ -135,14 +134,25 @@ export const BillingManagerPage: FC = () => {
     setMobileSidebarOpen(prev => !prev)
   }, [])
 
-  // Handle mobile filters toggle
-  const handleMobileFiltersToggle = useCallback(() => {
-    setMobileFiltersOpen(prev => !prev)
+  // Handle toolbar filter apply (categories selected from the checkbox menu)
+  const handleToolbarApplyFilters = useCallback((selectedFilters: string[]) => {
+    setToolbarSelectedFilters(selectedFilters)
   }, [])
 
-  // Handle desktop filters collapse toggle
-  const handleFiltersToggle = useCallback(() => {
-    setFiltersCollapsed(prev => !prev)
+  // Handle token-level filter values (applied via each token's popover)
+  const handleFilterValuesChange = useCallback((values: FilterValues) => {
+    console.log('Filter values changed:', values)
+  }, [])
+
+  // Handle toolbar sort change
+  const handleToolbarSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
+    const sortFields: Record<string, string> = {
+      dateOfService: 'Encounter Date',
+      id: 'Encounter Id',
+      patientName: 'Person Last Name',
+      patientFirstName: 'Person First Name',
+    }
+    setCurrentSort({ field, label: sortFields[field] || field, direction })
   }, [])
 
   // Handle sort changes
@@ -850,69 +860,6 @@ export const BillingManagerPage: FC = () => {
 
                       </div>
                       
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 flex-shrink-0">
-                        {/* Info icon with tooltip for Refresh button */}
-                        <TooltipRoot>
-                          <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors">
-                              <Icon icon="info-circle" className="w-4 h-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>The Refresh Button updates the billing queue with the latest encounter data and claim statuses</p>
-                          </TooltipContent>
-                        </TooltipRoot>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setRefreshKey(prev => prev + 1)}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2"
-                        >
-                          <Icon icon="sync" className="w-3.5 h-3.5" />
-                          Refresh
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/billing-reports')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2"
-                        >
-                          <Icon icon="chart-bar" className="w-3.5 h-3.5" />
-                          Reports
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/invoice-manager')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2"
-                        >
-                          <Icon icon="file-invoice" className="w-3.5 h-3.5" />
-                          Invoice Manager
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/encounter-details')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2"
-                        >
-                          <Icon icon="file-medical" className="w-3.5 h-3.5" />
-                          Encounter Details
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleExportCSV}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2"
-                        >
-                          <Icon icon="download" className="w-3.5 h-3.5" />
-                          Export
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1135,311 +1082,231 @@ export const BillingManagerPage: FC = () => {
 
             {/* Main Content - Responsive Layout */}
             <div className="flex-1 overflow-hidden">
-              {/* Desktop: Side by Side Layout */}
+              {/* Desktop: Full-width Layout with Horizontal Toolbar */}
               {!isMobile ? (
-                <div className="flex h-full">
-                  {/* Desktop Left Sidebar - Filters */}
-                  <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${
-                    filtersCollapsed ? 'w-12' : 'w-96'
-                  } ${filtersCollapsed ? '' : 'overflow-y-auto'}`}>
-                    {!filtersCollapsed ? (
-                      <div className="p-4">
-                        {/* Collapse Button */}
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-medium text-gray-700">Filters</h3>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleFiltersToggle}
-                            className="p-1 h-6 w-6 hover:bg-gray-100"
-                            title="Collapse filters"
-                          >
-                            <PanelLeft className="w-4 h-4 text-gray-500" />
-                          </Button>
-                        </div>
-
-                        {/* Global Search - Outside Tabs */}
-                        <div className="mb-4">
-                          <div className="relative">
-                            <Icon icon="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
-                            <input
-                              type="text"
-                              placeholder="Search encounters, patients, providers..."
-                              value={filters.searchQuery}
-                              onChange={(e) => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
-                              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center rounded-md p-1 mb-4">
-                          <Tabs value={filtersTab} onValueChange={(value) => setFiltersTab(value as 'quick' | 'advanced')} className="w-full" defaultValue="advanced">
-                            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 gap-1">
-                              <TabsTrigger 
-                                value="advanced" 
-                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filtersTab === 'advanced' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon icon="filter" className="w-3.5 h-3.5" />
-                                  Filters
-                                </div>
-                              </TabsTrigger>
-                              <TabsTrigger 
-                                value="quick" 
-                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filtersTab === 'quick' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon icon="eye" className="w-3.5 h-3.5" />
-                                  At Glance
-                                </div>
-                              </TabsTrigger>
-                            </TabsList>
-
-                          <TabsContent value="advanced" className="mt-3">
-                            <BillingFiltersPanel
-                              filters={filters}
-                              onFiltersChange={setFilters}
-                              onClearFilters={handleClearAllFilters}
-                              encounterCount={filteredEncounters.length}
-                              currentSort={currentSort}
-                              onSortChange={handleSortChange}
-                            />
-                          </TabsContent>
-
-                          <TabsContent value="quick" className="mt-3">
-                            <BillingQuickFilters
-                              onFilterChange={handleQuickFilterChange}
-                              onClearFilters={handleClearAllFilters}
-                              activeFilters={activeFilterCards}
-                              encounterCount={filteredEncounters.length}
-                            />
-                          </TabsContent>
-                        </Tabs>
-                      </div>
-                    </div>
-                    ) : (
-                      /* Collapsed State */
-                      <div className="flex flex-col items-center p-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleFiltersToggle}
-                          className="p-2 h-8 w-8 mb-2 hover:bg-gray-100"
-                          title="Expand filters"
-                        >
-                          <PanelRight className="w-4 h-4 text-gray-500" />
-                        </Button>
-                        
-                        {/* Active Filters Indicator */}
-                        {(activeFilterCards.length > 0 || filters.searchQuery) && (
-                          <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-medium">
-                            {activeFilterCards.length + (filters.searchQuery ? 1 : 0)}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                <div className="flex flex-col h-full bg-zinc-100">
+                  {/* Horizontal Filter Toolbar + Action Buttons */}
+                  <div className="bg-white border-b border-gray-200">
+                    <BillingFilterToolbar
+                      searchQuery={filters.searchQuery}
+                      onSearchChange={(query) =>
+                        setFilters(prev => ({ ...prev, searchQuery: query }))
+                      }
+                      onApplyFilters={handleToolbarApplyFilters}
+                      onFilterValuesChange={handleFilterValuesChange}
+                      onClearFilters={handleClearAllFilters}
+                      onSortChange={handleToolbarSortChange}
+                      currentSort={
+                        currentSort
+                          ? { field: currentSort.field, direction: currentSort.direction }
+                          : undefined
+                      }
+                    >
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <button className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors">
+                            <Icon icon="info-circle" className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>The Refresh Button updates the billing queue with the latest encounter data and claim statuses</p>
+                        </TooltipContent>
+                      </TooltipRoot>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setRefreshKey(prev => prev + 1)}
+                        className="flex items-center gap-1.5 text-xs px-3 py-2"
+                      >
+                        <Icon icon="sync" className="w-3.5 h-3.5" />
+                        Refresh
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/billing-reports')}
+                        className="flex items-center gap-1.5 text-xs px-3 py-2"
+                      >
+                        <Icon icon="chart-bar" className="w-3.5 h-3.5" />
+                        Reports
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/invoice-manager')}
+                        className="flex items-center gap-1.5 text-xs px-3 py-2"
+                      >
+                        <Icon icon="file-invoice" className="w-3.5 h-3.5" />
+                        Invoice Manager
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/encounter-details')}
+                        className="flex items-center gap-1.5 text-xs px-3 py-2"
+                      >
+                        <Icon icon="file-medical" className="w-3.5 h-3.5" />
+                        Encounter Details
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-1.5 text-xs px-3 py-2"
+                      >
+                        <Icon icon="download" className="w-3.5 h-3.5" />
+                        Export
+                      </Button>
+                    </BillingFilterToolbar>
                   </div>
 
-                  {/* Desktop Right Content - Table */}
-                  <div className="flex-1 flex flex-col overflow-hidden bg-zinc-100">
-                    
-                    {/* Tab Bar with Billing Type Filter */}
-                    <div className="bg-white border-b border-gray-200">
-                      <div className="flex items-center justify-between px-4">
-                        <div className="py-3 flex-1">
-                          <Tabs
-                            value={activeTab}
-                            onValueChange={(value) => setActiveTab(value as typeof activeTab)}
-                            className="w-full"
-                          >
-                            <TabsList className="h-10 items-center justify-center rounded-lg p-1 text-muted-foreground grid w-full max-w-2xl grid-cols-4 bg-gray-100">
-                              <TabsTrigger
-                                value="ready"
-                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
-                              >
-                                Ready to Bill ({encounters.filter(e => e.status === 'ready_to_bill' && !e.hasErrors).length})
-                              </TabsTrigger>
-                              <TabsTrigger
-                                value="blocked"
-                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
-                              >
-                                Blocked ({encounters.filter(e => e.hasErrors && e.errorSeverity === 'critical').length})
-                              </TabsTrigger>
-                              <TabsTrigger
-                                value="with_errors"
-                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
-                              >
-                                With Errors ({encounters.filter(e => e.hasErrors).length})
-                              </TabsTrigger>
-                              <TabsTrigger
-                                value="pending_submit"
-                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
-                              >
-                                Pending Submit ({encounters.filter(e => e.status === 'in_review' || e.status === 'authorized').length})
-                              </TabsTrigger>
-                            </TabsList>
-                          </Tabs>
-                        </div>
-                        
-                        {/* Billing Type Filter */}
-                        <div className="flex items-center gap-3 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-700">Billing Type:</span>
-                            <Select value={billingTypeFilter} onValueChange={setBillingTypeFilter}>
-                              <SelectTrigger className="w-[180px] h-9">
-                                <SelectValue placeholder="All Types" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Types ({encounters.length})</SelectItem>
-                                <SelectItem value="hcfa">HCFA ({encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length})</SelectItem>
-                                <SelectItem value="ub04">UB-04 ({encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length})</SelectItem>
-                                <SelectItem value="not_set">Not Set ({encounters.filter(e => !e.billType && !e.hcfaBillType).length})</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
+                  {/* Merged Tab Bar: Select All + Tabs + Billing Type */}
+                  <div className="bg-white border-b border-gray-200">
+                    <div className="flex items-center px-4 py-2 gap-4">
+                      {/* Left: Select All */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={filteredEncounters.length > 0 && selectedEncounters.length === filteredEncounters.length}
+                          ref={(input) => {
+                            if (input) {
+                              const allSelected = filteredEncounters.length > 0 && selectedEncounters.length === filteredEncounters.length
+                              const someSelected = selectedEncounters.length > 0 && !allSelected
+                              input.indeterminate = someSelected
+                            }
+                          }}
+                          onChange={() => {
+                            const allSelected = filteredEncounters.every(enc => selectedEncounters.includes(enc.id))
+                            if (allSelected) {
+                              filteredEncounters.forEach(enc => handleEncounterSelect(enc.id, false))
+                            } else {
+                              filteredEncounters.forEach(enc => {
+                                if (!selectedEncounters.includes(enc.id)) {
+                                  handleEncounterSelect(enc.id, true)
+                                }
+                              })
+                            }
+                          }}
+                          className="w-4 h-4 accent-primary border-gray-300 rounded focus:ring-primary focus:ring-2 cursor-pointer"
+                        />
+                        <span className="text-sm text-gray-600 whitespace-nowrap">
+                          {selectedEncounters.length === filteredEncounters.length && filteredEncounters.length > 0
+                            ? 'All'
+                            : selectedEncounters.length > 0
+                            ? `${selectedEncounters.length}`
+                            : 'All'}
+                        </span>
+                      </div>
+
+                      {/* Center: Tabs */}
+                      <div className="flex-1 min-w-0">
+                        <Tabs
+                          value={activeTab}
+                          onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+                          className="w-full"
+                        >
+                          <TabsList className="h-9 items-center justify-center rounded-lg p-1 text-muted-foreground grid w-full max-w-2xl grid-cols-4 bg-gray-100">
+                            <TabsTrigger
+                              value="ready"
+                              className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                            >
+                              Ready to Bill ({encounters.filter(e => e.status === 'ready_to_bill' && !e.hasErrors).length})
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="blocked"
+                              className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                            >
+                              Blocked ({encounters.filter(e => e.hasErrors && e.errorSeverity === 'critical').length})
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="with_errors"
+                              className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                            >
+                              With Errors ({encounters.filter(e => e.hasErrors).length})
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="pending_submit"
+                              className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+                            >
+                              Pending Submit ({encounters.filter(e => e.status === 'in_review' || e.status === 'authorized').length})
+                            </TabsTrigger>
+                          </TabsList>
+                        </Tabs>
+                      </div>
+
+                      {/* Right: Billing Type dropdown */}
+                      <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                        <span className="text-sm font-medium text-gray-700">Billing Type:</span>
+                        <Select value={billingTypeFilter} onValueChange={setBillingTypeFilter}>
+                          <SelectTrigger className="w-[160px] h-8 text-sm">
+                            <SelectValue placeholder="All Types" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types ({encounters.length})</SelectItem>
+                            <SelectItem value="hcfa">HCFA ({encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length})</SelectItem>
+                            <SelectItem value="ub04">UB-04 ({encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length})</SelectItem>
+                            <SelectItem value="not_set">Not Set ({encounters.filter(e => !e.billType && !e.hcfaBillType).length})</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                    
-                    {/* Action Buttons Section - Always visible */}
+                  </div>
+
+                  {/* Bulk Action Buttons — only visible when encounters are selected */}
+                  {selectedEncounterObjects.length > 0 && (
                     <BillingActionButtons
                       selectedEncounters={selectedEncounterObjects}
                       onAction={handleActionButtonClick}
-                      totalEncounters={filteredEncounters.length}
-                      onSelectAll={() => {
-                        const allSelected = filteredEncounters.every(enc => selectedEncounters.includes(enc.id))
-                        if (allSelected) {
-                          // Deselect all
-                          filteredEncounters.forEach(enc => handleEncounterSelect(enc.id, false))
-                        } else {
-                          // Select all
-                          filteredEncounters.forEach(enc => {
-                            if (!selectedEncounters.includes(enc.id)) {
-                              handleEncounterSelect(enc.id, true)
-                            }
-                          })
-                        }
-                      }}
                     />
+                  )}
 
-                    {/* Queue Table or Card View */}
-                    <div className="flex-1 p-4 overflow-hidden">
-                      {viewMode === 'grid' ? (
-                        <BillingQueueTable
-                          encounters={filteredEncounters}
-                          onEncounterSelect={handleEncounterSelect}
-                          onEncounterEdit={(encounter) => console.log('Edit encounter:', encounter)}
-                          onEncounterClick={handleEncounterClick}
-                          onGenerateClaim={(encounter) => handleBulkAction('generate_claims', [encounter.id])}
-                          onViewErrors={setShowErrorDialog}
-                          onBillingOverrideToggle={(encounterId, enabled) => console.log('Toggle override:', encounterId, enabled)}
-                          onHcfaBillTypeChange={(encounterId, billType) => console.log('Change bill type:', encounterId, billType)}
-                          onPrimaryPayerChange={(encounterId, primaryPayer) => console.log('Change primary payer:', encounterId, primaryPayer)}
-                          selectedEncounters={selectedEncounters}
-                          className="h-full"
-                        />
-                      ) : (
-                        <BillingViewCardsListing
-                          encounters={filteredEncounters}
-                          selectedEncounters={selectedEncounters}
-                          onEncounterSelect={handleEncounterSelect}
-                          onEncounterClick={handleEncounterClick}
-                          className="h-full"
-                        />
-                      )}
-                    </div>
+                  {/* Queue Table or Card View */}
+                  <div className="flex-1 p-4 overflow-hidden">
+                    {viewMode === 'grid' ? (
+                      <BillingQueueTable
+                        encounters={filteredEncounters}
+                        onEncounterSelect={handleEncounterSelect}
+                        onEncounterEdit={(encounter) => console.log('Edit encounter:', encounter)}
+                        onEncounterClick={handleEncounterClick}
+                        onGenerateClaim={(encounter) => handleBulkAction('generate_claims', [encounter.id])}
+                        onViewErrors={setShowErrorDialog}
+                        onBillingOverrideToggle={(encounterId, enabled) => console.log('Toggle override:', encounterId, enabled)}
+                        onHcfaBillTypeChange={(encounterId, billType) => console.log('Change bill type:', encounterId, billType)}
+                        onPrimaryPayerChange={(encounterId, primaryPayer) => console.log('Change primary payer:', encounterId, primaryPayer)}
+                        selectedEncounters={selectedEncounters}
+                        className="h-full"
+                      />
+                    ) : (
+                      <BillingViewCardsListing
+                        encounters={filteredEncounters}
+                        selectedEncounters={selectedEncounters}
+                        onEncounterSelect={handleEncounterSelect}
+                        onEncounterClick={handleEncounterClick}
+                        className="h-full"
+                      />
+                    )}
                   </div>
                 </div>
               ) : (
                 /* Mobile: Vertical Layout */
                 <div className="flex flex-col h-full bg-zinc-100">
-                  {/* Mobile Filters Section - Above Table */}
+                  {/* Mobile Horizontal Filter Toolbar */}
                   <div className="bg-white border-b border-gray-200">
-                    {/* Filters Toggle Button */}
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <Button
-                        variant="ghost"
-                        onClick={handleMobileFiltersToggle}
-                        className="w-full justify-between p-3 text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Icon icon="filter" className="w-4 h-4" />
-                          <span className="font-medium">Filters</span>
-                          {(activeFilterCards.length > 0 || filters.searchQuery) && (
-                            <Badge variant="secondary" className="ml-2">
-                              {activeFilterCards.length + (filters.searchQuery ? 1 : 0)}
-                            </Badge>
-                          )}
-                        </div>
-                        {mobileFiltersOpen ? (
-                          <Icon icon="chevron-up" className="w-4 h-4" />
-                        ) : (
-                          <Icon icon="chevron-down" className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-
-                    {/* Collapsible Filters Content */}
-                    {mobileFiltersOpen && (
-                      <div className="p-4 max-h-96 overflow-y-auto">
-                        {/* Global Search */}
-                        <div className="mb-4">
-                          <div className="relative">
-                            <Icon icon="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
-                            <input
-                              type="text"
-                              placeholder="Search encounters, patients, providers..."
-                              value={filters.searchQuery}
-                              onChange={(e) => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
-                              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center rounded-md p-1 mb-4">
-                          <Tabs value={filtersTab} onValueChange={(value) => setFiltersTab(value as 'quick' | 'advanced')} className="w-full">
-                            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 gap-1">
-                              <TabsTrigger 
-                                value="advanced" 
-                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filtersTab === 'advanced' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon icon="filter" className="w-3.5 h-3.5" />
-                                  Filters
-                                </div>
-                              </TabsTrigger>
-                              <TabsTrigger 
-                                value="quick" 
-                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filtersTab === 'quick' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon icon="eye" className="w-3.5 h-3.5" />
-                                  At Glance
-                                </div>
-                              </TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="advanced" className="mt-3">
-                              <BillingFiltersPanel
-                                filters={filters}
-                                onFiltersChange={setFilters}
-                                onClearFilters={handleClearAllFilters}
-                                encounterCount={filteredEncounters.length}
-                              />
-                            </TabsContent>
-
-                            <TabsContent value="quick" className="mt-3">
-                              <BillingQuickFilters
-                                onFilterChange={handleQuickFilterChange}
-                                onClearFilters={handleClearAllFilters}
-                                activeFilters={activeFilterCards}
-                                encounterCount={filteredEncounters.length}
-                              />
-                            </TabsContent>
-                          </Tabs>
-                        </div>
-                      </div>
-                    )}
+                    <BillingFilterToolbar
+                      searchQuery={filters.searchQuery}
+                      onSearchChange={(query) =>
+                        setFilters(prev => ({ ...prev, searchQuery: query }))
+                      }
+                      onApplyFilters={handleToolbarApplyFilters}
+                      onFilterValuesChange={handleFilterValuesChange}
+                      onClearFilters={handleClearAllFilters}
+                      onSortChange={handleToolbarSortChange}
+                      currentSort={
+                        currentSort
+                          ? { field: currentSort.field, direction: currentSort.direction }
+                          : undefined
+                      }
+                    />
                   </div>
 
                   {/* Mobile Tab Bar - Queue Type Selection */}

@@ -23,26 +23,26 @@ export const MessagesWidget: FC<MessagesWidgetProps> = ({
   onCreateMessage 
 }) => {
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
+    <div className="h-full flex flex-col overflow-hidden min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="space-y-1">
           {messages.map((message) => (
             <div
               key={message.id}
               className={cn(
-                "flex items-start gap-3 p-2 rounded-lg",
+                "flex items-start gap-2 sm:gap-3 p-2 rounded-lg",
                 "hover:bg-gray-50/80 transition-colors duration-200"
               )}
             >
-              <div className="w-8 h-8 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-600 mt-0.5">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-600 mt-0.5 text-xs sm:text-sm">
                 {message.sender.name.charAt(0)}
               </div>
               
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 text-sm">
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="flex items-start justify-between gap-1 sm:gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                      <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">
                         {message.sender.name}
                       </span>
                       <span className={cn(
@@ -52,12 +52,12 @@ export const MessagesWidget: FC<MessagesWidgetProps> = ({
                         {message.sender.type}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 truncate mt-0.5">
+                    <p className="text-xs sm:text-sm text-gray-600 truncate mt-0.5">
                       {message.content}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-xs text-gray-500">
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[10px] sm:text-xs text-gray-500">
                       {message.time}
                     </span>
                     {message.unreadCount && (

@@ -26,15 +26,15 @@ const getBackgroundColor = (index: number) => {
 
 export const PendingReferralsWidget: FC<PendingReferralsWidgetProps> = ({ referrals }) => {
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-wrap gap-1 p-1">
+    <div className="h-full flex flex-col min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex flex-wrap gap-1.5 sm:gap-1 p-1">
           {referrals.map((referral, index) => (
             <div
               key={referral.id}
               className={cn(
-                "p-1.5 rounded-lg shrink-0",
-                "w-[140px]",
+                "p-1.5 rounded-lg shrink-0 min-w-0",
+                "w-[130px] sm:w-[140px]",
                 getBackgroundColor(index),
                 "transition-colors duration-200"
               )}
@@ -68,7 +68,7 @@ export const PendingReferralsWidget: FC<PendingReferralsWidgetProps> = ({ referr
               "transition-colors duration-200",
               "hover:border-blue-200 hover:bg-blue-50/30",
               "min-h-[32px]",
-              "w-[140px] shrink-0"
+              "w-[130px] sm:w-[140px] shrink-0"
             )}
           >
             <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center">

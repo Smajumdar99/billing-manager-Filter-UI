@@ -98,21 +98,21 @@ const TimeSlot: FC<TimeSlotProps> = ({ time, appointments, showMore }) => {
   const colors = getTimeSlotColors(time)
 
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-1 sm:gap-2">
       <div className={cn(
-        "w-[50px] pt-1.5 text-xs font-medium shrink-0",
+        "w-9 sm:w-[50px] pt-1.5 text-[10px] sm:text-xs font-medium shrink-0",
         colors.text
       )}>
         {time} AM
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-          <div className="flex gap-2 pb-1 pr-4">
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent -mx-1 px-1">
+          <div className="flex gap-1.5 sm:gap-2 pb-1 pr-2 sm:pr-4">
             {appointments.map((apt) => (
               <div
                 key={apt.id}
                 className={cn(
-                  "w-[200px] shrink-0 p-3 rounded-lg",
+                  "w-[160px] sm:w-[200px] min-w-[140px] shrink-0 p-2 sm:p-3 rounded-lg",
                   colors.bg,
                   "border-l-4",
                   colors.border,
@@ -195,19 +195,19 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({
   }, {} as Record<string, Appointment[]>)
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Calendar header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center w-full">
+    <div className="h-full flex flex-col min-h-0">
+      {/* Calendar header - responsive */}
+      <div className="flex items-center justify-between mb-2 sm:mb-4 shrink-0">
+        <div className="flex items-center w-full min-w-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSelectedDate(prev => addDays(prev, -7))}
-            className="h-6 w-6 shrink-0"
+            className="h-7 w-7 sm:h-8 sm:w-8 shrink-0"
           >
             <ChevronLeftIcon className="h-3 w-3" />
           </Button>
-          <div className="flex justify-between flex-1 px-1">
+          <div className="flex justify-between flex-1 px-0.5 sm:px-1 min-w-0 overflow-x-auto">
             {days.map((day, i) => {
               const isToday = isSameDay(day, new Date())
               const isSelected = isSameDay(day, selectedDate)
@@ -217,14 +217,14 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({
                   key={i}
                   variant="ghost"
                   className={cn(
-                    "h-8 w-8 p-0 font-normal flex-col relative",
+                    "h-7 w-7 sm:h-8 sm:w-8 p-0 font-normal flex-col relative shrink-0",
                     "hover:bg-transparent",
                     !isToday && !isSelected && "hover:bg-gray-50"
                   )}
                   onClick={() => setSelectedDate(day)}
                 >
                   <span className={cn(
-                    "text-[8px] uppercase font-medium",
+                    "text-[7px] sm:text-[8px] uppercase font-medium leading-tight",
                     isToday && "text-primary",
                     !isToday && !isSelected && "text-gray-600",
                     isSelected && !isToday && "text-gray-600"
@@ -233,14 +233,12 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({
                   </span>
                   <span className={cn(
                     "relative inline-flex items-center justify-center",
-                    "w-6 h-6 rounded-full",
+                    "w-5 h-5 sm:w-6 sm:h-6 rounded-full text-xs sm:text-base",
                     isToday && "bg-primary text-primary-foreground",
                     isSelected && !isToday && "bg-primary/10 text-primary",
                     !isToday && !isSelected && "text-gray-900"
                   )}>
-                    <span className="text-base leading-none">
-                      {format(day, 'd')}
-                    </span>
+                    {format(day, 'd')}
                   </span>
                 </Button>
               )
@@ -250,7 +248,7 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({
             variant="ghost"
             size="icon"
             onClick={() => setSelectedDate(prev => addDays(prev, 7))}
-            className="h-6 w-6 shrink-0"
+            className="h-7 w-7 sm:h-8 sm:w-8 shrink-0"
           >
             <ChevronRightIcon className="h-3 w-3" />
           </Button>
@@ -258,8 +256,8 @@ export const AppointmentsWidget: FC<AppointmentsWidgetProps> = ({
       </div>
 
       {/* Appointments list */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto space-y-6 pr-3">
+      <div className="flex-1 overflow-hidden min-h-0">
+        <div className="h-full overflow-y-auto space-y-4 sm:space-y-6 pr-1 sm:pr-3">
           <TimeSlot time="7" appointments={appointmentsByHour['07'] || []} />
           <TimeSlot time="8" appointments={appointmentsByHour['08'] || []} />
           <TimeSlot time="9" appointments={appointmentsByHour['09'] || []} />

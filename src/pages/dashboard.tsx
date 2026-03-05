@@ -119,6 +119,12 @@ const navigation: NavSection[] = [
 ]
 
 export const defaultLayouts: Layouts = {
+  xs: [
+    { i: 'appointments', x: 0, y: 0, w: 4, h: 5, minW: 4, minH: 4, isResizable: true, isDraggable: true, static: false },
+    { i: 'patients', x: 0, y: 5, w: 4, h: 5, minW: 4, minH: 4, isResizable: true, isDraggable: true, static: false },
+    { i: 'tasks', x: 0, y: 10, w: 4, h: 5, minW: 4, minH: 4, isResizable: true, isDraggable: true, static: false },
+    { i: 'referrals', x: 0, y: 15, w: 4, h: 4, minW: 4, minH: 3, isResizable: true, isDraggable: true, static: false },
+  ],
   lg: [
     { 
       i: 'appointments', 
@@ -580,7 +586,7 @@ const mockTasks = [
 
 const DashboardSkeleton: FC = () => {
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen min-h-[100dvh] bg-background overflow-hidden">
       {/* Sidebar Skeleton */}
       <div className="hidden lg:flex w-64 flex-col fixed inset-y-0">
         <div className="flex flex-col flex-grow pt-5 bg-card overflow-y-auto border-r">
@@ -758,6 +764,18 @@ export const DashboardPage: FC = () => {
           
           // Ensure all required properties are present and valid
           const loadedLayouts = {
+            xs: settings.dashboardLayout.xs?.map(item => ({
+              i: String(item.i),
+              x: Number(item.x) || 0,
+              y: Number(item.y) || 0,
+              w: Math.max(Number(item.w) || 4, 4),
+              h: Math.max(Number(item.h) || 4, 3),
+              minW: 4,
+              minH: 3,
+              isResizable: true,
+              isDraggable: true,
+              static: false
+            })) || defaultLayouts.xs,
             lg: settings.dashboardLayout.lg?.map(item => ({
               i: String(item.i),
               x: Number(item.x) || 0,
@@ -798,7 +816,8 @@ export const DashboardPage: FC = () => {
 
           // Validate that all required widgets exist
           const requiredWidgets = ['appointments', 'patients', 'tasks', 'referrals'];
-          const hasAllWidgets = requiredWidgets.every(widgetId => 
+          const hasAllWidgets = requiredWidgets.every(widgetId =>
+            (loadedLayouts.xs?.some(item => item.i === widgetId) ?? true) &&
             loadedLayouts.lg.some(item => item.i === widgetId) &&
             loadedLayouts.md.some(item => item.i === widgetId) &&
             loadedLayouts.sm.some(item => item.i === widgetId)
@@ -853,6 +872,18 @@ export const DashboardPage: FC = () => {
         
         await saveUserSettings(userId, {
           dashboardLayout: {
+            xs: allLayouts.xs?.map(item => ({
+              i: String(item.i),
+              x: Number(item.x),
+              y: Number(item.y),
+              w: Math.max(Number(item.w), 4),
+              h: Math.max(Number(item.h), 3),
+              minW: 4,
+              minH: 3,
+              isResizable: true,
+              isDraggable: true,
+              static: false
+            })) ?? defaultLayouts.xs,
             lg: allLayouts.lg.map(item => ({
               i: String(item.i),
               x: Number(item.x),
@@ -952,7 +983,7 @@ export const DashboardPage: FC = () => {
       {isLoading ? (
         <DashboardSkeleton />
       ) : (
-        <div className="flex h-screen bg-background overflow-hidden">
+        <div className="flex h-screen min-h-[100dvh] bg-background overflow-hidden">
           <Sidebar 
             logo={<span className="text-xl font-bold">LOGO</span>}
             navigation={navigation}
@@ -974,34 +1005,34 @@ export const DashboardPage: FC = () => {
               onResetLayout={handleResetClick}
               onMobileMenuClick={() => setIsMobileMenuOpen(true)}
             />
-            <main className="flex-1 overflow-hidden relative">
-              <div className="h-full overflow-x-hidden overflow-y-auto px-2">
-                <div className="flex items-center justify-between mb-0 pt-0">
-                  <h1 className="text-2xl pl-4 font-semibold text-foreground">
+            <main className="flex-1 overflow-hidden relative min-h-0">
+              <div className="h-full overflow-x-hidden overflow-y-auto px-2 sm:px-4 pb-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-0 pt-2 sm:pt-0">
+                  <h1 className="text-xl sm:text-2xl pl-2 sm:pl-4 font-semibold text-foreground truncate">
                     Welcome back, {user?.displayName || 'Guest'}
                   </h1>
-                  <div className="flex items-center gap-2  pr-2">
+                  <div className="flex items-center gap-2 pr-2 shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => console.log('Customize')}
                       className="gap-2"
                     >
-                      <Cog6ToothIcon className="h-4 w-4" />
-                      Customize Dashboard
+                      <Cog6ToothIcon className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline">Customize Dashboard</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleResetClick}
-                      className="rounded-full shadow-sm hover:shadow-md transition-shadow"
+                      className="rounded-full shadow-sm hover:shadow-md transition-shadow shrink-0"
                       aria-label="Reset layout"
                     >
                       <ArrowPathIcon className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                <div>
+                <div className="min-h-0 w-full">
                   <WidgetGrid layouts={layouts} onLayoutChange={handleLayoutChange}>
                     <div key="appointments">
                       <Widget title="Appointments">

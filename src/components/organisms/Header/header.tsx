@@ -239,108 +239,94 @@ export const Header: FC<HeaderProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center border-b bg-background px-4">
+    <header className="sticky top-0 z-30 flex h-14 sm:h-16 w-full items-center border-b bg-background px-2 sm:px-4 gap-1 sm:gap-2">
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
+        className="shrink-0 lg:hidden"
         onClick={onMobileMenuClick}
+        aria-label="Open menu"
       >
         <Bars3Icon className="h-5 w-5" />
       </Button>
 
       {variant === 'default' && (
-        <div className="ml-4 flex-1 lg:max-w-sm bg-white rounded-full shadow-sm border">
+        <div className="ml-1 sm:ml-4 flex-1 min-w-0 max-w-none sm:max-w-[200px] md:max-w-sm bg-white rounded-full shadow-sm border">
           <SearchBar 
             onSearch={onSearch}
-            className="[&>div]:border-0 [&>div]:shadow-none"
+            className="[&>div]:border-0 [&>div]:shadow-none [&_input]:text-sm [&_input]:min-w-0"
           />
         </div>
       )}
 
-      <div className="ml-auto flex items-center gap-2 bg-white rounded-full shadow-sm border px-2">
+      <div className="ml-auto flex items-center gap-0.5 sm:gap-2 shrink-0 bg-white rounded-full shadow-sm border px-1 sm:px-2">
         <Button
           variant="ghost"
           size="icon"
           className={cn(
-            "relative transition-colors duration-200",
-            "hover:bg-gray-100",
-            "active:bg-gray-200",
+            "relative transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200",
             "focus-visible:ring-2 focus-visible:ring-primary/20",
-            "rounded-full p-3",
-            "h-12 w-12"
+            "rounded-full p-2 sm:p-3 h-9 w-9 sm:h-12 sm:w-12"
           )}
           onClick={onCallClick}
           title="Call"
         >
-          <PhoneIcon className="h-5 w-5" />
+          <PhoneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
           className={cn(
-            "relative transition-colors duration-200",
-            "hover:bg-gray-100",
-            "active:bg-gray-200",
+            "relative transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200 hidden sm:flex",
             "focus-visible:ring-2 focus-visible:ring-primary/20",
-            "rounded-full p-3",
-            "h-12 w-12"
+            "rounded-full p-2 sm:p-3 h-9 w-9 sm:h-12 sm:w-12"
           )}
           onClick={onReminderClick}
           title="Send Reminder"
         >
-          <BellAlertIcon className="h-5 w-5" />
+          <BellAlertIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
           className={cn(
-            "relative transition-colors duration-200",
-            "hover:bg-gray-100",
-            "active:bg-gray-200",
+            "relative transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200 hidden md:flex",
             "focus-visible:ring-2 focus-visible:ring-primary/20",
-            "rounded-full p-3",
-            "h-12 w-12"
+            "rounded-full p-2 sm:p-3 h-9 w-9 sm:h-12 sm:w-12"
           )}
           onClick={onHelpClick}
           title="Help"
         >
-          <QuestionMarkCircleIcon className="h-5 w-5" />
+          <QuestionMarkCircleIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
           className={cn(
-            "relative transition-colors duration-200",
-            "hover:bg-gray-100",
-            "active:bg-gray-200",
+            "relative transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200 hidden md:flex",
             "focus-visible:ring-2 focus-visible:ring-primary/20",
-            "rounded-full p-3",
-            "h-12 w-12"
+            "rounded-full p-2 sm:p-3 h-9 w-9 sm:h-12 sm:w-12"
           )}
           onClick={onSupportClick}
           title="Support"
         >
-          <LifebuoyIcon className="h-5 w-5" />
+          <LifebuoyIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
           className={cn(
-            "relative transition-colors duration-200",
-            "hover:bg-gray-100",
-            "active:bg-gray-200",
+            "relative transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200",
             "focus-visible:ring-2 focus-visible:ring-primary/20",
-            "rounded-full p-3",
-            "h-12 w-12"
+            "rounded-full p-2 sm:p-3 h-9 w-9 sm:h-12 sm:w-12"
           )}
           onClick={onNotificationClick}
         >
-          <BellIcon className="h-5 w-5" />
+          <BellIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           {notificationCount && notificationCount > 0 && (
             <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
               {notificationCount}
@@ -354,13 +340,12 @@ export const Header: FC<HeaderProps> = ({
               variant="ghost" 
               size="sm"
               className={cn(
-                "flex items-center gap-3",
-                "px-4 py-2 rounded-full",
-                "hover:bg-gray-100",
-                "active:bg-gray-200",
+                "flex items-center gap-2 sm:gap-3",
+                "px-2 sm:px-4 py-2 rounded-full",
+                "hover:bg-gray-100 active:bg-gray-200",
                 "focus-visible:ring-2 focus-visible:ring-primary/20",
                 "transition-all duration-200",
-                "h-12"
+                "h-9 sm:h-12"
               )}
             >
               <div className="hidden md:flex flex-col items-end mr-2">
