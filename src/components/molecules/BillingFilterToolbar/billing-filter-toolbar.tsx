@@ -1,5 +1,5 @@
 import { FC, useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react'
-import { Pencil, X } from 'lucide-react'
+import { Eye, Pencil, X, Filter, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { Icon } from '@/components/atoms/Icon/Icon'
 import { RadioGroup, RadioGroupItem } from '@/components/atoms/RadioGroup/radio-group'
 import { Calendar } from '@/components/atoms/Calendar/calendar'
@@ -163,9 +163,13 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
   // ---- Sort popover ----
   const [isSortOpen, setIsSortOpen] = useState(false)
 
+  // ---- At a Glance popover ----
+  const [isAtGlanceOpen, setIsAtGlanceOpen] = useState(false)
+
   // ---- Refs for click-outside ----
   const filtersRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)
+  const atGlanceRef = useRef<HTMLDivElement>(null)
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
@@ -173,6 +177,9 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
     }
     if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
       setIsSortOpen(false)
+    }
+    if (atGlanceRef.current && !atGlanceRef.current.contains(e.target as Node)) {
+      setIsAtGlanceOpen(false)
     }
   }, [])
 
@@ -259,7 +266,11 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
   }
 
   const handleSortFieldChange = (field: string) => {
-    onSortChange?.(field, currentSort?.direction ?? 'desc')
+    if (currentSort?.field === field) {
+      onSortChange?.('', currentSort?.direction ?? 'desc')
+    } else {
+      onSortChange?.(field, currentSort?.direction ?? 'desc')
+    }
   }
 
   const handleSortDirectionChange = (direction: 'asc' | 'desc') => {
@@ -284,7 +295,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
               : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
           }`}
         >
-          <Icon icon="filter" className="w-4 h-4" />
+          <Filter size={16} />
           Filters
           {appliedFilters.length > 0 && (
             <span className="ml-0.5 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-blue-600 rounded-full">
@@ -295,16 +306,13 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
 
         {/* ===== Two-Pane Popover ===== */}
         {isFiltersOpen && (
-          <div
-            className="absolute left-0 top-full mt-2 z-50 bg-white rounded-xl border border-gray-200 shadow-xl w-[780px] flex flex-col"
-            style={{ maxHeight: 'calc(100vh - 200px)' }}
-          >
+          <div className="absolute z-50 mt-2 w-[800px] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col overflow-hidden max-h-[calc(100vh-250px)]">
             {/* Body: two panes */}
-            <div className="flex flex-1 min-h-0 overflow-hidden" style={{ minHeight: 420 }}>
+            <div className="flex flex-1 min-h-0">
 
               {/* ---- Left Pane: search + category list ---- */}
-              <div className="w-1/3 border-r border-gray-200 flex flex-col">
-                <div className="p-3 border-b border-gray-100">
+              <div className="w-1/3 flex flex-col min-h-0 border-r border-gray-200">
+                <div className="shrink-0 p-3 border-b border-gray-100">
                   <div className="relative">
                     <Icon icon="search" className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                     <input
@@ -316,7 +324,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
                     />
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
+                <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
                   {visibleCategories.map(cat => {
                     const isAlreadySelected = selectedCategoryIds.has(cat.id)
                     const isCurrentDraft = draftFilter === cat.id
@@ -351,14 +359,14 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
               </div>
 
               {/* ---- Right Pane ---- */}
-              <div className="w-2/3 flex flex-col bg-slate-50">
+              <div className="w-2/3 bg-slate-50 flex flex-col min-h-0">
                 {/* Header */}
-                <div className="flex justify-between items-center w-full px-4 pt-4 pb-3">
+                <div className="shrink-0 p-4 border-b border-gray-200 flex justify-between items-center">
                   <span className="text-lg font-bold text-slate-800">Selected Criteria</span>
                   <span className="text-base text-slate-500">{selectedFilters.length} selected</span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 pb-3">
+                <div className="flex-1 overflow-y-auto p-4">
                   {/* Draft configuration card */}
                   {draftCat && (
                     <div className="bg-white border-2 border-blue-200 rounded-lg shadow-sm p-3 mb-3">
@@ -425,7 +433,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
             </div>
 
             {/* ---- Footer ---- */}
-            <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-gray-200 bg-white rounded-b-xl">
+            <div className="shrink-0 p-4 border-t border-gray-200 bg-white flex justify-end gap-3">
               <button
                 onClick={handleClearAll}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -448,15 +456,17 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
       <div className="relative" ref={sortRef}>
         <button
           onClick={() => { setIsSortOpen(prev => !prev); setIsFiltersOpen(false) }}
-          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
             isSortOpen
               ? 'bg-gray-100 border-gray-400 text-gray-900'
-              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              : currentSort?.field
+                ? 'bg-white border-2 border-primary text-gray-700 hover:bg-gray-50'
+                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
           }`}
         >
-          <Icon icon="sort" className="w-4 h-4" />
+          <ArrowUpDown size={16} />
           Sort By
-          <Icon icon={isSortOpen ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 ml-0.5" />
+          {isSortOpen ? <ChevronUp size={14} className="ml-0.5" /> : <ChevronDown size={14} className="ml-0.5" />}
         </button>
 
         {isSortOpen && (
@@ -471,20 +481,25 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
               </button>
             </div>
 
-            <RadioGroup
-              value={currentSort?.field ?? ''}
-              onValueChange={handleSortFieldChange}
-              className="gap-3"
-            >
-              {SORT_FIELDS.map(field => (
-                <div key={field.value} className="flex items-center gap-2.5">
-                  <RadioGroupItem value={field.value} id={`sort-field-${field.value}`} />
-                  <label htmlFor={`sort-field-${field.value}`} className="text-sm text-gray-700 cursor-pointer select-none">
-                    {field.label}
-                  </label>
-                </div>
-              ))}
-            </RadioGroup>
+            <div className="flex flex-col gap-3">
+              {SORT_FIELDS.map(field => {
+                const isActive = currentSort?.field === field.value
+                return (
+                  <button
+                    key={field.value}
+                    onClick={() => handleSortFieldChange(field.value)}
+                    className="flex items-center gap-2.5 text-left"
+                  >
+                    <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      isActive ? 'border-primary' : 'border-gray-300'
+                    }`}>
+                      {isActive && <span className="w-2 h-2 rounded-full bg-primary" />}
+                    </span>
+                    <span className="text-sm text-gray-700 select-none">{field.label}</span>
+                  </button>
+                )
+              })}
+            </div>
 
             <div className="border-t border-gray-200 my-4" />
 
@@ -508,6 +523,150 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
                 </label>
               </div>
             </RadioGroup>
+          </div>
+        )}
+      </div>
+
+      {/* ----- At a Glance Button + Popover ----- */}
+      <div className="relative" ref={atGlanceRef}>
+        <button
+          onClick={() => { setIsAtGlanceOpen(prev => !prev); setIsFiltersOpen(false); setIsSortOpen(false) }}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
+            isAtGlanceOpen
+              ? 'bg-gray-100 border-gray-400 text-gray-900'
+              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <Eye className="w-4 h-4" />
+          At a Glance
+          <Icon icon={isAtGlanceOpen ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 ml-0.5" />
+        </button>
+
+        {isAtGlanceOpen && (
+          <div className="absolute left-0 top-full mt-2 z-50 w-[700px] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col overflow-hidden max-h-[calc(100vh-250px)]">
+            {/* Header */}
+            <div className="shrink-0 flex justify-between items-center p-4 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-900">Dashboard Summary</h3>
+              <button
+                onClick={() => setIsAtGlanceOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Scrollable content body */}
+            <div className="flex-1 overflow-y-auto min-h-0 p-4">
+
+              {/* A. Date Ranges */}
+              <div className="bg-[#F0F6FF] border border-[#D6E4FF] border-l-4 border-l-[#4A90D9] rounded-lg p-4 mb-4">
+                <h4 className="text-[#1B5EB5] font-semibold mb-3">Date Ranges</h4>
+                <div className="grid grid-cols-1 gap-2">
+                  {([
+                    { title: 'Last 30 Days', count: '847', sub: 'Most recent encounters' },
+                    { title: 'Last 60 Days', count: '1,624', sub: 'Extended recent period' },
+                    { title: 'Last 90 Days', count: '2,341', sub: 'Quarterly view' },
+                  ] as const).map(item => (
+                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
+                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
+                      </div>
+                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* B. Insurance Payers */}
+              <div className="bg-[#F5F2FF] border border-[#E2DAFF] border-l-4 border-l-[#7C5CC4] rounded-lg p-4 mb-4">
+                <h4 className="text-[#5B3A9E] font-semibold mb-3">Insurance Payers</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { title: 'Medicare', count: '289', sub: 'Federal health insurance' },
+                    { title: 'Medicaid', count: '412', sub: 'State health insurance' },
+                    { title: 'Blue Cross Blue Shield', count: '156', sub: 'BCBS commercial plans' },
+                    { title: 'Aetna', count: '134', sub: 'Aetna commercial insurance' },
+                    { title: 'UnitedHealth', count: '98', sub: 'UnitedHealthcare plans' },
+                    { title: 'Cigna', count: '87', sub: 'Cigna behavioral health' },
+                    { title: 'EAP', count: '73', sub: 'Employee Assistance Programs' },
+                    { title: 'Self Pay', count: '145', sub: 'Private pay patients' },
+                  ] as const).map(item => (
+                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
+                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
+                      </div>
+                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* C. Service Types */}
+              <div className="bg-[#FFF6EE] border border-[#FFE4CC] border-l-4 border-l-[#D97A2B] rounded-lg p-4 mb-4">
+                <h4 className="text-[#A1542B] font-semibold mb-3">Service Types</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { title: 'Individual Therapy', count: '432', sub: 'One-on-one therapy sessions' },
+                    { title: 'Group Therapy', count: '187', sub: 'Group therapy sessions' },
+                    { title: 'Psychiatry', count: '298', sub: 'Psychiatric evaluations & med mgmt' },
+                    { title: 'Telehealth', count: '365', sub: 'Virtual sessions' },
+                  ] as const).map(item => (
+                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
+                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
+                      </div>
+                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* D. Provider Types */}
+              <div className="bg-[#EEEEFF] border border-[#DDDCFE] border-l-4 border-l-[#5A54C8] rounded-lg p-4 mb-4">
+                <h4 className="text-[#3F38A0] font-semibold mb-3">Provider Types</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { title: 'Psychiatrist', count: '214', sub: 'MD/DO providers' },
+                    { title: 'Therapist', count: '389', sub: 'LPC/LMFT providers' },
+                    { title: 'Social Worker', count: '156', sub: 'LCSW providers' },
+                    { title: 'Counselor', count: '245', sub: 'Licensed counselors' },
+                  ] as const).map(item => (
+                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
+                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
+                      </div>
+                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* E. Authorization & Documentation */}
+              <div className="bg-[#FFFBF0] border border-[#FCEDC6] border-l-4 border-l-[#C98B1D] rounded-lg p-4 mb-4">
+                <h4 className="text-[#926310] font-semibold mb-3">Authorization &amp; Documentation</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { title: 'Pre-Auth Required', count: '124', sub: 'Needs authorization' },
+                    { title: 'Missing Diagnosis', count: '67', sub: 'No primary diagnosis' },
+                    { title: 'Treatment Plan', count: '43', sub: 'Missing treatment plan' },
+                    { title: 'Crisis Sessions', count: '89', sub: 'Emergency/crisis billing' },
+                  ] as const).map(item => (
+                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
+                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
+                      </div>
+                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
           </div>
         )}
       </div>
