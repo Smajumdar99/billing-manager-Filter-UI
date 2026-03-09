@@ -262,7 +262,7 @@ const StatusSheetPage: FC = () => {
                 <Button
                   size="sm"
                   onClick={handleAdd}
-                  className="h-8 px-3 text-xs flex items-center gap-1 bg-blue-600 text-white hover:bg-blue-700"
+                  className="h-8 px-3 text-xs flex items-center gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <PlusIcon className="h-3 w-3" />
                   Add
