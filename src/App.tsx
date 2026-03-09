@@ -56,6 +56,7 @@ import FeeSheetDetailsPage from './pages/FeeSheetDetailsPage'
 import FacesheetPage from './pages/FacesheetPage'
 import AdmitPauseDischargePage from './pages/AdmitPauseDischargePage'
 import ETARPage from './pages/ETARPage'
+import StatusSheetPage from './pages/StatusSheetPage'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -178,6 +179,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <ETARPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/status-sheet/:patientId"
+        element={
+          <ProtectedRoute>
+            <StatusSheetPage />
           </ProtectedRoute>
         }
       />

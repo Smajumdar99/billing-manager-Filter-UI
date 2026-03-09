@@ -638,19 +638,24 @@ const OldUI: FC = () => {
   }> = ({ patient, isTestPatient, onTestPatientChange, onPrescribe, onAddEncounter, onEdit, onNavigate }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [clientInfoSubMenuOpen, setClientInfoSubMenuOpen] = useState(false)
+    const [clinicalSubMenuOpen, setClinicalSubMenuOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const buttonRef = useRef<HTMLButtonElement>(null)
     const clientInfoRef = useRef<HTMLButtonElement>(null)
     const subMenuRef = useRef<HTMLDivElement>(null)
+    const clinicalRef = useRef<HTMLButtonElement>(null)
+    const clinicalSubMenuRef = useRef<HTMLDivElement>(null)
 
     // Close dropdown when clicking outside
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
             buttonRef.current && !buttonRef.current.contains(event.target as Node) &&
-            subMenuRef.current && !subMenuRef.current.contains(event.target as Node)) {
+            subMenuRef.current && !subMenuRef.current.contains(event.target as Node) &&
+            (!clinicalSubMenuRef.current || !clinicalSubMenuRef.current.contains(event.target as Node))) {
           setIsOpen(false)
           setClientInfoSubMenuOpen(false)
+          setClinicalSubMenuOpen(false)
         }
       }
 
@@ -697,9 +702,45 @@ const OldUI: FC = () => {
         event.stopPropagation()
       }
       console.log(`Menu action: ${action}`)
-      // Handle menu actions here
       setIsOpen(false)
       setClientInfoSubMenuOpen(false)
+      setClinicalSubMenuOpen(false)
+    }
+
+    const handleClinicalSubMenuAction = (action: string, event?: React.MouseEvent) => {
+      if (event) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      console.log(`Clinical sub-menu action: ${action}`)
+
+      if (action === 'Status Sheet' && patient && onNavigate) {
+        let patientId = patient.id || patient.name || ''
+        if (typeof patientId === 'string' && patientId.includes(' (')) {
+          patientId = patientId.split(' (')[1].replace(')', '')
+        } else if (!patientId && patient.name) {
+          patientId = patient.name
+        }
+        if (patientId) {
+          onNavigate(`/status-sheet/${encodeURIComponent(patientId)}`)
+        }
+      }
+
+      if (action === 'ETAR' && patient && onNavigate) {
+        let patientId = patient.id || patient.name || ''
+        if (typeof patientId === 'string' && patientId.includes(' (')) {
+          patientId = patientId.split(' (')[1].replace(')', '')
+        } else if (!patientId && patient.name) {
+          patientId = patient.name
+        }
+        if (patientId) {
+          onNavigate(`/etar/${encodeURIComponent(patientId)}`)
+        }
+      }
+
+      setIsOpen(false)
+      setClientInfoSubMenuOpen(false)
+      setClinicalSubMenuOpen(false)
     }
 
     const handleClientInfoSubMenuAction = (action: string, event?: React.MouseEvent) => {
@@ -737,6 +778,17 @@ const OldUI: FC = () => {
       
       setIsOpen(false)
       setClientInfoSubMenuOpen(false)
+      setClinicalSubMenuOpen(false)
+    }
+
+    const getClinicalSubMenuPosition = () => {
+      if (!clinicalRef.current || !dropdownRef.current) return { top: 0, right: 0 }
+      const clinicalRect = clinicalRef.current.getBoundingClientRect()
+      const dropdownRect = dropdownRef.current.getBoundingClientRect()
+      return {
+        top: clinicalRect.top,
+        right: window.innerWidth - dropdownRect.left + 4
+      }
     }
 
     const getSubMenuPosition = () => {
@@ -785,6 +837,50 @@ const OldUI: FC = () => {
         >
           Manage eSignature
         </button>
+      </div>
+    ) : null
+
+    const clinicalSubMenu = clinicalSubMenuOpen && isOpen ? (
+      <div
+        ref={clinicalSubMenuRef}
+        className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-[200px] max-h-[min(400px,60vh)] overflow-y-auto"
+        style={{
+          ...getClinicalSubMenuPosition(),
+          zIndex: 999999
+        }}
+        onMouseEnter={() => setClinicalSubMenuOpen(true)}
+        onMouseLeave={() => setClinicalSubMenuOpen(false)}
+      >
+        {([
+          'Incidents',
+          'Root Cause',
+          'EMAR V1',
+          'EMAR V2',
+          'ETAR',
+          'Adverse Events',
+          'Intake/Output',
+          'Clinical Reconciliation',
+          'Transfer Request Form',
+          'Status Sheet',
+          'Interdisciplinary Treatment Plan',
+          'History (HPI)',
+          'Transactions',
+          'Referrals',
+          'Diagnosis',
+          'Nutrition Forms',
+          'MDS Form',
+          'Treatment Plan',
+          'Treatment Plan',
+          'Treatment Plan',
+        ] as const).map((item, index) => (
+          <button
+            key={`${item}-${index}`}
+            onClick={(e) => handleClinicalSubMenuAction(item, e)}
+            className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+          >
+            {item}
+          </button>
+        ))}
       </div>
     ) : null
 
@@ -849,14 +945,28 @@ const OldUI: FC = () => {
             <span>Resident Info</span>
           </button>
 
-          {/* Clinical */}
-          <button
-            onClick={(e) => handleMenuAction('Clinical', e)}
-            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors"
+          {/* Clinical with Sub-menu */}
+          <div
+            className="relative"
+            onMouseEnter={() => setClinicalSubMenuOpen(true)}
+            onMouseLeave={() => setClinicalSubMenuOpen(false)}
           >
-            <BeakerIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-            <span>Clinical</span>
-          </button>
+            <button
+              ref={clinicalRef}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setClinicalSubMenuOpen(!clinicalSubMenuOpen)
+              }}
+              className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-3 transition-colors justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <BeakerIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span>Clinical</span>
+              </div>
+              <ChevronRightIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            </button>
+          </div>
 
           {/* Billing */}
           <button
@@ -950,6 +1060,7 @@ const OldUI: FC = () => {
         </Tooltip>
         {createPortal(dropdownMenu, document.body)}
         {createPortal(clientInfoSubMenu, document.body)}
+        {createPortal(clinicalSubMenu, document.body)}
       </div>
     )
   }

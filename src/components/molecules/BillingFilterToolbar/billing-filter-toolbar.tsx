@@ -719,7 +719,7 @@ const CardBody: FC<{
                 onClick={() => toggle(opt)}
                 className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
                   active
-                    ? 'bg-blue-600 border-blue-600 text-white'
+                    ? 'bg-primary border-primary text-primary-foreground'
                     : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -746,7 +746,7 @@ const CardBody: FC<{
               onClick={() => onChange(opt.v)}
               className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
                 value === opt.v
-                  ? 'bg-blue-600 border-blue-600 text-white'
+                  ? 'bg-primary border-primary text-primary-foreground'
                   : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -779,7 +779,7 @@ const CardBody: FC<{
               onClick={() => onChange(value === opt ? null : opt)}
               className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
                 value === opt
-                  ? 'bg-blue-600 border-blue-600 text-white'
+                  ? 'bg-primary border-primary text-primary-foreground'
                   : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -910,7 +910,7 @@ const ServiceCodeCard: FC<{
             onClick={() => setActiveTab(tab)}
             className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
               activeTab === tab
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
