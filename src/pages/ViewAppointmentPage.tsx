@@ -2,11 +2,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import TopNavigationBar from '../components/old-ui/TopNavigationBar';
 import MainNavigationBar from '../components/old-ui/MainNavigationBar';
 import { 
-  InformationCircleIcon,
+  CalendarIcon,
   PhoneIcon,
   ClockIcon,
   MapPinIcon,
-  AcademicCapIcon,
   ClipboardDocumentListIcon,
   CheckCircleIcon,
   VideoCameraIcon,
@@ -15,6 +14,7 @@ import {
   ArrowUpTrayIcon,
   PrinterIcon,
   XCircleIcon,
+  XMarkIcon,
   ArrowUpOnSquareStackIcon,
   DocumentDuplicateIcon,
   CreditCardIcon,
@@ -39,6 +39,14 @@ import AddPatientsModal from '../components/molecules/GroupAppointmentForm/AddPa
 import { ComboboxOption } from '@/components/atoms/Combobox/Combobox';
 import CreateTelehealthDialog from '../components/molecules/CreateTelehealthDialog/CreateTelehealthDialog';
 import ContactAttendeesDialog from '../components/molecules/ContactAttendeesDialog/ContactAttendeesDialog';
+import EventCancellationDialog from '../components/molecules/EventCancellationDialog/EventCancellationDialog';
+
+// User/doctor icon (Font Awesome Pro - user-doctor)
+const UserDoctorIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className={className} fill="currentColor" aria-hidden>
+    <path d="M320 112C364.2 112 400 147.8 400 192C400 236.2 364.2 272 320 272C275.8 272 240 236.2 240 192C240 147.8 275.8 112 320 112zM192 192C192 262.7 249.3 320 320 320C390.7 320 448 262.7 448 192C448 121.3 390.7 64 320 64C249.3 64 192 121.3 192 192zM264 486.4L264 432L360 432L360 473C338.8 482.3 324 503.4 324 528L324 552C324 563 333 572 344 572C355 572 364 563 364 552L364 528C364 517 373 508 384 508C395 508 404 517 404 528L404 552C404 563 413 572 424 572C435 572 444 563 444 552L444 528C444 503.4 429.2 482.3 408 473L408 436.3C458.7 450.3 496 496.8 496 552C496 565.3 506.7 576 520 576C533.3 576 544 565.3 544 552C544 459.2 468.8 384 376 384L264 384C171.2 384 96 459.2 96 552C96 565.3 106.7 576 120 576C133.3 576 144 565.3 144 552C144 502.8 173.6 460.5 216 442L216 486.4C201.7 494.7 192 510.2 192 528C192 554.5 213.5 576 240 576C266.5 576 288 554.5 288 528C288 510.2 278.3 494.7 264 486.4z" />
+  </svg>
+);
 
 // Mock appointment data interface
 interface AppointmentData {
@@ -104,6 +112,15 @@ const ViewAppointmentPage: React.FC = () => {
   
   // State for ContactAttendeesDialog
   const [contactAttendeesDialogOpen, setContactAttendeesDialogOpen] = useState(false);
+
+  // State for EventCancellationDialog
+  const [cancelEventDialogOpen, setCancelEventDialogOpen] = useState(false);
+
+  // Cancellation state (set when user confirms cancel in dialog)
+  const [cancellationReason, setCancellationReason] = useState<string | null>(null);
+
+  // Track cancelled event rows for the Activate flow
+  const [cancelledEventRows, setCancelledEventRows] = useState<{ eventDate: string; cancelReason: string }[]>([]);
   
   // Waitlist patients mock data
   const waitlistPatients = useMemo(() => [
@@ -230,6 +247,41 @@ const ViewAppointmentPage: React.FC = () => {
   // Handler for opening contact attendees dialog
   const handleOpenContactAttendeesDialog = useCallback(() => {
     setContactAttendeesDialogOpen(true);
+  }, []);
+
+  // Handler for opening cancel event dialog
+  const handleOpenCancelEventDialog = useCallback(() => {
+    setCancelEventDialogOpen(true);
+  }, []);
+
+  // Handler for confirming event cancellation
+  const handleConfirmCancelEvent = useCallback((reason: string, selectedDates: string[]) => {
+    const latest = reason || 'No reason provided';
+    setCancellationReason(latest);
+    // Build row(s) for the cancelled table — formatted the same as the dialog does
+    const newRows = selectedDates.map((d) => {
+      const date = new Date(d);
+      const display = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+      return { eventDate: display, cancelReason: latest };
+    });
+    setCancelledEventRows((prev) => {
+      const all = [...prev, ...newRows];
+      // Deduplicate by eventDate
+      return all.filter((r, i) => all.findIndex((x) => x.eventDate === r.eventDate) === i);
+    });
+    // TODO: call API to cancel event(s) with selectedDates
+  }, []);
+
+  // Open the dialog from the "Activate Event" banner button
+  const handleActivateEvent = useCallback(() => {
+    setCancelEventDialogOpen(true);
+  }, []);
+
+  // Called when user selects row(s) in the table and clicks Allow
+  const handleAllowEvents = useCallback(() => {
+    setCancellationReason(null);
+    setCancelledEventRows([]);
+    // TODO: call API to reactivate event(s)
   }, []);
 
   // Mock fetch function (replace with real API call)
@@ -557,12 +609,27 @@ const ViewAppointmentPage: React.FC = () => {
             {/* Appointment Header */}
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-semibold text-gray-900">{appointmentData.title}</h2>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(appointmentData.status)}`}>
-                      <CheckCircleIcon className="w-4 h-4 inline mr-1" />
-                      {appointmentData.status}
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span
+                      className={
+                        cancellationReason
+                          ? 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-destructive text-destructive-foreground border border-destructive'
+                          : `px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(appointmentData.status)}`
+                      }
+                    >
+                      {cancellationReason ? (
+                        <>
+                          <XMarkIcon className="w-4 h-4 inline shrink-0" />
+                          Canceled
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircleIcon className="w-4 h-4 inline mr-1" />
+                          {appointmentData.status}
+                        </>
+                      )}
                     </span>
                     <span className="text-sm text-gray-500">•</span>
                     <span className="text-sm text-gray-600">{appointmentData.type} Appointment</span>
@@ -719,7 +786,7 @@ const ViewAppointmentPage: React.FC = () => {
                             size="icon" 
                             variant="ghost" 
                             aria-label="Cancel Event" 
-                            onClick={() => console.log('Cancel Event')}
+                            onClick={handleOpenCancelEventDialog}
                             className="hover:bg-red-50"
                           >
                             <XCircleIcon className="w-5 h-5 text-red-500" />
@@ -759,24 +826,42 @@ const ViewAppointmentPage: React.FC = () => {
                   
                   <Button 
                     onClick={() => navigate(`/edit-appointment/${appointmentId}`)}
+                    disabled={!!cancellationReason}
+                    className={cancellationReason ? 'bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300' : undefined}
                   >
                     Edit Appointment
                   </Button>
                 </div>
               </div>
+              {cancellationReason && (
+                <div className="mt-2 w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2 px-3 rounded-lg bg-[#FBE5E6] border border-red-100">
+                  <p className="text-sm text-gray-900 min-w-0 flex-1 break-words">
+                    <span className="font-semibold">Reason of cancellation</span>
+                    <span className="font-normal"> – {cancellationReason}</span>
+                  </p>
+                  <Button
+                    type="button"
+                    variant="default"
+                    onClick={handleActivateEvent}
+                    className="shrink-0 w-full sm:w-auto"
+                  >
+                    Activate Event
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Appointment Details - Compact Layout */}
             <div className="p-6 space-y-6">
               {/* Appointment Information - All in One */}
               <Card className="shadow-none border-gray-200">
-                <CardHeader className="bg-gray-50 border-b border-gray-200 py-3">
+                <CardHeader className="bg-gray-50 border-b border-gray-200 py-3 px-6">
                   <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <InformationCircleIcon className="w-4 h-4" />
+                    <CalendarIcon className="w-4 h-4 shrink-0" />
                     Appointment Information
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
+                <CardContent className="px-6 py-4 pt-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-12 gap-4 lg:gap-6">
                     {/* Date & Time Section */}
                     <div className="sm:col-span-2 md:col-span-3 lg:col-span-3 xl:col-span-3">
@@ -813,7 +898,7 @@ const ViewAppointmentPage: React.FC = () => {
                     {/* Provider Information Section */}
                     <div className="sm:col-span-2 md:col-span-3 lg:col-span-3 xl:col-span-4">
                       <div className="flex items-center gap-2 mb-3">
-                        <AcademicCapIcon className="w-4 h-4 text-gray-500" />
+                        <UserDoctorIcon className="w-4 h-4 text-gray-500 shrink-0" />
                         <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Provider Information</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1066,6 +1151,19 @@ const ViewAppointmentPage: React.FC = () => {
       onSendEmail={handleSendEmail}
       appointmentId={appointmentId}
     />
+
+    {/* EventCancellationDialog */}
+    {appointmentData && (
+      <EventCancellationDialog
+        open={cancelEventDialogOpen}
+        onClose={() => setCancelEventDialogOpen(false)}
+        onConfirm={handleConfirmCancelEvent}
+        onAllow={handleAllowEvents}
+        eventName={appointmentData.title}
+        currentDate={appointmentData.appointmentDate}
+        initialCancelledEvents={cancelledEventRows}
+      />
+    )}
     </TooltipProvider>
   );
 };
