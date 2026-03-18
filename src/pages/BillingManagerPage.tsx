@@ -21,7 +21,29 @@ import {
   TooltipContent
 } from '@/components/atoms/Tooltip/tooltip'
 import { Icon } from '@/components/atoms/Icon/Icon'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select'
+import {
+  HomeIcon,
+  CalendarDaysIcon,
+  UsersIcon,
+  BellAlertIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  EllipsisHorizontalIcon,
+  EllipsisVerticalIcon,
+  ClipboardDocumentIcon,
+  ClockIcon,
+  UserGroupIcon,
+  BeakerIcon,
+  BanknotesIcon,
+  ChartBarIcon,
+  InboxIcon,
+  ChevronDownIcon,
+  ChevronUpDownIcon,
+  FunnelIcon,
+  ArrowsUpDownIcon,
+} from '@heroicons/react/24/outline'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { 
   mockBillingEncounters, 
   getBillingQueueStats, 
@@ -32,6 +54,33 @@ import {
   BillingQueueFilters as FilterType, 
   BulkActionType
 } from '@/types/billing-manager'
+
+const mobileSidebarItems: Array<{
+  icon: string
+  label: string
+  subItems?: Array<{ label: string }>
+}> = [
+  { icon: "chart-bar", label: "Billing Dashboard" },
+  { icon: "file-invoice-dollar", label: "Billing Manager" },
+  { icon: "folder-open", label: "Batch Manager" },
+  { icon: "cogs", label: "Masters", subItems: [{ label: "Level of Care" }] },
+  { icon: "clipboard-list", label: "Claims & Denials" },
+  { icon: "exchange-alt", label: "ERA Process" },
+  { icon: "file-contract", label: "Fee Sheet" },
+  { icon: "dollar-sign", label: "Charges" },
+  { icon: "receipt", label: "Checkout" },
+  { icon: "chart-line", label: "Error Reports", subItems: [{ label: "Golden Thread Errors" }] },
+  { icon: "exclamation-triangle", label: "View Billing Errors", subItems: [{ label: "HCFA" }, { label: "UB04" }] },
+  { icon: "credit-card", label: "Payments" },
+  { icon: "chart-pie", label: "Report" },
+  { icon: "file-signature", label: "Statement Manager", subItems: [{ label: "New" }, { label: "Report" }] },
+  { icon: "shield-alt", label: "PRP Program", subItems: [{ label: "Compile PRP Program" }, { label: "Status Report" }, { label: "Settings" }] },
+  { icon: "tools", label: "Manage UB-04 Preprocessing", subItems: [{ label: "Pre Process" }, { label: "Pre Process Status Report" }, { label: "Settings" }] },
+  { icon: "shield-alt", label: "Eligibility & Benefits" },
+  { icon: "calendar", label: "Accounting Period" },
+  { icon: "file-export", label: "Export Data to General Ledger", subItems: [{ label: "Manage Crosswalks" }, { label: "Export Data" }, { label: "Export History" }, { label: "Adjustment Accounts" }] },
+  { icon: "redo-alt", label: "Reprocess Encounters" },
+]
 
 /**
  * BillingManagerPage Component
@@ -46,8 +95,9 @@ export const BillingManagerPage: FC = () => {
   // Set document title for better UX and SEO
   useDocumentTitle('Billing Manager')
 
-  // Mobile detection
+  // Mobile / desktop detection
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   // State for sidebar navigation
   const [activeSidebarItem, setActiveSidebarItem] = useState('Billing Manager')
@@ -55,7 +105,14 @@ export const BillingManagerPage: FC = () => {
 
   // Mobile-specific states
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false)
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false)
+  const [mobileSortOpen, setMobileSortOpen] = useState(false)
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
+  const [billingTypeDropdownOpen, setBillingTypeDropdownOpen] = useState(false)
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [showMetrics, setShowMetrics] = useState(false)
+  const [expandedMenuItems, setExpandedMenuItems] = useState<Set<string>>(new Set())
 
   // Toolbar filter state (selected filter category IDs from the popover)
   const [toolbarSelectedFilters, setToolbarSelectedFilters] = useState<string[]>([
@@ -76,6 +133,7 @@ export const BillingManagerPage: FC = () => {
   const [billingTypeFilter, setBillingTypeFilter] = useState<string>('all')
   const [showOverrideDialog, setShowOverrideDialog] = useState(false)
   const [overrideActionType, setOverrideActionType] = useState<'override' | 'override_and_generate'>('override')
+  const [collapsedEncounterIds, setCollapsedEncounterIds] = useState<Set<string>>(new Set())
 
   // Handle navigation in the main nav bar
   const handleMainNavigation = (itemName: string) => {
@@ -122,10 +180,11 @@ export const BillingManagerPage: FC = () => {
     sessionStorage.setItem('billing-manager-filters', JSON.stringify(filters))
   }, [filters])
 
-  // Close mobile sidebar when switching to desktop
+  // Close mobile overlays when switching to desktop
   useEffect(() => {
     if (!isMobile) {
       setMobileSidebarOpen(false)
+      setMoreSheetOpen(false)
     }
   }, [isMobile])
 
@@ -573,6 +632,7 @@ export const BillingManagerPage: FC = () => {
   const handleClearAllFilters = useCallback(() => {
     setFilters(defaultBillingFilters)
     setActiveFilterCards([])
+    setToolbarSelectedFilters([])
   }, [])
 
   // Handle bulk actions
@@ -682,11 +742,13 @@ export const BillingManagerPage: FC = () => {
         }}
       />
 
-      {/* Main Navigation */}
-      <MainNavigationBar 
-        activeItem="Billing" // Keep billing active since this is a billing-related page
-        onNavigate={handleMainNavigation}
-      />
+      {/* Main Navigation — hidden on mobile, shown on desktop */}
+      <div className="hidden lg:block">
+        <MainNavigationBar
+          activeItem="Billing"
+          onNavigate={handleMainNavigation}
+        />
+      </div>
       
       {/* Main Content Area with Sidebar */}
       <div className="flex-1 overflow-hidden bg-zinc-200 flex relative">
@@ -701,43 +763,110 @@ export const BillingManagerPage: FC = () => {
           />
         )}
 
-        {/* Mobile Sidebar Overlay */}
-        {isMobile && mobileSidebarOpen && (
+        {/* Mobile Left-Sliding Sidebar Navigation */}
+        {isMobile && (
           <>
-            {/* Backdrop */}
-            <div 
-              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            <div
+              className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 ${
+                mobileSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
               onClick={() => setMobileSidebarOpen(false)}
             />
-            
-            {/* Sidebar Panel */}
-            <div className="fixed inset-y-0 left-0 w-80 bg-white shadow-xl z-50 flex flex-col">
-              {/* Mobile Sidebar Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Navigation</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className="p-2"
-                >
-                  <Icon icon="times" className="w-5 h-5" />
-                </Button>
+
+            <div
+              className={`fixed inset-y-0 left-0 z-50 w-72 bg-white transition-transform duration-300 ease-out flex flex-col ${
+                mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full shadow-none'
+              }`}
+            >
+              {/* Header with search */}
+              <div className="shrink-0 border-b border-gray-200 bg-white">
+                <div className="flex items-center p-3">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="search"
+                        placeholder="Search navigation..."
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1C75BC] focus:border-[#1C75BC] transition-colors"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg ml-2 transition-colors"
+                  >
+                    <XMarkIcon className="h-5 w-5 text-gray-500" />
+                  </button>
+                </div>
               </div>
-              
-              {/* Sidebar Content */}
-              <div className="flex-1 overflow-y-auto">
-                <Sidebar
-                  activeItem={activeSidebarItem}
-                  onMenuSelect={(item) => {
-                    handleSidebarSelect(item)
-                    setMobileSidebarOpen(false) // Close sidebar after selection
-                  }}
-                  onSearch={handleSidebarSearch}
-                  onCollapsedChange={setSidebarCollapsed}
-                  defaultCollapsed={false} // Always expanded on mobile
-                />
-              </div>
+
+              {/* Scrollable Navigation Items */}
+              <nav className="flex-1 overflow-y-auto">
+                <div className="py-2 space-y-0.5">
+                  {mobileSidebarItems.map((item) => {
+                    const isActive = activeSidebarItem === item.label
+                    const hasSubItems = item.subItems && item.subItems.length > 0
+                    const isExpanded = expandedMenuItems.has(item.label)
+                    const iconColor = isActive ? 'text-blue-600 bg-blue-50/50' : 'text-gray-600 bg-gray-50/50'
+
+                    return (
+                      <div key={item.label}>
+                        <button
+                          type="button"
+                          className={`flex items-center w-full px-3 py-2 text-sm relative transition-colors duration-150 ${
+                            isActive
+                              ? 'text-[#1C75BC] bg-[#1C75BC]/10 font-medium'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                          onClick={() => {
+                            if (hasSubItems) {
+                              setExpandedMenuItems(prev => {
+                                const next = new Set(prev)
+                                if (next.has(item.label)) next.delete(item.label)
+                                else next.add(item.label)
+                                return next
+                              })
+                            } else {
+                              handleSidebarSelect(item.label)
+                              setMobileSidebarOpen(false)
+                            }
+                          }}
+                        >
+                          {isActive && (
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#1C75BC]" />
+                          )}
+                          <div className={`w-7 h-7 flex items-center justify-center rounded-lg shrink-0 ${iconColor}`}>
+                            <FontAwesomeIcon icon={item.icon as IconProp} className="h-4 w-4" />
+                          </div>
+                          <span className="ml-2 flex-1 truncate text-left">{item.label}</span>
+                          {hasSubItems && (
+                            <FontAwesomeIcon
+                              icon={(isExpanded ? 'chevron-up' : 'chevron-down') as IconProp}
+                              className="w-3 h-3 text-gray-400 ml-2 shrink-0"
+                            />
+                          )}
+                        </button>
+
+                        {hasSubItems && isExpanded && (
+                          <div className="ml-6 border-l border-gray-200 pl-4 py-1">
+                            {item.subItems!.map((sub, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                className="block w-full text-left py-1.5 px-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded transition-colors duration-150"
+                                onClick={() => setMobileSidebarOpen(false)}
+                              >
+                                {sub.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </nav>
             </div>
           </>
         )}
@@ -751,7 +880,7 @@ export const BillingManagerPage: FC = () => {
                 {/* Desktop: Single Row with Title, Metrics, and Actions */}
                 <div className="hidden lg:block">
                   <div className="p-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
                       {/* Title Section */}
                       <div className="flex-shrink-0">
                         <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -799,6 +928,69 @@ export const BillingManagerPage: FC = () => {
                             )}
                           </div>
                         </div>
+                      </div>
+
+                      {/* Right: Info + Action buttons (Refresh, Reports, Invoice Manager, Encounter Details, Export) */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <TooltipRoot>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="flex items-center justify-center p-1.5 text-primary hover:text-primary hover:bg-primary/10 rounded-full transition-colors"
+                              aria-label="Billing queue info"
+                            >
+                              <Icon icon="info-circle" className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>The Refresh Button updates the billing queue with the latest encounter data and claim statuses</p>
+                          </TooltipContent>
+                        </TooltipRoot>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRefreshKey(prev => prev + 1)}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Icon icon="sync" className="w-3.5 h-3.5" />
+                          Refresh
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate('/billing-reports')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Icon icon="chart-bar" className="w-3.5 h-3.5" />
+                          Reports
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate('/invoice-manager')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Icon icon="file-invoice" className="w-3.5 h-3.5" />
+                          Invoice Manager
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate('/encounter-details')}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Icon icon="file-medical" className="w-3.5 h-3.5" />
+                          Encounter Details
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExportCSV}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Icon icon="download" className="w-3.5 h-3.5" />
+                          Export
+                        </Button>
                       </div>
                       
                       {/* Metrics Section - Desktop Inline - Hidden for now */}
@@ -866,150 +1058,60 @@ export const BillingManagerPage: FC = () => {
 
                 {/* Mobile/Tablet: Stacked Layout */}
                 <div className="lg:hidden">
-                  <div className="overflow-hidden">
+                  <div>
                     {/* Top Row - Title and Actions */}
-                    <div className={`flex items-center justify-between p-4 sm:p-5 ${showMetrics ? "border-b border-gray-100" : ""}`}>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3">
-                          {/* Mobile Hamburger Menu */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleMobileSidebarToggle}
-                            className="p-2"
-                          >
-                            <Icon icon="bars" className="w-5 h-5" />
-                          </Button>
-                          
-                          <div className="flex-1 min-w-0">
-                            <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate flex items-center gap-2">
-                              <Icon icon="dollar-sign" className="w-5 h-5" />
-                              Billing Manager
-                            </h1>
-                            <div className="mt-0.5">
-                              <div className="flex items-center gap-2 flex-wrap justify-center">
-                                <p className="text-xs sm:text-sm text-gray-600">Queue-based billing workflow</p>
-                                {/* Active Filters Display - Mobile */}
-                                {activeFilterCards.length > 0 && (
-                                  <>
-                                    <span className="text-xs text-gray-500 hidden sm:inline">•</span>
-                                    <span className="text-xs text-gray-500 font-medium">Filters:</span>
-                                    {activeFilterCards.slice(0, 2).map((card, index) => (
-                                      <span 
-                                        key={index}
-                                        className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 text-xs font-medium rounded-md border border-blue-200 shadow-sm"
-                                      >
-                                        <span>{card}</span>
-                                        <button
-                                          onClick={() => {
-                                            const newCards = activeFilterCards.filter((_, i) => i !== index);
-                                            setActiveFilterCards(newCards);
-                                            if (newCards.length === 0) {
-                                              setFilters(defaultBillingFilters);
-                                            }
-                                          }}
-                                          className="hover:bg-blue-200 rounded-sm p-0.5 transition-colors"
-                                        >
-                                          <Icon icon="times" className="w-2.5 h-2.5" />
-                                        </button>
-                                      </span>
-                                    ))}
-                                    {activeFilterCards.length > 2 && (
-                                      <span className="text-xs text-gray-500 px-1.5 py-0.5 bg-gray-100 rounded-md">
-                                        +{activeFilterCards.length - 2}
-                                      </span>
-                                    )}
-                                    <button
-                                      onClick={() => {
-                                        setActiveFilterCards([]);
-                                        setFilters(defaultBillingFilters);
-                                      }}
-                                      className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-0.5 hover:bg-gray-100 rounded transition-colors"
-                                    >
-                                      Clear all
-                                    </button>
-                                  </>
-                                )}
-                              </div>
+                    <div className="flex items-center gap-3 w-full px-4 py-3 sm:px-5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleMobileSidebarToggle}
+                        className="p-2"
+                      >
+                        <Icon icon="bars" className="w-5 h-5" />
+                      </Button>
+
+                      <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate flex items-center gap-2 flex-1">
+                        <Icon icon="file-invoice-dollar" className="w-5 h-5" />
+                        Billing Manager
+                      </h1>
+
+                      {/* Actions Dropdown */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setMobileActionsOpen(prev => !prev)}
+                          className="p-2 border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors"
+                        >
+                          <EllipsisVerticalIcon className="w-5 h-5 text-slate-600" />
+                        </button>
+
+                        {mobileActionsOpen && (
+                          <>
+                            <div className="fixed inset-0 z-30" onClick={() => setMobileActionsOpen(false)} />
+                            <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-1.5 z-40">
+                              {[
+                                { icon: 'sync', label: 'Refresh', action: () => setRefreshKey(prev => prev + 1) },
+                                { icon: 'chart-bar', label: 'Reports', action: () => navigate('/billing-reports') },
+                                { icon: 'file-alt', label: 'Invoice Manager', action: () => navigate('/invoice-manager') },
+                                { icon: 'clipboard-list', label: 'Encounter Details', action: () => navigate('/encounter-details') },
+                                { icon: 'download', label: 'Export', action: () => handleExportCSV() },
+                              ].map((item) => (
+                                <button
+                                  key={item.label}
+                                  type="button"
+                                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                  onClick={() => {
+                                    item.action()
+                                    setMobileActionsOpen(false)
+                                  }}
+                                >
+                                  <Icon icon={item.icon} className="w-4 h-4 text-gray-500" />
+                                  {item.label}
+                                </button>
+                              ))}
                             </div>
-                          </div>
-                          
-                          {/* Metrics Toggle Button - Mobile Only */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowMetrics(!showMetrics)}
-                            className="flex items-center gap-1.5 text-xs px-2 py-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                          >
-                            <Icon icon="chart-bar" className="w-4 h-4" />
-                            <span className="hidden sm:inline">Metrics</span>
-                            <Icon icon="chevron-down" className={`w-3.5 h-3.5 transition-transform duration-200 ${showMetrics ? "rotate-180" : ""}`} />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Action Buttons - Mobile Friendly */}
-                      <div className="flex gap-2 ml-3">
-                        {/* Info icon with tooltip for Refresh button */}
-                        <TooltipRoot>
-                          <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-9 h-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors">
-                              <Icon icon="info-circle" className="w-4 h-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>The Refresh Button updates the billing queue with the latest encounter data and claim statuses</p>
-                          </TooltipContent>
-                        </TooltipRoot>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setRefreshKey(prev => prev + 1)}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
-                        >
-                          <Icon icon="sync" className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Refresh</span>
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/billing-reports')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
-                        >
-                          <Icon icon="chart-bar" className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Reports</span>
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/invoice-manager')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
-                        >
-                          <Icon icon="file-invoice" className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Invoice Manager</span>
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/encounter-details')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
-                        >
-                          <Icon icon="file-medical" className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Encounter Details</span>
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleExportCSV}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 min-h-[36px]"
-                        >
-                          <Icon icon="download" className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Export</span>
-                        </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                     
@@ -1101,69 +1203,21 @@ export const BillingManagerPage: FC = () => {
                           ? { field: currentSort.field, direction: currentSort.direction }
                           : undefined
                       }
-                    >
-                      <TooltipRoot>
-                        <TooltipTrigger asChild>
-                          <button className="flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors">
-                            <Icon icon="info-circle" className="w-4 h-4" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p>The Refresh Button updates the billing queue with the latest encounter data and claim statuses</p>
-                        </TooltipContent>
-                      </TooltipRoot>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setRefreshKey(prev => prev + 1)}
-                        className="flex items-center gap-1.5 text-xs px-3 py-2"
-                      >
-                        <Icon icon="sync" className="w-3.5 h-3.5" />
-                        Refresh
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/billing-reports')}
-                        className="flex items-center gap-1.5 text-xs px-3 py-2"
-                      >
-                        <Icon icon="chart-bar" className="w-3.5 h-3.5" />
-                        Reports
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/invoice-manager')}
-                        className="flex items-center gap-1.5 text-xs px-3 py-2"
-                      >
-                        <Icon icon="file-invoice" className="w-3.5 h-3.5" />
-                        Invoice Manager
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/encounter-details')}
-                        className="flex items-center gap-1.5 text-xs px-3 py-2"
-                      >
-                        <Icon icon="file-medical" className="w-3.5 h-3.5" />
-                        Encounter Details
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExportCSV}
-                        className="flex items-center gap-1.5 text-xs px-3 py-2"
-                      >
-                        <Icon icon="download" className="w-3.5 h-3.5" />
-                        Export
-                      </Button>
-                    </BillingFilterToolbar>
+                      billingTypeValue={billingTypeFilter}
+                      onBillingTypeChange={setBillingTypeFilter}
+                      billingTypeOptions={[
+                        { value: 'all', label: `All Types (${encounters.length})` },
+                        { value: 'hcfa', label: `HCFA (${encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length})` },
+                        { value: 'ub04', label: `UB-04 (${encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length})` },
+                        { value: 'not_set', label: `Not Set (${encounters.filter(e => !e.billType && !e.hcfaBillType).length})` },
+                      ]}
+                    />
                   </div>
 
                   {/* Merged Tab Bar: Select All + Tabs + Billing Type */}
                   <div className="bg-white border-b border-gray-200">
                     <div className="flex items-center px-4 py-2 gap-4">
-                      {/* Left: Select All */}
+                      {/* Left: Select All + Total count */}
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <input
                           type="checkbox"
@@ -1198,14 +1252,13 @@ export const BillingManagerPage: FC = () => {
                         </span>
                       </div>
 
-                      {/* Center: Tabs */}
-                      <div className="flex-1 min-w-0">
+                      {/* Center: Tabs + Total immediately after */}
+                      <div className="flex items-center gap-3 min-w-0">
                         <Tabs
                           value={activeTab}
                           onValueChange={(value) => setActiveTab(value as typeof activeTab)}
-                          className="w-full"
                         >
-                          <TabsList className="h-9 items-center justify-center rounded-lg p-1 text-muted-foreground grid w-full max-w-2xl grid-cols-4 bg-gray-100">
+                          <TabsList className="h-9 items-center justify-center rounded-lg p-1 text-muted-foreground grid grid-cols-4 bg-gray-100" style={{ width: 'max-content' }}>
                             <TabsTrigger
                               value="ready"
                               className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
@@ -1232,22 +1285,31 @@ export const BillingManagerPage: FC = () => {
                             </TabsTrigger>
                           </TabsList>
                         </Tabs>
+                        {/* Total count — hugs right edge of last tab */}
+                        <span className="text-xs text-gray-500 font-medium whitespace-nowrap flex-shrink-0">
+                          Total - <span className="font-semibold text-gray-800">{encounters.length}</span>
+                        </span>
                       </div>
 
-                      {/* Right: Billing Type dropdown */}
-                      <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-                        <span className="text-sm font-medium text-gray-700">Billing Type:</span>
-                        <Select value={billingTypeFilter} onValueChange={setBillingTypeFilter}>
-                          <SelectTrigger className="w-[160px] h-8 text-sm">
-                            <SelectValue placeholder="All Types" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Types ({encounters.length})</SelectItem>
-                            <SelectItem value="hcfa">HCFA ({encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length})</SelectItem>
-                            <SelectItem value="ub04">UB-04 ({encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length})</SelectItem>
-                            <SelectItem value="not_set">Not Set ({encounters.filter(e => !e.billType && !e.hcfaBillType).length})</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      {/* Right: Expand All */}
+                      <div className="ml-auto flex items-center gap-3 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allCollapsed = filteredEncounters.length > 0 && collapsedEncounterIds.size === filteredEncounters.length
+                            if (allCollapsed) {
+                              setCollapsedEncounterIds(new Set())
+                            } else {
+                              setCollapsedEncounterIds(new Set(filteredEncounters.map(e => e.id)))
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 transition-all duration-150 shadow-sm h-8"
+                        >
+                          <ChevronUpDownIcon className="w-3.5 h-3.5" />
+                          {filteredEncounters.length > 0 && collapsedEncounterIds.size === filteredEncounters.length
+                            ? 'Expand All'
+                            : 'Collapse All'}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1260,38 +1322,116 @@ export const BillingManagerPage: FC = () => {
                     />
                   )}
 
-                  {/* Queue Table or Card View */}
+                  {/* Queue Table or Card View — table only on desktop */}
                   <div className="flex-1 p-4 overflow-hidden">
-                    {viewMode === 'grid' ? (
-                      <BillingQueueTable
-                        encounters={filteredEncounters}
-                        onEncounterSelect={handleEncounterSelect}
-                        onEncounterEdit={(encounter) => console.log('Edit encounter:', encounter)}
-                        onEncounterClick={handleEncounterClick}
-                        onGenerateClaim={(encounter) => handleBulkAction('generate_claims', [encounter.id])}
-                        onViewErrors={setShowErrorDialog}
-                        onBillingOverrideToggle={(encounterId, enabled) => console.log('Toggle override:', encounterId, enabled)}
-                        onHcfaBillTypeChange={(encounterId, billType) => console.log('Change bill type:', encounterId, billType)}
-                        onPrimaryPayerChange={(encounterId, primaryPayer) => console.log('Change primary payer:', encounterId, primaryPayer)}
-                        selectedEncounters={selectedEncounters}
-                        className="h-full"
-                      />
+                    {isDesktop ? (
+                      viewMode === 'grid' ? (
+                        <BillingQueueTable
+                          encounters={filteredEncounters}
+                          onEncounterSelect={handleEncounterSelect}
+                          onEncounterEdit={(encounter) => console.log('Edit encounter:', encounter)}
+                          onEncounterClick={handleEncounterClick}
+                          onGenerateClaim={(encounter) => handleBulkAction('generate_claims', [encounter.id])}
+                          onViewErrors={setShowErrorDialog}
+                          onBillingOverrideToggle={(_id, enabled) => console.log('Toggle override:', _id, enabled)}
+                          onHcfaBillTypeChange={(_id, billType) => console.log('Change bill type:', _id, billType)}
+                          onPrimaryPayerChange={(_id, primaryPayer) => console.log('Change primary payer:', _id, primaryPayer)}
+                          selectedEncounters={selectedEncounters}
+                          className="h-full"
+                        />
+                      ) : (
+                        <BillingViewCardsListing
+                          encounters={filteredEncounters}
+                          selectedEncounters={selectedEncounters}
+                          onEncounterSelect={handleEncounterSelect}
+                          onEncounterClick={handleEncounterClick}
+                          collapsedEncounterIds={collapsedEncounterIds}
+                          onCollapsedEncounterIdsChange={setCollapsedEncounterIds}
+                          className="h-full"
+                        />
+                      )
                     ) : (
-                      <BillingViewCardsListing
-                        encounters={filteredEncounters}
-                        selectedEncounters={selectedEncounters}
-                        onEncounterSelect={handleEncounterSelect}
-                        onEncounterClick={handleEncounterClick}
-                        className="h-full"
-                      />
+                      <div className="w-full space-y-3 pb-24 bg-slate-50 pt-2">
+                        {filteredEncounters.map((enc) => {
+                          const statusStyle = enc.hasErrors
+                            ? 'bg-red-50 text-red-700'
+                            : enc.status === 'ready_to_bill'
+                              ? 'bg-green-50 text-green-700'
+                              : enc.status === 'claim_generated' || enc.status === 'claim_submitted'
+                                ? 'bg-purple-50 text-purple-700'
+                                : enc.status === 'paid' || enc.status === 'claim_accepted'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-slate-50 text-slate-700'
+
+                          return (
+                            <div
+                              key={enc.id}
+                              className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col mx-4"
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <div>
+                                  <div className="text-[15px] font-semibold text-slate-800">{enc.patientName}</div>
+                                  <div className="text-xs text-slate-500">MRN: {enc.patientMrn}</div>
+                                </div>
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium ${statusStyle}`}>
+                                  {enc.status.replace(/_/g, ' ')}
+                                </span>
+                              </div>
+                              <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+                                <span>{enc.treatmentTime || 'N/A'}</span>
+                                <span className="text-slate-300">•</span>
+                                <span>{enc.provider}</span>
+                              </div>
+                              <div className="mt-3 pt-3 border-t border-slate-50 flex flex-col gap-1">
+                                <span className="text-sm text-slate-600">Code: {enc.hcfaBillType || enc.encounterType}</span>
+                                <span className="text-sm text-slate-600">Facility: {enc.department}</span>
+                              </div>
+                              <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center">
+                                <div className="text-sm font-bold text-slate-800">
+                                  Total: ${enc.totalCharges.toFixed(2)}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="p-2 text-slate-400 hover:bg-slate-50 rounded-full"
+                                  aria-label="Encounter actions"
+                                >
+                                  <Icon icon="ellipsis-h" className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
                     )}
                   </div>
                 </div>
               ) : (
                 /* Mobile: Vertical Layout */
                 <div className="flex flex-col h-full bg-zinc-100">
-                  {/* Mobile Horizontal Filter Toolbar */}
-                  <div className="bg-white border-b border-gray-200">
+                  {/* Mobile Filter Toolbar */}
+                  <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center gap-2">
+                    {/* Filter icon button — opens mobile full-screen filter modal */}
+                    <div className="relative flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setMobileFilterOpen(true)}
+                        className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
+                          toolbarSelectedFilters.length > 0
+                            ? 'bg-blue-50 border-blue-300 text-blue-600'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                        title="Filters"
+                      >
+                        <FunnelIcon className="w-4 h-4" />
+                      </button>
+                      {toolbarSelectedFilters.length > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold px-1">
+                          {toolbarSelectedFilters.length > 99 ? '99+' : toolbarSelectedFilters.length}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Mobile Filter Modal (rendered by BillingFilterToolbar in mobile mode) */}
                     <BillingFilterToolbar
                       searchQuery={filters.searchQuery}
                       onSearchChange={(query) =>
@@ -1300,64 +1440,422 @@ export const BillingManagerPage: FC = () => {
                       onApplyFilters={handleToolbarApplyFilters}
                       onFilterValuesChange={handleFilterValuesChange}
                       onClearFilters={handleClearAllFilters}
-                      onSortChange={handleToolbarSortChange}
-                      currentSort={
-                        currentSort
-                          ? { field: currentSort.field, direction: currentSort.direction }
-                          : undefined
-                      }
+                      externalOpen={mobileFilterOpen}
+                      onExternalOpenChange={setMobileFilterOpen}
                     />
-                  </div>
 
-                  {/* Mobile Tab Bar - Queue Type Selection */}
-                  <div className="bg-white border-b border-gray-200">
-                    <div className="px-3 py-2">
-                      <Tabs
-                        value={activeTab}
-                        onValueChange={(value) => setActiveTab(value as typeof activeTab)}
-                        className="w-full"
+                    {/* Sort dropdown */}
+                    <div className="relative flex-shrink-0">
+                      <button
+                        type="button"
+                        title="Sort"
+                        onClick={() => setMobileSortOpen(prev => !prev)}
+                        className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
+                          currentSort
+                            ? 'bg-blue-50 border-blue-300 text-blue-600'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
                       >
-                        <TabsList className="h-10 items-center justify-center rounded-lg p-1 text-muted-foreground grid w-full grid-cols-2 bg-gray-100">
-                          <TabsTrigger
-                            value="ready"
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
-                          >
-                            Ready to Bill
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="blocked"
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
-                          >
-                            Blocked
-                          </TabsTrigger>
-                        </TabsList>
-                      </Tabs>
+                        <ArrowsUpDownIcon className="w-4 h-4" />
+                      </button>
+
+                      {mobileSortOpen && (
+                        <>
+                          <div className="fixed inset-0 z-30" onClick={() => setMobileSortOpen(false)} />
+                          <div className="absolute left-0 top-full mt-1 w-60 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-40">
+                            {/* Panel header */}
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                              <div className="flex items-center gap-2">
+                                <ArrowsUpDownIcon className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm font-semibold text-gray-800">Sort By</span>
+                              </div>
+                              {currentSort && (
+                                <button
+                                  type="button"
+                                  className="text-xs text-blue-600 font-medium active:opacity-70"
+                                  onClick={() => { setCurrentSort(undefined); setMobileSortOpen(false) }}
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Sort field – radio list */}
+                            <div className="py-1">
+                              {[
+                                { value: 'dateOfService', label: 'Encounter Date' },
+                                { value: 'id', label: 'Encounter Id' },
+                                { value: 'patientName', label: 'Person Last Name' },
+                                { value: 'patientFirstName', label: 'Person First Name' },
+                              ].map((field) => {
+                                const isSelected = currentSort?.field === field.value
+                                return (
+                                  <button
+                                    key={field.value}
+                                    type="button"
+                                    className="flex items-center gap-3 w-full px-4 py-3 active:bg-gray-50 transition-colors"
+                                    onClick={() => handleToolbarSortChange(field.value, currentSort?.direction || 'desc')}
+                                  >
+                                    <span className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                      isSelected ? 'border-blue-600' : 'border-gray-300'
+                                    }`}>
+                                      {isSelected && <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
+                                    </span>
+                                    <span className={`text-sm ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                                      {field.label}
+                                    </span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-gray-100 mx-4" />
+
+                            {/* Sort direction – radio list */}
+                            <div className="py-1">
+                              {[
+                                { value: 'desc' as const, label: 'Newest First', icon: '↓' },
+                                { value: 'asc' as const, label: 'Oldest First', icon: '↑' },
+                              ].map((dir) => {
+                                const isSelected = (currentSort?.direction || 'desc') === dir.value
+                                return (
+                                  <button
+                                    key={dir.value}
+                                    type="button"
+                                    className="flex items-center gap-3 w-full px-4 py-3 active:bg-gray-50 transition-colors"
+                                    onClick={() => {
+                                      handleToolbarSortChange(currentSort?.field || 'dateOfService', dir.value)
+                                      setMobileSortOpen(false)
+                                    }}
+                                  >
+                                    <span className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                      isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-300'
+                                    }`}>
+                                      {isSelected && <span className="w-2 h-2 rounded-full bg-white" />}
+                                    </span>
+                                    <span className={`text-sm flex items-center gap-1.5 ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                                      <span className="text-gray-400">{dir.icon}</span>
+                                      {dir.label}
+                                    </span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Search bar */}
+                    <div className="relative flex-1">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <input
+                        type="search"
+                        placeholder="Search patients, MRN..."
+                        value={filters.searchQuery}
+                        onChange={(e) => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                      />
                     </div>
                   </div>
 
-                  {/* Mobile Action Buttons Section */}
-                  <div className="p-3 bg-zinc-100 border-b border-gray-200">
-                    <BillingActionButtons
-                      selectedEncounters={selectedEncounterObjects}
-                      onAction={handleActionButtonClick}
-                    />
+                  {/* Mobile Tab Bar — two custom dropdowns side by side */}
+                  <div className="bg-white border-b border-gray-200 py-2 px-4">
+                    <div className="flex items-center gap-2">
+
+                      {/* ── Status dropdown ── */}
+                      {(() => {
+                        const statusOpts = [
+                          { value: 'ready' as const, label: 'Ready to Bill', count: encounters.filter(e => e.status === 'ready_to_bill' && !e.hasErrors).length },
+                          { value: 'blocked' as const, label: 'Blocked', count: encounters.filter(e => e.hasErrors && e.errorSeverity === 'critical').length },
+                          { value: 'with_errors' as const, label: 'With Errors', count: encounters.filter(e => e.hasErrors).length },
+                          { value: 'pending_submit' as const, label: 'Pending Submit', count: encounters.filter(e => e.status === 'in_review' || e.status === 'authorized').length },
+                        ]
+                        const activeLabel = statusOpts.find(o => o.value === activeTab)
+                        return (
+                          <div className="relative flex-1">
+                            <button
+                              type="button"
+                              onClick={() => { setStatusDropdownOpen(p => !p); setBillingTypeDropdownOpen(false) }}
+                              className="flex items-center justify-between w-full bg-white border border-slate-200 text-slate-800 py-2.5 pl-3 pr-3 rounded-xl font-semibold shadow-sm text-sm gap-1"
+                            >
+                              <span className="truncate">{activeLabel?.label} ({activeLabel?.count})</span>
+                              <ChevronDownIcon className={`w-3.5 h-3.5 flex-shrink-0 text-slate-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {statusDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setStatusDropdownOpen(false)} />
+                                <div className="absolute left-0 top-full mt-1 min-w-[160px] w-full z-50 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden py-1">
+                                  {statusOpts.map(opt => (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                                        activeTab === opt.value
+                                          ? 'bg-blue-50 text-[#1a73e8] font-medium'
+                                          : 'text-slate-700 hover:bg-slate-50 active:bg-blue-50'
+                                      }`}
+                                      onClick={() => { setActiveTab(opt.value); setStatusDropdownOpen(false) }}
+                                    >
+                                      {opt.label} ({opt.count})
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )
+                      })()}
+
+                      {/* ── Billing Type dropdown ── */}
+                      {(() => {
+                        const billingOpts = [
+                          { value: 'all', label: 'All Types', count: encounters.length },
+                          { value: 'hcfa', label: 'HCFA', count: encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length },
+                          { value: 'ub04', label: 'UB-04', count: encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length },
+                          { value: 'not_set', label: 'Not Set', count: encounters.filter(e => !e.billType && !e.hcfaBillType).length },
+                        ]
+                        const activeLabel = billingOpts.find(o => o.value === billingTypeFilter)
+                        const isFiltered = billingTypeFilter !== 'all'
+                        return (
+                          <div className="relative flex-1">
+                            <button
+                              type="button"
+                              onClick={() => { setBillingTypeDropdownOpen(p => !p); setStatusDropdownOpen(false) }}
+                              className={`flex items-center justify-between w-full border py-2.5 pl-3 pr-3 rounded-xl shadow-sm text-sm font-semibold gap-1 transition-colors ${
+                                isFiltered
+                                  ? 'bg-blue-50 border-blue-300 text-blue-700'
+                                  : 'bg-white border-slate-200 text-slate-800'
+                              }`}
+                            >
+                              <span className="truncate">{activeLabel?.label} ({activeLabel?.count})</span>
+                              <ChevronDownIcon className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isFiltered ? 'text-blue-400' : 'text-slate-400'} ${billingTypeDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {billingTypeDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setBillingTypeDropdownOpen(false)} />
+                                <div className="absolute right-0 top-full mt-1 min-w-[140px] w-full z-50 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden py-1">
+                                  {billingOpts.map(opt => (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                                        billingTypeFilter === opt.value
+                                          ? 'bg-blue-50 text-[#1a73e8] font-medium'
+                                          : 'text-slate-700 hover:bg-slate-50 active:bg-blue-50'
+                                      }`}
+                                      onClick={() => { setBillingTypeFilter(opt.value); setBillingTypeDropdownOpen(false) }}
+                                    >
+                                      {opt.label} ({opt.count})
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )
+                      })()}
+
+                    </div>
                   </div>
 
-                  {/* Mobile Table Section */}
-                  <div className="flex-1 p-3 overflow-hidden">
-                    <BillingQueueTable
-                      encounters={filteredEncounters}
-                      onEncounterSelect={handleEncounterSelect}
-                      onEncounterEdit={(encounter) => console.log('Edit encounter:', encounter)}
-                      onEncounterClick={handleEncounterClick}
-                      onGenerateClaim={(encounter) => handleBulkAction('generate_claims', [encounter.id])}
-                      onViewErrors={setShowErrorDialog}
-                      onBillingOverrideToggle={(encounterId, enabled) => console.log('Toggle override:', encounterId, enabled)}
-                      onHcfaBillTypeChange={(encounterId, billType) => console.log('Change bill type:', encounterId, billType)}
-                      onPrimaryPayerChange={(encounterId, primaryPayer) => console.log('Change primary payer:', encounterId, primaryPayer)}
-                      selectedEncounters={selectedEncounters}
-                      className="h-full"
-                    />
+                  {/* Mobile content — table on desktop, stacked cards on mobile */}
+                  <div className="flex-1 overflow-auto">
+                    {isDesktop ? (
+                      <BillingQueueTable
+                        encounters={filteredEncounters}
+                        onEncounterSelect={handleEncounterSelect}
+                        onEncounterEdit={(encounter) => console.log('Edit encounter:', encounter)}
+                        onEncounterClick={handleEncounterClick}
+                        onGenerateClaim={(encounter) => handleBulkAction('generate_claims', [encounter.id])}
+                        onViewErrors={setShowErrorDialog}
+                        onBillingOverrideToggle={(_id, enabled) => console.log('Toggle override:', _id, enabled)}
+                        onHcfaBillTypeChange={(_id, billType) => console.log('Change bill type:', _id, billType)}
+                        onPrimaryPayerChange={(_id, primaryPayer) => console.log('Change primary payer:', _id, primaryPayer)}
+                        selectedEncounters={selectedEncounters}
+                        className="h-full"
+                      />
+                    ) : (
+                      <div className="w-full space-y-3 pb-32 bg-slate-50 pt-2">
+                        {filteredEncounters.map((enc) => {
+                          const statusStyle = enc.hasErrors
+                            ? 'bg-red-50 text-red-700'
+                            : enc.status === 'ready_to_bill'
+                              ? 'bg-green-50 text-green-700'
+                              : enc.status === 'claim_generated' || enc.status === 'claim_submitted'
+                                ? 'bg-purple-50 text-purple-700'
+                                : enc.status === 'paid' || enc.status === 'claim_accepted'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-slate-50 text-slate-700'
+
+                          return (
+                            <div
+                              key={enc.id}
+                              className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col mx-4"
+                            >
+                              {/* Header — name + badge */}
+                              <div className="flex justify-between items-start mb-1">
+                                <div>
+                                  <div className="text-[15px] font-semibold text-slate-800">{enc.patientName}</div>
+                                  <div className="text-xs text-slate-500">MRN: {enc.patientMrn}</div>
+                                </div>
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium ${statusStyle}`}>
+                                  {enc.status.replace(/_/g, ' ')}
+                                </span>
+                              </div>
+
+                              {/* Time & Provider */}
+                              <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+                                <span>{enc.treatmentTime || 'N/A'}</span>
+                                <span className="text-slate-300">•</span>
+                                <span>{enc.provider}</span>
+                              </div>
+
+                              {/* Billing details */}
+                              <div className="mt-3 pt-3 border-t border-slate-50 flex flex-col gap-1">
+                                <span className="text-sm text-slate-600">Code: {enc.hcfaBillType || enc.encounterType}</span>
+                                <span className="text-sm text-slate-600">Facility: {enc.department}</span>
+                              </div>
+
+                              {/* Footer — total + actions */}
+                              <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center">
+                                <div className="text-sm font-bold text-slate-800">
+                                  Total: ${enc.totalCharges.toFixed(2)}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="p-2 text-slate-400 hover:bg-slate-50 rounded-full"
+                                  aria-label="Encounter actions"
+                                >
+                                  <Icon icon="ellipsis-h" className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+
+                  {/* Fixed Bottom Navigation Bar */}
+                  <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-2 py-1 flex justify-between items-center z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+                    <button type="button" className="flex flex-col items-center p-2 min-w-[64px]" onClick={() => navigate('/old-ui-dashboard')}>
+                      <HomeIcon className="w-6 h-6 text-slate-500" />
+                      <span className="text-[10px] mt-1 font-medium text-slate-500">Dashboard</span>
+                    </button>
+                    <button type="button" className="flex flex-col items-center p-2 min-w-[64px]" onClick={() => navigate('/my-calendar')}>
+                      <CalendarDaysIcon className="w-6 h-6 text-slate-500" />
+                      <span className="text-[10px] mt-1 font-medium text-slate-500">Schedule</span>
+                    </button>
+                    <button type="button" className="flex flex-col items-center p-2 min-w-[64px]" onClick={() => navigate('/clients')}>
+                      <UsersIcon className="w-6 h-6 text-slate-500" />
+                      <span className="text-[10px] mt-1 font-medium text-slate-500">Clients</span>
+                    </button>
+                    <button type="button" className="flex flex-col items-center p-2 min-w-[64px]">
+                      <BellAlertIcon className="w-6 h-6 text-slate-500" />
+                      <span className="text-[10px] mt-1 font-medium text-slate-500">Notifications</span>
+                    </button>
+                    <button type="button" className="flex flex-col items-center p-2 min-w-[64px]" onClick={() => setMoreSheetOpen(prev => !prev)}>
+                      <EllipsisHorizontalIcon className="w-6 h-6 text-blue-600" />
+                      <span className="text-[10px] mt-1 font-medium text-blue-600">More</span>
+                    </button>
+                  </div>
+
+                  {/* "More" Bottom Sheet */}
+                  <div
+                    className={`fixed inset-0 bg-black/40 z-[55] transition-opacity duration-300 ${
+                      moreSheetOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                    onClick={() => setMoreSheetOpen(false)}
+                  />
+                  <div
+                    className={`fixed inset-x-0 bottom-0 z-[60] bg-white rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
+                      moreSheetOpen ? 'translate-y-0' : 'translate-y-full'
+                    }`}
+                    style={{ maxHeight: '85vh' }}
+                  >
+                    <div className="flex justify-center pt-3 pb-1">
+                      <div className="w-10 h-1 rounded-full bg-slate-300" />
+                    </div>
+
+                    <div className="flex items-center justify-between px-5 pb-4">
+                      <h2 className="text-lg font-semibold text-slate-900">Navigation Menu</h2>
+                      <div className="flex items-center gap-2">
+                        <button type="button" className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full">
+                          <MagnifyingGlassIcon className="w-5 h-5" />
+                        </button>
+                        <button type="button" className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full" onClick={() => setMoreSheetOpen(false)}>
+                          <XMarkIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="overflow-y-auto px-5 pb-10" style={{ maxHeight: 'calc(85vh - 80px)' }}>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">Quick Access</p>
+                      <div className="grid grid-cols-2 gap-2 mb-6">
+                        {([
+                          { icon: HomeIcon, label: 'Dashboard', route: '/old-ui-dashboard' },
+                          { icon: CalendarDaysIcon, label: 'Schedule', route: '/my-calendar' },
+                          { icon: UsersIcon, label: 'Clients', route: '/clients' },
+                          { icon: BellAlertIcon, label: 'Notifications', route: '' },
+                        ] as const).map((item) => {
+                          const isHighlighted = item.label === 'Billing'
+                          return (
+                            <button
+                              key={item.label}
+                              type="button"
+                              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                                isHighlighted
+                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                              onClick={() => {
+                                setMoreSheetOpen(false)
+                                if (item.route) navigate(item.route)
+                              }}
+                            >
+                              <item.icon className={`w-5 h-5 flex-shrink-0 ${isHighlighted ? 'text-blue-600' : 'text-slate-500'}`} />
+                              {item.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">More Options</p>
+                      <div className="flex flex-col gap-1">
+                        {([
+                          { icon: ClipboardDocumentIcon, label: 'ADL', route: '/adl' },
+                          { icon: ClockIcon, label: 'Wait List', route: '/wait-list' },
+                          { icon: UserGroupIcon, label: 'Staff Dashboard', route: '/staff-dashboard' },
+                          { icon: BeakerIcon, label: 'Practice', route: '/practice' },
+                          { icon: BanknotesIcon, label: 'Billing', route: '/billing' },
+                          { icon: ChartBarIcon, label: 'Reports', route: '/reports' },
+                          { icon: InboxIcon, label: 'Inbox', route: '/task-hub' },
+                        ] as const).map((item) => {
+                          const isActive = item.label === 'Billing'
+                          return (
+                            <button
+                              key={item.label}
+                              type="button"
+                              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium w-full text-left transition-colors ${
+                                isActive
+                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                              onClick={() => {
+                                setMoreSheetOpen(false)
+                                if (item.route) navigate(item.route)
+                              }}
+                            >
+                              <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
+                              {item.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

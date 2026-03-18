@@ -1,11 +1,19 @@
 import { FC, useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react'
-import { Eye, Pencil, X, Filter, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
+import { Pencil, X, Filter, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { Icon } from '@/components/atoms/Icon/Icon'
 import { RadioGroup, RadioGroupItem } from '@/components/atoms/RadioGroup/radio-group'
 import { Calendar } from '@/components/atoms/Calendar/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/Popover/popover'
 import { format } from 'date-fns'
-import { CalendarIcon } from '@heroicons/react/24/outline'
+import { CalendarIcon, CheckCircleIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/atoms/Select/select'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +38,12 @@ export interface BillingFilterToolbarProps {
   currentSort?: { field: string; direction: 'asc' | 'desc' }
   children?: ReactNode
   className?: string
+  externalOpen?: boolean
+  onExternalOpenChange?: (open: boolean) => void
+  /** Billing Type dropdown in filter section (right-aligned when provided) */
+  billingTypeValue?: string
+  onBillingTypeChange?: (value: string) => void
+  billingTypeOptions?: { value: string; label: string }[]
 }
 
 interface SelectedFilter {
@@ -145,12 +159,27 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
   currentSort,
   children,
   className = '',
+  externalOpen,
+  onExternalOpenChange,
+  billingTypeValue,
+  onBillingTypeChange,
+  billingTypeOptions = [],
 }) => {
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const [mobileExpandedCat, setMobileExpandedCat] = useState<string | null>(null)
+  const [mobileDraftValue, setMobileDraftValue] = useState<any>(undefined)
+
   // ---- Committed state (what the parent knows about) ----
   const [appliedFilters, setAppliedFilters] = useState<SelectedFilter[]>([])
 
   // ---- Staging: completed filters inside the popover ----
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [isFiltersOpenInternal, setIsFiltersOpenInternal] = useState(false)
+  const isFiltersOpen = externalOpen !== undefined ? externalOpen : isFiltersOpenInternal
+  const setIsFiltersOpen = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof v === 'function' ? v(isFiltersOpenInternal) : v
+    setIsFiltersOpenInternal(next)
+    onExternalOpenChange?.(next)
+  }, [isFiltersOpenInternal, onExternalOpenChange])
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilter[]>([])
 
   // ---- Draft: the single category being configured right now ----
@@ -163,13 +192,9 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
   // ---- Sort popover ----
   const [isSortOpen, setIsSortOpen] = useState(false)
 
-  // ---- At a Glance popover ----
-  const [isAtGlanceOpen, setIsAtGlanceOpen] = useState(false)
-
   // ---- Refs for click-outside ----
   const filtersRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)
-  const atGlanceRef = useRef<HTMLDivElement>(null)
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
@@ -177,9 +202,6 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
     }
     if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
       setIsSortOpen(false)
-    }
-    if (atGlanceRef.current && !atGlanceRef.current.contains(e.target as Node)) {
-      setIsAtGlanceOpen(false)
     }
   }, [])
 
@@ -278,8 +300,212 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
   }
 
   // ===========================================================================
+  // Mobile handlers
+  // ===========================================================================
+  const handleMobileCategoryToggle = (catId: string) => {
+    if (mobileExpandedCat === catId) {
+      setMobileExpandedCat(null)
+      setMobileDraftValue(undefined)
+    } else {
+      const existing = selectedFilters.find(f => f.categoryId === catId)
+      setMobileExpandedCat(catId)
+      setMobileDraftValue(existing?.value)
+    }
+  }
+
+  const handleMobileConfirm = () => {
+    if (!mobileExpandedCat) return
+    setSelectedFilters(prev => {
+      const without = prev.filter(f => f.categoryId !== mobileExpandedCat)
+      return [...without, { categoryId: mobileExpandedCat, value: mobileDraftValue }]
+    })
+    setMobileExpandedCat(null)
+    setMobileDraftValue(undefined)
+  }
+
+  const handleMobileCancel = () => {
+    setMobileExpandedCat(null)
+    setMobileDraftValue(undefined)
+  }
+
+  const handleMobileDeleteFilter = (catId: string) => {
+    setSelectedFilters(prev => prev.filter(f => f.categoryId !== catId))
+  }
+
+  const handleMobileEditFilter = (catId: string) => {
+    const existing = selectedFilters.find(f => f.categoryId === catId)
+    setMobileExpandedCat(catId)
+    setMobileDraftValue(existing?.value)
+  }
+
+  const handleMobileApply = () => {
+    setAppliedFilters([...selectedFilters])
+    const catIds = selectedFilters.map(f => f.categoryId)
+    const vals: FilterValues = {}
+    for (const f of selectedFilters) {
+      if (f.value !== undefined) vals[f.categoryId] = f.value
+    }
+    onApplyFilters(catIds)
+    onFilterValuesChange(vals)
+    setIsFiltersOpen(false)
+    setMobileExpandedCat(null)
+  }
+
+  const handleMobileClearAll = () => {
+    setSelectedFilters([])
+    setMobileExpandedCat(null)
+    setMobileDraftValue(undefined)
+    setAppliedFilters([])
+    onClearFilters()
+    onFilterValuesChange({})
+    setIsFiltersOpen(false)
+  }
+
+  // ===========================================================================
   // JSX
   // ===========================================================================
+
+  // ─── Mobile full-screen modal ───
+  if (!isDesktop && isFiltersOpen) {
+    const mobileCatIds = new Set(selectedFilters.map(f => f.categoryId))
+    return (
+      <div className="fixed inset-0 z-[100] bg-white flex flex-col h-[100dvh]">
+        {/* ── Header ── */}
+        <div className="flex justify-between items-center px-4 py-3.5 border-b border-slate-200 flex-shrink-0">
+          <h2 className="text-lg font-bold text-slate-900">Filters</h2>
+          <button
+            type="button"
+            onClick={() => { setIsFiltersOpen(false); setMobileExpandedCat(null) }}
+            className="p-2 -mr-2 rounded-lg active:bg-slate-100 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5 text-slate-500" />
+          </button>
+        </div>
+
+        {/* ── Selected Criteria chips ── */}
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 min-h-[68px] flex-shrink-0">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Selected Criteria</span>
+            <span className="text-xs text-slate-500">{selectedFilters.length} selected</span>
+          </div>
+          {selectedFilters.length === 0 ? (
+            <p className="text-xs text-slate-400">No criteria selected — tap a category below to add filters.</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedFilters.map(f => {
+                const cat = CATEGORY_MAP.get(f.categoryId)!
+                return (
+                  <div
+                    key={f.categoryId}
+                    className="inline-flex items-center gap-1.5 bg-white border border-slate-200 pl-3 pr-1.5 py-1.5 rounded-lg text-xs shadow-sm"
+                  >
+                    <span className="font-medium text-slate-700">{cat.label}:</span>
+                    <span className="text-slate-500 max-w-[100px] truncate">{formatFilterValue(cat, f.value)}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleMobileEditFilter(f.categoryId)}
+                      className="p-1 rounded active:bg-slate-100"
+                    >
+                      <Pencil size={12} className="text-slate-400" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMobileDeleteFilter(f.categoryId)}
+                      className="p-1 rounded active:bg-slate-100"
+                    >
+                      <X size={12} className="text-slate-400" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Category accordion list ── */}
+        <div className="flex-1 overflow-y-auto pb-24">
+          {FILTER_CATEGORIES.map(cat => {
+            const hasActiveFilter = mobileCatIds.has(cat.id)
+            const isExpanded = mobileExpandedCat === cat.id
+            const mobileDraftCat = isExpanded ? cat : null
+
+            return (
+              <div key={cat.id}>
+                {/* Category header row */}
+                <button
+                  type="button"
+                  onClick={() => handleMobileCategoryToggle(cat.id)}
+                  className={`w-full flex justify-between items-center px-4 py-3.5 border-b border-slate-100 transition-colors active:bg-slate-50 ${
+                    isExpanded ? 'bg-blue-50/50' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {hasActiveFilter && (
+                      <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    )}
+                    <span className={`text-sm ${hasActiveFilter ? 'text-slate-900 font-semibold' : 'text-slate-700 font-medium'}`}>
+                      {cat.label}
+                    </span>
+                  </div>
+                  <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Expanded configuration panel */}
+                {isExpanded && mobileDraftCat && (
+                  <div className="bg-white px-4 py-4 border-b border-slate-200 shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)]">
+                    <h4 className="text-[#1a73e8] font-medium text-sm mb-3">
+                      Configure: {mobileDraftCat.label}
+                    </h4>
+                    <MobileCardBody cat={mobileDraftCat} value={mobileDraftValue} onChange={setMobileDraftValue} />
+                    <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 mt-4">
+                      <button
+                        type="button"
+                        onClick={handleMobileCancel}
+                        className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg active:bg-slate-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleMobileConfirm}
+                        className="px-5 py-2 text-sm font-medium text-white bg-[#1a73e8] rounded-lg active:bg-blue-700 transition-colors"
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* ── Fixed footer ── */}
+        <div className="fixed bottom-0 left-0 right-0 px-4 py-3.5 border-t border-slate-200 bg-white flex gap-3" style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}>
+          <button
+            type="button"
+            onClick={handleMobileClearAll}
+            className="flex-1 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl active:bg-slate-50 transition-colors"
+          >
+            Clear All
+          </button>
+          <button
+            type="button"
+            onClick={handleMobileApply}
+            disabled={mobileExpandedCat !== null}
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-[#1a73e8] rounded-xl active:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            Apply Filters ({selectedFilters.length})
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // On mobile when filter modal is closed, render nothing (parent handles its own filter button)
+  if (!isDesktop) return null
+
+  // ─── Desktop toolbar (unchanged) ───
   return (
     <div className={`flex items-center justify-between gap-4 py-3 px-4 ${className}`}>
       {/* ===== Left Side: Filters + Sort By + Search ===== */}
@@ -456,7 +682,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
       <div className="relative" ref={sortRef}>
         <button
           onClick={() => { setIsSortOpen(prev => !prev); setIsFiltersOpen(false) }}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
+          className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
             isSortOpen
               ? 'bg-gray-100 border-gray-400 text-gray-900'
               : currentSort?.field
@@ -527,150 +753,6 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
         )}
       </div>
 
-      {/* ----- At a Glance Button + Popover ----- */}
-      <div className="relative" ref={atGlanceRef}>
-        <button
-          onClick={() => { setIsAtGlanceOpen(prev => !prev); setIsFiltersOpen(false); setIsSortOpen(false) }}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
-            isAtGlanceOpen
-              ? 'bg-gray-100 border-gray-400 text-gray-900'
-              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <Eye className="w-4 h-4" />
-          At a Glance
-          <Icon icon={isAtGlanceOpen ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 ml-0.5" />
-        </button>
-
-        {isAtGlanceOpen && (
-          <div className="absolute left-0 top-full mt-2 z-50 w-[700px] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col overflow-hidden max-h-[calc(100vh-250px)]">
-            {/* Header */}
-            <div className="shrink-0 flex justify-between items-center p-4 border-b border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-900">Dashboard Summary</h3>
-              <button
-                onClick={() => setIsAtGlanceOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Scrollable content body */}
-            <div className="flex-1 overflow-y-auto min-h-0 p-4">
-
-              {/* A. Date Ranges */}
-              <div className="bg-[#F0F6FF] border border-[#D6E4FF] border-l-4 border-l-[#4A90D9] rounded-lg p-4 mb-4">
-                <h4 className="text-[#1B5EB5] font-semibold mb-3">Date Ranges</h4>
-                <div className="grid grid-cols-1 gap-2">
-                  {([
-                    { title: 'Last 30 Days', count: '847', sub: 'Most recent encounters' },
-                    { title: 'Last 60 Days', count: '1,624', sub: 'Extended recent period' },
-                    { title: 'Last 90 Days', count: '2,341', sub: 'Quarterly view' },
-                  ] as const).map(item => (
-                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
-                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
-                      </div>
-                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* B. Insurance Payers */}
-              <div className="bg-[#F5F2FF] border border-[#E2DAFF] border-l-4 border-l-[#7C5CC4] rounded-lg p-4 mb-4">
-                <h4 className="text-[#5B3A9E] font-semibold mb-3">Insurance Payers</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { title: 'Medicare', count: '289', sub: 'Federal health insurance' },
-                    { title: 'Medicaid', count: '412', sub: 'State health insurance' },
-                    { title: 'Blue Cross Blue Shield', count: '156', sub: 'BCBS commercial plans' },
-                    { title: 'Aetna', count: '134', sub: 'Aetna commercial insurance' },
-                    { title: 'UnitedHealth', count: '98', sub: 'UnitedHealthcare plans' },
-                    { title: 'Cigna', count: '87', sub: 'Cigna behavioral health' },
-                    { title: 'EAP', count: '73', sub: 'Employee Assistance Programs' },
-                    { title: 'Self Pay', count: '145', sub: 'Private pay patients' },
-                  ] as const).map(item => (
-                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
-                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
-                      </div>
-                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* C. Service Types */}
-              <div className="bg-[#FFF6EE] border border-[#FFE4CC] border-l-4 border-l-[#D97A2B] rounded-lg p-4 mb-4">
-                <h4 className="text-[#A1542B] font-semibold mb-3">Service Types</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { title: 'Individual Therapy', count: '432', sub: 'One-on-one therapy sessions' },
-                    { title: 'Group Therapy', count: '187', sub: 'Group therapy sessions' },
-                    { title: 'Psychiatry', count: '298', sub: 'Psychiatric evaluations & med mgmt' },
-                    { title: 'Telehealth', count: '365', sub: 'Virtual sessions' },
-                  ] as const).map(item => (
-                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
-                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
-                      </div>
-                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* D. Provider Types */}
-              <div className="bg-[#EEEEFF] border border-[#DDDCFE] border-l-4 border-l-[#5A54C8] rounded-lg p-4 mb-4">
-                <h4 className="text-[#3F38A0] font-semibold mb-3">Provider Types</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { title: 'Psychiatrist', count: '214', sub: 'MD/DO providers' },
-                    { title: 'Therapist', count: '389', sub: 'LPC/LMFT providers' },
-                    { title: 'Social Worker', count: '156', sub: 'LCSW providers' },
-                    { title: 'Counselor', count: '245', sub: 'Licensed counselors' },
-                  ] as const).map(item => (
-                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
-                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
-                      </div>
-                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* E. Authorization & Documentation */}
-              <div className="bg-[#FFFBF0] border border-[#FCEDC6] border-l-4 border-l-[#C98B1D] rounded-lg p-4 mb-4">
-                <h4 className="text-[#926310] font-semibold mb-3">Authorization &amp; Documentation</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { title: 'Pre-Auth Required', count: '124', sub: 'Needs authorization' },
-                    { title: 'Missing Diagnosis', count: '67', sub: 'No primary diagnosis' },
-                    { title: 'Treatment Plan', count: '43', sub: 'Missing treatment plan' },
-                    { title: 'Crisis Sessions', count: '89', sub: 'Emergency/crisis billing' },
-                  ] as const).map(item => (
-                    <div key={item.title} className="flex flex-col p-3 border border-[#EDF0F7] bg-white rounded-md shadow-sm">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-semibold text-[#1E293B]">{item.title}</span>
-                        <span className="text-xs font-medium bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">{item.count}</span>
-                      </div>
-                      <span className="text-xs text-[#94A3B8] mt-1">{item.sub}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* ----- Global Search Input ----- */}
       <div className="relative w-[400px]">
         <Icon icon="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -684,12 +766,29 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
       </div>
       </div>
 
-      {/* ===== Right Side: Action Buttons (passed via children) ===== */}
-      {children && (
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {children}
-        </div>
-      )}
+      {/* ===== Right Side: Billing Type (right-aligned) + Action Buttons (children) ===== */}
+      <div className="ml-auto flex items-center gap-3 flex-shrink-0">
+        {(billingTypeValue != null && onBillingTypeChange && billingTypeOptions.length > 0) && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Billing Type:</span>
+            <Select value={billingTypeValue} onValueChange={onBillingTypeChange}>
+              <SelectTrigger className="w-[160px] h-8 text-sm bg-slate-50/80 border-gray-200">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                {billingTypeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {children && (
+          <div className="flex items-center gap-2">
+            {children}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -930,6 +1029,138 @@ const ServiceCodeCard: FC<{
       </div>
     </div>
   )
+}
+
+// ===========================================================================
+// MobileCardBody — touch-optimised filter configuration inputs
+// ===========================================================================
+
+const MobileCardBody: FC<{
+  cat: FilterCategory
+  value: any
+  onChange: (val: any) => void
+}> = ({ cat, value, onChange }) => {
+  switch (cat.template) {
+    case 'multiselect': {
+      const selected: string[] = Array.isArray(value) ? value : []
+      const toggle = (opt: string) =>
+        onChange(selected.includes(opt) ? selected.filter(s => s !== opt) : [...selected, opt])
+
+      return (
+        <div className="flex flex-wrap gap-2">
+          {(cat.options ?? []).map(opt => {
+            const active = selected.includes(opt)
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggle(opt)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
+                  active
+                    ? 'bg-[#1a73e8] border-[#1a73e8] text-white'
+                    : 'border-slate-300 text-slate-600 active:bg-slate-50'
+                }`}
+              >
+                {opt}
+              </button>
+            )
+          })}
+        </div>
+      )
+    }
+
+    case 'date':
+      return <DateRangeCard value={value} onChange={onChange} />
+
+    case 'yesno':
+      return (
+        <div className="flex gap-3">
+          {([
+            { label: 'Yes', v: true },
+            { label: 'No', v: false },
+          ] as const).map(opt => (
+            <button
+              key={opt.label}
+              type="button"
+              onClick={() => onChange(opt.v)}
+              className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
+                value === opt.v
+                  ? 'bg-[#1a73e8] border-[#1a73e8] text-white'
+                  : 'bg-white border-slate-300 text-slate-600 active:bg-slate-50'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )
+
+    case 'service_code':
+      return <ServiceCodeCard value={value} onChange={onChange} />
+
+    case 'text':
+      return (
+        <input
+          type="text"
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={`Enter ${cat.label.toLowerCase()}...`}
+          className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      )
+
+    case 'select':
+      return (
+        <div className="flex flex-wrap gap-2">
+          {(cat.options ?? []).map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(value === opt ? null : opt)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
+                value === opt
+                  ? 'bg-[#1a73e8] border-[#1a73e8] text-white'
+                  : 'border-slate-300 text-slate-600 active:bg-slate-50'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )
+
+    case 'range': {
+      const min = value?.min ?? ''
+      const max = value?.max ?? ''
+      return (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Min</label>
+            <input
+              type="number"
+              value={min}
+              onChange={e => onChange({ min: e.target.value, max })}
+              placeholder="0"
+              className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Max</label>
+            <input
+              type="number"
+              value={max}
+              onChange={e => onChange({ min, max: e.target.value })}
+              placeholder="1000"
+              className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      )
+    }
+
+    default:
+      return null
+  }
 }
 
 export default BillingFilterToolbar

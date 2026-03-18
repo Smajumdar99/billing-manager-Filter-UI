@@ -1,7 +1,13 @@
-import { FC, useState } from 'react'
+import { Dispatch, FC, SetStateAction, useState, useCallback, useEffect } from 'react'
 import { BillingEncounter } from '@/types/billing-manager'
+import {
+  ChevronDownIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  PencilSquareIcon,
+} from '@heroicons/react/24/outline'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faExclamationTriangle, faFileInvoiceDollar, faUserShield } from '@fortawesome/free-solid-svg-icons'
+import { faExclamationTriangle, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons'
 import {
   TooltipProvider,
   TooltipRoot,
@@ -22,6 +28,9 @@ export interface BillingViewCardsListingProps {
   selectedEncounters: string[]
   onEncounterSelect: (encounterId: string, selected: boolean) => void
   onEncounterClick?: (encounter: BillingEncounter) => void
+  /** External collapsed-IDs set — when provided, replaces the internal state */
+  collapsedEncounterIds?: Set<string>
+  onCollapsedEncounterIdsChange?: Dispatch<SetStateAction<Set<string>>>
   className?: string
 }
 
@@ -56,11 +65,76 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
   selectedEncounters,
   onEncounterSelect,
   onEncounterClick,
+  collapsedEncounterIds: externalCollapsedIds,
+  onCollapsedEncounterIdsChange,
   className = ''
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEncounterId, setSelectedEncounterId] = useState<string>('');
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
+  const [internalCollapsedIds, setInternalCollapsedIds] = useState<Set<string>>(new Set());
+
+  // Use external state when provided, otherwise fall back to internal
+  const collapsedDetailsIds = externalCollapsedIds ?? internalCollapsedIds;
+  const setCollapsedDetailsIds: Dispatch<SetStateAction<Set<string>>> = useCallback((updater) => {
+    if (onCollapsedEncounterIdsChange) {
+      onCollapsedEncounterIdsChange(updater);
+    } else {
+      setInternalCollapsedIds(updater);
+    }
+  }, [onCollapsedEncounterIdsChange]);
+
+  const toggleDetails = (encounterId: string) => {
+    setCollapsedDetailsIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(encounterId)) next.delete(encounterId);
+      else next.add(encounterId);
+      return next;
+    });
+  };
+
+  // Mock claims history entries per encounter (with dates)
+  const getClaimsHistory = (_encounter: BillingEncounter) => [
+    { id: 'ch1', label: 'Re-opened', date: '01/20/2026' },
+    { id: 'ch2', label: 'Re-opened', date: '01/18/2026' },
+    { id: 'ch3', label: 'Re-opened', date: '01/15/2026' },
+    { id: 'ch4', label: 'Re-opened', date: '01/12/2026' },
+    { id: 'ch5', label: 'Re-opened', date: '01/08/2026' },
+  ];
+
+  // ── Gear (settings) popover state ──────────────────────────────────────────
+  const [posPopoverEncounterId, setPosPopoverEncounterId] = useState<string | null>(null);
+  const [posValues, setPosValues] = useState<Record<string, string>>({});
+  const POS_OPTIONS = [
+    { value: '11', label: '11 - Office' },
+    { value: '12', label: '12 - Home' },
+    { value: '21', label: '21 - Inpatient Hospital' },
+    { value: '22', label: '22 - On Campus-Outpatient' },
+    { value: '23', label: '23 - Emergency Room' },
+    { value: '31', label: '31 - Skilled Nursing Facility' },
+    { value: '32', label: '32 - Nursing Facility' },
+  ];
+
+  // ── Kebab (more actions) menu state ────────────────────────────────────────
+  const [kebabMenuEncounterId, setKebabMenuEncounterId] = useState<string | null>(null);
+  const KEBAB_ACTIONS = [
+    { id: 'add',      icon: '+',  label: 'Add & Justify',    bold: false },
+    { id: 'generate', icon: '📄', label: 'Generate Claims',  bold: false },
+    { id: 'submit',   icon: '→',  label: 'Submit Claims',    bold: false },
+    { id: 'override', icon: '🛡', label: 'Override Blocks',  bold: false },
+    { id: 'ready',    icon: '✓',  label: 'Mark Ready',       bold: true  },
+    { id: 'export',   icon: '📄', label: 'Export',           bold: false },
+  ];
+
+  // Close any open popup when clicking outside
+  useEffect(() => {
+    const handleDocClick = () => {
+      setPosPopoverEncounterId(null);
+      setKebabMenuEncounterId(null);
+    };
+    document.addEventListener('click', handleDocClick);
+    return () => document.removeEventListener('click', handleDocClick);
+  }, []);
 
   const handleEncounterClick = (encounter: BillingEncounter) => {
     setSelectedEncounterId(encounter.id);
@@ -301,6 +375,13 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
             .ag-header-cell-right .ag-header-cell-label {
               justify-content: flex-end;
             }
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+            }
+            .scrollbar-hide {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+            }
           `}
         </style>
         
@@ -318,283 +399,263 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
             return (
               <div
                 key={encounter.id}
-                className={`bg-white rounded border transition-all duration-200 hover:shadow-md ${
+                className={`bg-white rounded-lg border transition-all duration-200 hover:shadow-md ${
                   isSelected 
-                    ? 'border-amber-500 shadow-sm' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 shadow-sm' 
+                    : 'border-slate-200 hover:border-slate-300 shadow-sm'
                 }`}
               >
-                {/* Card Header - Mobile Responsive Design with Horizontal Scroll */}
-                <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 overflow-x-auto [&:has(.group:hover)]:overflow-visible">
-                  <div className="px-3 md:px-4 py-3 min-w-[900px] relative" style={{ zIndex: 10 }}>
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 lg:justify-between">
-                    {/* Mobile: First Row - Checkbox, Icons, Patient Name */}
-                    <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
-                      {/* Checkbox */}
-                      <input
-                        type="checkbox"
-                        id={`encounter-select-${encounter.id}`}
-                        checked={isSelected}
-                        onChange={(e) => onEncounterSelect(encounter.id, e.target.checked)}
-                        className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-2 focus:ring-amber-500 cursor-pointer flex-shrink-0"
-                        aria-label={`Select encounter ${encounter.id} for ${encounter.patientName}`}
-                      />
+                {/* Card Header — Clean flexbox layout */}
+                <div className="flex items-center justify-between w-full p-4 bg-white border-b border-slate-200 rounded-t-lg">
 
-                      {/* Status Icons - Compact */}
-                      <div className="flex items-center gap-1.5 flex-shrink-0" role="group" aria-label="Status indicators">
-                      {encounter.hasErrors && encounter.errorSeverity === 'critical' && (
-                        <TooltipRoot>
-                          <TooltipTrigger asChild>
-                            <button className="p-1 hover:bg-red-50 rounded transition-colors" aria-label="Critical error">
-                              <FontAwesomeIcon icon={faExclamationTriangle} className="w-4 h-4 text-red-600" aria-hidden="true" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent><p className="text-xs">Form completion error</p></TooltipContent>
-                        </TooltipRoot>
-                      )}
-                      
-                      {encounter.billingOverrideEnabled && (
-                        <TooltipRoot>
-                          <TooltipTrigger asChild>
-                            <button className="p-1 hover:bg-green-50 rounded transition-colors" aria-label="Override enabled">
-                              <FontAwesomeIcon icon={faUserShield} className="w-4 h-4 text-green-600" aria-hidden="true" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent><p className="text-xs">Billing overridden</p></TooltipContent>
-                        </TooltipRoot>
-                      )}
+                  {/* LEFT — Patient identity (fixed width) */}
+                  <div className="flex items-center gap-3 w-[210px] shrink-0">
+                    <input
+                      type="checkbox"
+                      id={`encounter-select-${encounter.id}`}
+                      checked={isSelected}
+                      onChange={(e) => onEncounterSelect(encounter.id, e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 accent-blue-600 cursor-pointer shrink-0"
+                      aria-label={`Select encounter ${encounter.id} for ${encounter.patientName}`}
+                    />
+
+                    {encounter.hasErrors && encounter.errorSeverity === 'critical' && (
+                      <TooltipRoot>
+                        <TooltipTrigger asChild>
+                          <button className="p-0.5 shrink-0" aria-label="Critical error">
+                            <FontAwesomeIcon icon={faExclamationTriangle} className="w-3.5 h-3.5 text-red-500" aria-hidden="true" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">Form completion error</p></TooltipContent>
+                      </TooltipRoot>
+                    )}
+
+                    <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0 select-none">
+                      {encounter.patientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
 
-                      {/* Patient Avatar & Name - Always visible on first row */}
-                      <div className="flex items-center gap-2.5 flex-shrink-0 relative group z-50">
-                        {/* Patient Avatar */}
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm flex-shrink-0">
-                          {encounter.patientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                        </div>
-                        
-                        <div className="flex flex-col">
-                          <h3 className="text-sm font-semibold text-gray-900 cursor-pointer hover:text-blue-700 transition-colors">
-                            {encounter.patientName}
-                          </h3>
-                          <span className="text-xs text-gray-500">MRN: {encounter.patientId ? `${Math.floor(Math.random() * 9000000) + 1000000}-${Math.floor(Math.random() * 900000) + 100000}` : encounter.patientMrn}</span>
-                        </div>
-                        
-                        {/* Hover Overlay Menu - Desktop only */}
-                        <div className="hidden lg:block absolute left-0 top-full mt-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-                          <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 w-64">
-                            {/* Patient Quick Info */}
-                            <div className="flex flex-col gap-2 pb-3 border-b border-gray-200">
-                              <p className="text-sm font-semibold text-gray-900">{encounter.patientName}</p>
-                              <p className="text-xs text-gray-600">MRN: {encounter.patientId || encounter.patientMrn}</p>
-                              <p className="text-xs text-gray-600">DOB: 01/15/1985 • Age: 39</p>
-                              <p className="text-xs text-gray-600">Gender: Male</p>
-                            </div>
-                            
-                            {/* Quick Links */}
-                            <div className="flex flex-col gap-2 mt-3">
-                              <button 
-                                className="text-sm text-blue-700 hover:text-blue-900 hover:underline text-left flex items-center gap-2 transition-colors"
-                                onClick={() => console.log('View Demographics')}
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                View Demographics
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-bold text-slate-900 truncate">{encounter.patientName}</span>
+                      <span className="text-xs text-slate-500">MRN: {encounter.patientMrn}</span>
                     </div>
+                  </div>
 
-                    {/* Patient Info & Details - Responsive Grid Layout */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:items-start gap-3 lg:gap-6 flex-1 min-w-0">
-                      {/* Encounter Details - Vertical Layout */}
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600 font-medium opacity-70">Encounter ID</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEncounterClick(encounter)}
-                            className="text-sm text-gray-900 hover:text-gray-700 font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-gray-500 rounded text-left"
-                            aria-label={`View details for encounter ${encounter.id}`}
-                          >
-                            {encounter.id} ({new Date(encounter.dateOfService).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
-                          </button>
-                          <span className="text-gray-400">•</span>
-                          <button
-                            onClick={() => console.log('View Fee Sheet for', encounter.id)}
-                            className="text-xs text-gray-900 hover:text-gray-700 hover:underline"
-                          >
-                            View Fee Sheet
-                          </button>
-                        </div>
-                      </div>
+                  {/* MIDDLE — Data columns */}
+                  <div className="flex items-center gap-5 flex-1 pl-5 border-l border-slate-100 min-w-0 overflow-x-auto scrollbar-hide">
 
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600 font-medium opacity-70">Treatment Time</span>
-                        <span className="text-sm text-gray-900">{encounter.treatmentTime || '-'}</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600 font-medium opacity-70">Provider</span>
-                        <span className="text-sm text-gray-900">{encounter.provider}</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600 font-medium opacity-70">Rend</span>
-                        <span className="text-sm text-gray-900">{encounter.provider.replace(/^Dr\.\s*/i, '')}</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600 font-medium opacity-70">Facility</span>
-                        <span className="text-sm text-gray-900">{getFacilityName(encounter.department)}</span>
-                      </div>
-                      
-                      {/* Status - Vertical Layout with Labels on Top */}
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600 font-medium opacity-70" id={`enc-status-label-${encounter.id}`}>Enc. Status</span>
-                        <span 
-                          className="text-sm text-gray-900"
-                          role="status"
-                          aria-labelledby={`enc-status-label-${encounter.id}`}
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Encounter ID</span>
+                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        <button
+                          onClick={() => handleEncounterClick(encounter)}
+                          className="text-[13px] font-medium text-[#1a73e8] hover:underline cursor-pointer"
+                          aria-label={`View details for encounter ${encounter.id}`}
                         >
-                          {encounterStatus}
-                        </span>
-                      </div>
-                      
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600 font-medium opacity-70" id={`bill-status-label-${encounter.id}`}>Bill Status</span>
-                        <span 
-                          className="text-sm text-gray-900"
-                          role="status"
-                          aria-labelledby={`bill-status-label-${encounter.id}`}
-                        >
-                          {billingStatus}
-                        </span>
-                      </div>
-                      
-                      {/* Settings/Actions Icon with Overlay */}
-                      <div className="flex items-center justify-center relative group" style={{ zIndex: 100 }}>
-                        <button className="p-1 hover:bg-blue-50 rounded transition-colors" aria-label="Settings and actions">
-                          <svg className="w-5 h-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
+                          {encounter.id} ({new Date(encounter.dateOfService).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })})
                         </button>
-                        
-                        {/* View More Overlay */}
-                        <div className="absolute right-0 top-full mt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto" style={{ zIndex: 9999 }}>
-                          <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 w-80">
-                            {/* POS Selector */}
-                            <div className="flex flex-col gap-2 pb-3 border-b border-gray-200">
-                              <label className="text-xs font-semibold text-gray-700">Place of Service (POS)</label>
-                              <Select defaultValue="11">
-                                <SelectTrigger className="h-9 text-sm">
-                                  <SelectValue placeholder="Select POS" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="11">11 - Office</SelectItem>
-                                  <SelectItem value="12">12 - Home</SelectItem>
-                                  <SelectItem value="21">21 - Inpatient Hospital</SelectItem>
-                                  <SelectItem value="22">22 - Outpatient Hospital</SelectItem>
-                                  <SelectItem value="23">23 - Emergency Room</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            {/* Additional Info */}
-                            <div className="flex flex-col gap-2 py-3">
-                              <p className="text-xs font-semibold text-gray-700">Additional Info</p>
-                              <p className="text-xs text-gray-600">Treatment Time: 10:00 - 10:30 AM</p>
-                              <p className="text-xs text-gray-600">Referring Provider: Dr. Smith</p>
-                              <p className="text-xs text-gray-600">Authorization: AUTH123456</p>
+                        <span className="text-slate-300">&bull;</span>
+                        <button
+                          onClick={() => console.log('View Fee Sheet for', encounter.id)}
+                          className="text-[12px] text-[#1a73e8] hover:underline cursor-pointer"
+                        >
+                          View Fee Sheet
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Treatment Time</span>
+                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{encounter.treatmentTime || '-'}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Provider</span>
+                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{encounter.provider}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Rend</span>
+                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{encounter.provider.replace(/^Dr\.\s*/i, '')}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Facility</span>
+                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap" title={getFacilityName(encounter.department)}>{getFacilityName(encounter.department)}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Enc. Status</span>
+                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{encounterStatus}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Bill Status</span>
+                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{billingStatus}</span>
+                    </div>
+                  </div>
+
+                  {/* RIGHT — Actions (dropdown chevron, gear, kebab) */}
+                  <div className="flex items-center gap-3 shrink-0 pl-4 border-l border-slate-100">
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => toggleDetails(encounter.id)}
+                          className="p-1.5 text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50 rounded-md transition-colors"
+                          aria-expanded={!collapsedDetailsIds.has(encounter.id)}
+                          aria-label={collapsedDetailsIds.has(encounter.id) ? 'Show billing details' : 'Hide billing details'}
+                        >
+                          <ChevronDownIcon
+                            className={`w-4 h-4 transition-transform duration-200 ${collapsedDetailsIds.has(encounter.id) ? '' : 'rotate-180'}`}
+                          />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        <p>{collapsedDetailsIds.has(encounter.id) ? 'Show billing details' : 'Hide billing details'}</p>
+                      </TooltipContent>
+                    </TooltipRoot>
+                    {/* ── Gear / Settings popover ── */}
+                    <div className="relative">
+                      <button
+                        className={`p-1.5 rounded-md transition-colors ${posPopoverEncounterId === encounter.id ? 'text-[#1a73e8] bg-blue-50' : 'text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50'}`}
+                        aria-label="Settings"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPosPopoverEncounterId(posPopoverEncounterId === encounter.id ? null : encounter.id);
+                          setKebabMenuEncounterId(null);
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
+
+                      {posPopoverEncounterId === encounter.id && (
+                        <div
+                          className="absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* POS selector */}
+                          <p className="text-xs font-semibold text-slate-700 mb-2">Place of Service (POS)</p>
+                          <Select
+                            value={posValues[encounter.id] ?? (encounter.serviceLines?.[0]?.placeOfService ?? '11')}
+                            onValueChange={(val) => setPosValues(prev => ({ ...prev, [encounter.id]: val }))}
+                          >
+                            <SelectTrigger className="h-9 text-sm w-full">
+                              <SelectValue placeholder="Select POS" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {POS_OPTIONS.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {/* Additional Info */}
+                          <div className="mt-4">
+                            <p className="text-xs font-semibold text-slate-700 mb-2">Additional Info</p>
+                            <div className="space-y-1 text-xs text-[#1a73e8]">
+                              <p>Treatment Time: {encounter.treatmentTime || '10:00 – 10:30 AM'}</p>
+                              <p>Referring Provider: Dr. Smith</p>
+                              <p>Authorization: AUTH123456</p>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
-                    
-                    {/* Right Section - 3-Dot Menu (Grid Actions) */}
-                    <div className="relative group z-50 flex-shrink-0">
-                      <button className="p-1 hover:bg-gray-100 rounded transition-colors" aria-label="More actions">
-                        <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+
+                    {/* ── Kebab / More actions menu ── */}
+                    <div className="relative">
+                      <button
+                        className={`p-1.5 rounded-md transition-colors ${kebabMenuEncounterId === encounter.id ? 'text-[#1a73e8] bg-blue-50' : 'text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50'}`}
+                        aria-label="More actions"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setKebabMenuEncounterId(kebabMenuEncounterId === encounter.id ? null : encounter.id);
+                          setPosPopoverEncounterId(null);
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                         </svg>
                       </button>
-                      
-                      {/* Grid Actions Menu */}
-                      <div className="absolute right-0 top-full mt-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-                        <div className="bg-white border border-gray-200 rounded-lg shadow-xl py-2 w-56">
-                          <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span className="text-gray-900">Add & Justify</span>
-                          </button>
-                          
-                          <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span className="text-gray-600">Generate Claims</span>
-                          </button>
-                          
-                          <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                            <span className="text-gray-600">Submit Claims</span>
-                          </button>
-                          
-                          <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                            <span className="text-gray-600">Override Blocks</span>
-                          </button>
-                          
-                          <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-gray-900 font-medium">Mark Ready</span>
-                          </button>
-                          
-                          <div className="border-t border-gray-200 my-1"></div>
-                          
-                          <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span className="text-gray-600">Export</span>
-                          </button>
+
+                      {kebabMenuEncounterId === encounter.id && (
+                        <div
+                          className="absolute right-0 top-full mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 overflow-hidden"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {KEBAB_ACTIONS.map((action, idx) => (
+                            <div key={action.id}>
+                              {/* Separator before Export */}
+                              {idx === 5 && <div className="my-1 border-t border-slate-100" />}
+                              <button
+                                type="button"
+                                className={`w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-slate-50 transition-colors text-left ${action.bold ? 'font-semibold text-slate-900' : 'text-slate-700'}`}
+                                onClick={() => {
+                                  console.log(action.id, encounter.id);
+                                  setKebabMenuEncounterId(null);
+                                }}
+                              >
+                                {/* Icon column */}
+                                {action.id === 'add'      && <span className="w-4 text-center font-bold text-slate-500 text-base leading-none">+</span>}
+                                {action.id === 'generate' && (
+                                  <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                  </svg>
+                                )}
+                                {action.id === 'submit'   && (
+                                  <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                  </svg>
+                                )}
+                                {action.id === 'override' && (
+                                  <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                                  </svg>
+                                )}
+                                {action.id === 'ready'    && (
+                                  <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                )}
+                                {action.id === 'export'   && (
+                                  <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                  </svg>
+                                )}
+                                {action.label}
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      )}
                     </div>
-                  </div>
                   </div>
                 </div>
 
-                {/* Card Body */}
+                {/* Card Body — hidden in collapsed mode (only underlined header details visible) */}
+                {!collapsedDetailsIds.has(encounter.id) && (
                 <div className="p-3 md:p-4 relative" style={{ zIndex: 1 }}>
 
-                  {/* Services Table - Compact HTML Table with WCAG Font Sizes - Horizontally scrollable on mobile */}
+                  {/* Insurance/Billing data table */}
                   <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
-                    <table className="w-full min-w-[800px] text-sm border-collapse">
+                    <table className="w-full min-w-[800px] text-xs border-collapse">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="pl-3 pr-0 py-2.5 text-center font-normal text-gray-700 w-6"></th>
-                          <th className="pl-0 pr-1 py-2.5 text-center font-normal text-gray-700">Insurance Levels</th>
-                          <th className="px-3 py-2.5 text-left font-normal text-gray-700 w-48">Insurance</th>
-                          <th className="px-3 py-2.5 text-center font-normal text-gray-700">Billing Type</th>
-                          <th className="px-3 py-2.5 text-center font-normal text-gray-700">X12 Partner</th>
-                          <th className="px-3 py-2.5 text-left font-normal text-gray-700">Code</th>
-                          <th className="px-3 py-2.5 text-center font-normal text-gray-700">Unit</th>
-                          <th className="px-3 py-2.5 text-right font-normal text-gray-700">Unit Price</th>
-                          <th className="px-3 py-2.5 text-center font-normal text-gray-700">POS</th>
-                          <th className="px-3 py-2.5 text-left font-normal text-gray-700">Diagnosis</th>
-                          <th className="px-3 py-2.5 text-left font-normal text-gray-700">Rend</th>
-                          <th className="px-3 py-2.5 text-right font-normal text-gray-700">Total</th>
+                          <th className="pl-3 pr-0 py-2 text-center font-medium text-gray-700 w-6"></th>
+                          <th className="pl-0 pr-1 py-2 text-center font-medium text-gray-700">Insurance Levels</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-700 w-48">Insurance</th>
+                          <th className="px-3 py-2 text-center font-medium text-gray-700">Billing Type</th>
+                          <th className="px-3 py-2 text-center font-medium text-gray-700">X12 Partner</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-700">Code</th>
+                          <th className="px-3 py-2 text-center font-medium text-gray-700">Unit</th>
+                          <th className="px-3 py-2 text-right font-medium text-gray-700">Unit Price</th>
+                          <th className="px-3 py-2 text-center font-medium text-gray-700">POS</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-700">Diagnosis</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-700">Rend</th>
+                          <th className="px-3 py-2 text-right font-medium text-gray-700">Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -606,9 +667,12 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                           
                           return (
                           <>
-                          <tr key={service.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${service.hasError ? 'bg-red-50' : ''}`}>
+                          <tr
+                            key={service.id}
+                            className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${service.hasError ? 'bg-red-50' : 'bg-white'}`}
+                          >
                             {/* Status Icon */}
-                            <td className="pl-3 pr-0 py-2.5 text-center">
+                            <td className="pl-3 pr-0 py-1.5 text-center">
                               <TooltipRoot>
                                 <TooltipTrigger asChild>
                                   <span className="inline-block cursor-help">
@@ -625,11 +689,11 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </td>
                             
                             {/* Insurance Levels */}
-                            <td className="pl-0 pr-1 py-2.5 text-center">
+                            <td className="pl-0 pr-1 py-1.5 text-center">
                               {service.insuranceLevels ? (
                                 <TooltipRoot>
                                   <TooltipTrigger asChild>
-                                    <div className="inline-flex items-center border border-gray-300 rounded overflow-hidden cursor-help hover:scale-105 transition-transform">
+                                    <div className="inline-flex items-center border border-gray-300 rounded-md overflow-hidden cursor-help">
                                       {/* Primary - 1 */}
                                       <div className={`px-2 py-1 text-xs font-medium flex items-center justify-center gap-1 min-w-[28px] border-r border-gray-300 ${
                                         service.insuranceLevels.primary.billed 
@@ -786,7 +850,68 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                       </tbody>
                     </table>
                   </div>
+
+                  {/* ── More Details (always visible) ── */}
+                  <div className="mt-3 border-t border-slate-100 pt-3 grid grid-cols-2 gap-4 px-2 pb-3">
+
+                    {/* Left — Edit Forms box */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      {/* Box header */}
+                      <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border-b border-slate-200">
+                        <PencilSquareIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Edit Forms</span>
+                      </div>
+                      {/* Box body */}
+                      <div className="px-3 py-2.5 space-y-2">
+                        <a
+                          href="#"
+                          className="flex items-center gap-1.5 text-xs text-[#1a73e8] hover:underline"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <DocumentTextIcon className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                          New Patient Encounter
+                        </a>
+                        <a
+                          href="#"
+                          className="flex items-center gap-1.5 text-xs text-[#1a73e8] hover:underline"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <DocumentTextIcon className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                          Services Conclusion Plan
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Right — Claims History box */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden transition-shadow duration-200 hover:shadow-md hover:border-slate-300">
+                      {/* Box header */}
+                      <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border-b border-slate-200">
+                        <ClockIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Claims History</span>
+                      </div>
+                      {/* Box body */}
+                      <div className="px-3 py-2.5 space-y-1">
+                        {getClaimsHistory(encounter).map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="flex items-center justify-between gap-2 py-2 px-2 -mx-1 rounded-md text-xs text-slate-600 cursor-pointer transition-colors hover:bg-slate-100"
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <svg className="w-3.5 h-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                              </svg>
+                              <span className="font-medium text-slate-700">{entry.label}</span>
+                            </div>
+                            <span className="text-slate-400 text-[11px] shrink-0 tabular-nums">{entry.date}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+
                 </div>
+                )}
               </div>
             )
           })
