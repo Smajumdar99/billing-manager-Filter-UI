@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Filter, ChevronDown, Minus, ChevronLeft, ChevronRight, User, Users, Folder, Calendar as CalendarLucide, MessageSquare, Printer, Download, Clock } from 'lucide-react';
 import { 
   Cog6ToothIcon,
   ArrowLeftIcon,
@@ -26,12 +27,15 @@ import {
   ViewColumnsIcon,
   Bars3Icon,
   PlusIcon,
-  CalendarIcon
+  CalendarIcon,
+  MapPinIcon,
+  ClipboardDocumentListIcon,
+  PencilSquareIcon
 } from '@heroicons/react/24/outline';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed } from '@fortawesome/free-solid-svg-icons';
 import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/atoms/Tooltip/tooltip';
-import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
+import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, getDaysInMonth } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select';
 import {
   DropdownMenu,
@@ -71,6 +75,12 @@ interface Event {
   appointmentType?: string;
   location?: string;
   notes?: string;
+  category?: string;
+  program?: string;
+  personName?: string;
+  phoneNumber?: string;
+  supervisingProvider?: string;
+  copay?: number;
 }
 
 interface FilterOptions {
@@ -106,6 +116,7 @@ interface CalendarMainViewProps {
   activeTab: 'provider' | 'room' | 'patient';
   onTabChange: (tab: 'provider' | 'room' | 'patient') => void;
   onMyCalendarToggle?: (isMyCalendar: boolean) => void;
+  onProviderSelectionChange?: (providerIds: string[]) => void;
 }
 
 type ColorScheme = {
@@ -113,6 +124,30 @@ type ColorScheme = {
   category: string;
   location: string;
 };
+
+/** Provider / clinician type labels for advanced search "for" dropdown (reference list). */
+const ADVANCED_SEARCH_PROVIDER_TYPE_OPTIONS: readonly string[] = [
+  'Doctor, Acupuncturist',
+  'doctor, Allergist',
+  'doctor, Andrologist',
+  'Doctor, Ayurvedic',
+  'doctor, Dermatologist',
+  'doctor, Endocrinologist',
+  'doctor, Epidemiologist',
+  'doctor, ER',
+  'doctor, Gastroenterologist',
+  'doctor, Hepatologist',
+  'doctor, Homeopathic',
+  'doctor, Immunologist',
+  'doctor, Intensivist',
+  'doctor, Microbiologist',
+  'Doctor, Naturopathic',
+  'doctor, OB',
+  'doctor, Oncologist',
+  'doctor, Orthopedist',
+  'doctor, Osteopath',
+  'doctor, Parasitologist',
+];
 
 // Add new types for agenda data
 type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no-show' | 'in-progress';
@@ -184,11 +219,92 @@ const getEventBgColor = (type?: string) => {
   }
 };
 
-const EventCard: React.FC<{ 
+/** Mobile soft-block event cards: tinted bg + thick left border (no separate accent strip) */
+const getMobileEventSoftBlockClasses = (type?: Event['type']) => {
+  switch (type) {
+    case 'Provider':
+      return {
+        block: 'bg-purple-50/70 border-purple-500',
+        typeText: 'text-purple-600',
+      };
+    case 'Group':
+      return {
+        block: 'bg-emerald-50/70 border-emerald-500',
+        typeText: 'text-emerald-600',
+      };
+    case 'Individual':
+      return {
+        block: 'bg-blue-50/70 border-blue-500',
+        typeText: 'text-blue-600',
+      };
+    default:
+      return {
+        block: 'bg-slate-50/70 border-slate-500',
+        typeText: 'text-slate-600',
+      };
+  }
+};
+
+/**
+ * Mobile: time gutter + continuous vertical rule in content column (empty hours still draw border-l).
+ * md+: classic sticky time column + plain content cell.
+ */
+const DayScheduleTimelineRow: React.FC<{
+  timeLabel: string;
+  variant?: 'hour' | 'allDay';
+  children: React.ReactNode;
+}> = ({ timeLabel, variant = 'hour', children }) => {
+  const isAllDay = variant === 'allDay';
+  return (
+    <div
+      className={`flex w-full border-b ${
+        isAllDay ? 'border-gray-200 min-h-[30px] md:min-h-[32px]' : 'border-gray-100 min-h-[44px] md:min-h-0'
+      }`}
+    >
+      <div
+        className={`w-16 shrink-0 md:w-12 md:sticky md:left-0 md:bg-white md:z-10 ${
+          isAllDay
+            ? 'flex items-center justify-center text-center px-1 md:px-0.5 py-1.5'
+            : 'text-right pr-4 md:pr-1 pt-2 md:py-1.5'
+        }`}
+      >
+        <span className="text-xs font-medium text-slate-400 md:text-gray-500 md:font-normal">
+          {timeLabel}
+        </span>
+      </div>
+      <div
+        className={`flex-1 flex flex-col gap-2 border-l border-slate-200 pl-4 md:border-l-0 md:pl-0 md:gap-0 md:relative ${
+          isAllDay ? 'pb-2 pt-1.5 md:pb-0' : 'pb-3 pt-1.5 md:pb-0 md:pt-0 md:min-h-[40px]'
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const mobilePopupStatusClass = (status?: Event['status']) => {
+  switch (status) {
+    case 'Confirmed':
+      return 'text-blue-600 bg-blue-50';
+    case 'Pending':
+      return 'text-yellow-600 bg-yellow-50';
+    case 'Checked In':
+      return 'text-green-600 bg-green-50';
+    case 'Completed':
+      return 'text-gray-600 bg-gray-50';
+    default:
+      return 'text-gray-600 bg-gray-50';
+  }
+};
+
+const EventCard: React.FC<{
   event: Event;
   onViewEvent?: (event: Event) => void;
   onEditEvent?: (event: Event) => void;
-}> = ({ event, onViewEvent, onEditEvent }) => {
+  activeEventId: string | null;
+  onActivateEventId: (id: string | null) => void;
+}> = ({ event, onViewEvent, onEditEvent, activeEventId, onActivateEventId }) => {
   const getEventIcon = () => {
     switch (event.type) {
       case 'Individual':
@@ -200,42 +316,192 @@ const EventCard: React.FC<{
     }
   };
 
-  // Use standard background color for event type
   const bgColor = getEventBgColor(event.type);
+  const soft = getMobileEventSoftBlockClasses(event.type);
+  const typeLabel = event.type ?? 'Event';
+  const isPopupOpen = activeEventId === event.id;
 
-  const eventContent = (
-    <div 
-      className="mx-2 my-1 p-2 rounded border text-xs overflow-hidden cursor-pointer bg-white flex flex-col gap-1 min-w-0"
-      style={{ 
-        backgroundColor: bgColor,
-        borderColor: event.type === 'Individual' ? '#C7D2FE' : 
-                    event.type === 'Group' ? '#A7F3D0' : 
-                    event.type === 'Provider' ? '#D8B4FE' : '#E5E7EB',
-      }}
+  const mobileCardFace = (
+    <div
+      className={`relative flex w-full flex-col border-l-[4px] p-3 mb-1 rounded-r-xl rounded-l-sm transition-all duration-200 ease-out shadow-[0_4px_14px_-2px_rgba(15,23,42,0.12),0_2px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.75)] hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.14),0_4px_10px_-4px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.85)] active:shadow-[0_2px_8px_-2px_rgba(15,23,42,0.1),inset_0_2px_4px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] ${soft.block} ${isPopupOpen ? 'ring-2 ring-primary/30' : ''}`}
     >
-      {/* Badge and title row */}
-      <div className="flex items-center gap-2 min-w-0">
-        <EventTypeBadge type={event.type} />
-        {getEventIcon()}
-        <div className="font-medium truncate flex-1">{event.title}</div>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-white/0 via-white/80 to-white/0 opacity-90"
+        aria-hidden
+      />
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="min-w-0 flex-1 truncate text-[14px] font-bold leading-tight text-slate-900">
+          {event.title}
+        </h4>
+        <span
+          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest bg-white/60 ${soft.typeText}`}
+        >
+          {typeLabel}
+        </span>
       </div>
-      {/* Time and phone row */}
-      <div className="text-gray-600 flex items-center gap-2 min-w-0">
-        <span>{event.startTime} - {event.endTime}</span>
+      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-[12px] font-medium text-slate-600">
+        <span className="shrink-0">
+          {event.isAllDay ? 'All day' : `${event.startTime} - ${event.endTime}`}
+        </span>
+        {event.type === 'Individual' && (
+          <span className="flex shrink-0 items-center opacity-70" aria-hidden>
+            <UserIcon className="h-3.5 w-3.5" />
+          </span>
+        )}
+        {event.type === 'Group' && (
+          <span className="flex shrink-0 items-center opacity-70" aria-hidden>
+            <UserGroupIcon className="h-3.5 w-3.5" />
+          </span>
+        )}
         {event.mobile && (
-          <span className="flex items-center gap-1 text-blue-600">
-            <PhoneIcon className="w-3 h-3" />
-            {event.mobile}
+          <span className="flex min-w-0 items-center gap-1 text-slate-700">
+            <PhoneIcon className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+            <span className="truncate">{event.mobile}</span>
           </span>
         )}
       </div>
     </div>
   );
 
+  const mobileDetailPopup = isPopupOpen && (
+        <div
+          role="dialog"
+          aria-label="Event details"
+          className="absolute top-full left-0 z-[60] mt-1 ml-[2.5%] w-[95%] origin-top rounded-xl border border-slate-200 bg-white p-4 shadow-xl animate-in fade-in zoom-in-95 duration-200 ease-out"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <h4 className="text-[15px] font-semibold leading-tight text-slate-800">{event.title}</h4>
+            <button
+              type="button"
+              className="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Edit appointment"
+              onClick={() => {
+                onEditEvent?.(event);
+                onActivateEventId(null);
+              }}
+            >
+              <PencilSquareIcon className="h-4 w-4" />
+            </button>
+          </div>
+          {event.personName && (
+            <div className="mb-2 flex items-center gap-3 text-[13px] text-slate-600">
+              <UserIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>{event.personName}</span>
+            </div>
+          )}
+          {event.status && (
+            <div className="mb-2 flex items-center gap-3 text-[13px] text-slate-600">
+              <CheckCircleIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${mobilePopupStatusClass(event.status)}`}>
+                {event.status}
+              </span>
+            </div>
+          )}
+          <div className="mb-2 flex items-center gap-3 text-[13px] text-slate-600 last:mb-0">
+            <ClockIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+            <span>{event.isAllDay ? 'All day' : `${event.startTime} - ${event.endTime}`}</span>
+          </div>
+          {(event.category || event.appointmentType) && (
+            <div className="mb-2 flex items-center gap-3 text-[13px] text-slate-600 last:mb-0">
+              <ClipboardDocumentListIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>{event.category || event.appointmentType}</span>
+            </div>
+          )}
+          {event.program && (
+            <div className="mb-2 flex items-center gap-3 text-[13px] text-slate-600 last:mb-0">
+              <ClipboardDocumentListIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>{event.program}</span>
+            </div>
+          )}
+          {event.location && (
+            <div className="mb-2 flex items-center gap-3 text-[13px] text-slate-600 last:mb-0">
+              <MapPinIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>{event.location}</span>
+            </div>
+          )}
+          {event.supervisingProvider && (
+            <div className="mb-2 flex items-center gap-3 text-[13px] text-slate-600 last:mb-0">
+              <UserIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>{event.supervisingProvider}</span>
+            </div>
+          )}
+          {(event.phoneNumber || event.mobile) && (
+            <div className="mb-2 flex items-center gap-3 text-[13px] text-slate-600 last:mb-0">
+              <PhoneIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>{event.phoneNumber || event.mobile}</span>
+            </div>
+          )}
+          {event.notes && (
+            <div className="mt-2 border-t border-slate-100 pt-2 text-[12px] text-slate-600">
+              <span className="font-medium text-slate-700">Notes: </span>
+              {event.notes}
+            </div>
+          )}
+        </div>
+  );
+
+  const desktopCard = (
+    <div
+      className="mx-2 my-1 flex min-w-0 cursor-pointer flex-col gap-1 overflow-hidden rounded-lg border bg-white p-2 text-xs shadow-[0_3px_10px_-2px_rgba(15,23,42,0.1),0_1px_4px_-1px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.9)] ring-1 ring-slate-900/[0.05] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-[0_6px_16px_-4px_rgba(15,23,42,0.12),0_2px_6px_-2px_rgba(15,23,42,0.08)] active:translate-y-0 active:shadow-md"
+      style={{
+        backgroundColor: bgColor,
+        borderColor:
+          event.type === 'Individual'
+            ? '#C7D2FE'
+            : event.type === 'Group'
+              ? '#A7F3D0'
+              : event.type === 'Provider'
+                ? '#D8B4FE'
+                : '#E5E7EB',
+      }}
+    >
+      <div className="flex flex-col gap-1 min-w-0 flex-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <EventTypeBadge type={event.type} />
+          {getEventIcon()}
+          <div className="font-medium truncate flex-1">{event.title}</div>
+        </div>
+        <div className="text-gray-600 flex items-center gap-2 min-w-0">
+          <span>
+            {event.isAllDay ? 'All day' : `${event.startTime} - ${event.endTime}`}
+          </span>
+          {event.mobile && (
+            <span className="flex items-center gap-1 text-blue-600">
+              <PhoneIcon className="w-3 h-3" />
+              {event.mobile}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <EventPopover event={event} onEdit={onEditEvent} onView={onViewEvent}>
-      {eventContent}
-    </EventPopover>
+    <>
+      <div className="relative w-full md:hidden" data-event-card-root>
+        <button
+          type="button"
+          className="w-full text-left"
+          aria-expanded={isPopupOpen}
+          aria-haspopup="dialog"
+          onClick={(e) => {
+            e.stopPropagation();
+            onActivateEventId(activeEventId === event.id ? null : event.id);
+          }}
+          onDoubleClick={() => onViewEvent?.(event)}
+        >
+          {mobileCardFace}
+        </button>
+        {mobileDetailPopup}
+      </div>
+      <div className="hidden md:block w-full min-w-0">
+        <EventPopover event={event as never} onEdit={onEditEvent} onView={onViewEvent}>
+          {desktopCard}
+        </EventPopover>
+      </div>
+    </>
   );
 };
 
@@ -255,7 +521,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   availablePatients = [],
   activeTab,
   onTabChange,
-  onMyCalendarToggle
+  onMyCalendarToggle,
+  onProviderSelectionChange
 }) => {
   // State for internal search functionality if no external handler provided
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
@@ -274,13 +541,15 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   
   // State for advanced search overlay
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
+    keywords: '',
+    operator: 'AND',
     serviceType: 'Any Service Type',
-    dateFrom: '',
-    dateTo: '',
-    program: 'All Programs',
-    status: 'All Statuses',
-    provider: 'All Providers'
+    dateFrom: format(new Date(), 'yyyy-MM-dd'),
+    dateTo: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
+    provider: 'Admin, Ensoftek',
+    facility: 'All Facilities',
   });
   
   // State for filter functionality
@@ -295,7 +564,21 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   
   // State for mobile hamburger menu
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  
+  const [showResults, setShowResults] = useState(false);
+
+  /** Mobile day view: which event detail popup is open (tap same/other card to toggle/switch) */
+  const [activeEventId, setActiveEventId] = useState<string | null>(null);
+
+  // Options drawer: Locations, Providers, Programs (advanced filters)
+  const optionsDrawerLocations = ['Main Campus - Downtown', 'North Clinic', 'Virtual', 'Emergency Unit', 'Walk-in Clinic', 'IOP Center', 'Room 101', 'Room 102', 'Room 105', 'Room 203', 'Conference Room A', 'Break Room'];
+  const optionsDrawerPrograms = ['Adult Mental Health', 'Substance Use', 'Child & Adolescent', 'Crisis Services', 'Dual Diagnosis', 'IOP', 'MAT Program', 'Behavioral Health', 'General', 'Staff Training'];
+  const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
+  const [selectedProgramIds, setSelectedProgramIds] = useState<string[]>([]);
+  const [optionsSearchLocations, setOptionsSearchLocations] = useState('');
+  const [optionsSearchProviders, setOptionsSearchProviders] = useState('');
+  const [optionsSearchPrograms, setOptionsSearchPrograms] = useState('');
+  const [openSection, setOpenSection] = useState<'locations' | 'providers' | 'programs' | ''>('providers');
+
   // State for transfer dialog
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   
@@ -490,30 +773,161 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       })
     : filteredEvents;
 
+  type SearchResultRow = {
+    id: string;
+    date: string;
+    time: string;
+    durationMins: number;
+    program: string;
+    provider: string;
+    category: string;
+    status: string;
+    resident: string;
+    comments: string;
+  };
+
   // Filter all-day events
   const allDayEvents = myCalendarFilteredEvents.filter(event => event.isAllDay);
   const timeEvents = myCalendarFilteredEvents.filter(event => !event.isAllDay);
+  const searchResults: SearchResultRow[] = [
+    {
+      id: 'sr-1',
+      date: '24/03/2026',
+      time: '10:00',
+      durationMins: 21,
+      program: 'A-AADO',
+      provider: 'Admin, Ensoftek',
+      category: 'All Staff',
+      status: 'Scheduled',
+      resident: 'Resident Name',
+      comments: 'testing',
+    },
+    {
+      id: 'sr-2',
+      date: '25/03/2026',
+      time: '10:00',
+      durationMins: 71,
+      program: 'A-AADO',
+      provider: 'Admin, Ensoftek',
+      category: 'All Staff',
+      status: 'Scheduled',
+      resident: 'Resident Name',
+      comments: 'testing',
+    },
+    {
+      id: 'sr-3',
+      date: '26/03/2026',
+      time: '10:00',
+      durationMins: 71,
+      program: 'A-AADO',
+      provider: 'Admin, Ensoftek',
+      category: 'All Staff',
+      status: 'Scheduled',
+      resident: 'Resident Name',
+      comments: 'testing',
+    },
+    {
+      id: 'sr-4',
+      date: '27/03/2026',
+      time: '10:00',
+      durationMins: 21,
+      program: 'A-AADO',
+      provider: 'Admin, Ensoftek',
+      category: 'All Staff',
+      status: 'Scheduled',
+      resident: 'Resident Name',
+      comments: 'testing',
+    },
+  ];
+
+  const getEventDurationMinutes = (event: Event) => {
+    if (event.isAllDay) return 24 * 60;
+    const [startHour, startMinute] = event.startTime.split(':').map(Number);
+    const [endHour, endMinute] = event.endTime.split(':').map(Number);
+    const startTotal = startHour * 60 + startMinute;
+    const endTotal = endHour * 60 + endMinute;
+    return Math.max(0, endTotal - startTotal);
+  };
+
+  const totalResultsDurationMinutes = searchResults.reduce((total, event) => total + event.durationMins, 0);
+
+  const getDesktopResultTone = (status?: string) => {
+    switch (status) {
+      case 'Confirmed':
+        return {
+          container: 'bg-emerald-50 border-emerald-200',
+          badge: 'bg-emerald-100/80 text-emerald-700 border-emerald-200/50',
+        };
+      case 'Pending':
+        return {
+          container: 'bg-purple-50 border-purple-200',
+          badge: 'bg-purple-100/80 text-purple-700 border-purple-200/50',
+        };
+      case 'Checked In':
+        return {
+          container: 'bg-emerald-50 border-emerald-200',
+          badge: 'bg-emerald-100/80 text-emerald-700 border-emerald-200/50',
+        };
+      default:
+        return {
+          container: 'bg-blue-50 border-blue-200',
+          badge: 'bg-blue-100/80 text-blue-700 border-blue-200/50',
+        };
+    }
+  };
+
+  const ProviderDoctorIcon: React.FC<{ className?: string; size?: number }> = ({ className = '', size = 14 }) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 640 640"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden
+      focusable="false"
+    >
+      <path d="M320 112C364.2 112 400 147.8 400 192C400 236.2 364.2 272 320 272C275.8 272 240 236.2 240 192C240 147.8 275.8 112 320 112zM192 192C192 262.7 249.3 320 320 320C390.7 320 448 262.7 448 192C448 121.3 390.7 64 320 64C249.3 64 192 121.3 192 192zM264 486.4L264 432L360 432L360 473C338.8 482.3 324 503.4 324 528L324 552C324 563 333 572 344 572C355 572 364 563 364 552L364 528C364 517 373 508 384 508C395 508 404 517 404 528L404 552C404 563 413 572 424 572C435 572 444 563 444 552L444 528C444 503.4 429.2 482.3 408 473L408 436.3C458.7 450.3 496 496.8 496 552C496 565.3 506.7 576 520 576C533.3 576 544 565.3 544 552C544 459.2 468.8 384 376 384L264 384C171.2 384 96 459.2 96 552C96 565.3 106.7 576 120 576C133.3 576 144 565.3 144 552C144 502.8 173.6 460.5 216 442L216 486.4C201.7 494.7 192 510.2 192 528C192 554.5 213.5 576 240 576C266.5 576 288 554.5 288 528C288 510.2 278.3 494.7 264 486.4z" />
+    </svg>
+  );
 
   // State for dropdown visibility
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileFilterDropdownRef = useRef<HTMLDivElement>(null);
   const searchOverlayRef = useRef<HTMLDivElement>(null);
+  /** Full-screen mobile search panel — must be excluded from outside-click; it is NOT under searchOverlayRef (desktop-only). */
+  const mobileSearchOverlayRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
-        setShowFilters(false);
-      }
-      if (searchOverlayRef.current && !searchOverlayRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideFilter = (filterDropdownRef.current?.contains(target)) || (mobileFilterDropdownRef.current?.contains(target));
+      if (!insideFilter) setShowFilters(false);
+      const insideDesktopSearch = searchOverlayRef.current?.contains(target);
+      const insideMobileSearch = mobileSearchOverlayRef.current?.contains(target);
+      if (!insideDesktopSearch && !insideMobileSearch) {
         setShowSearchOverlay(false);
       }
     }
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Close mobile event detail sheet when tapping outside any event card (root includes popup)
+  useEffect(() => {
+    if (activeEventId === null) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const el = e.target as HTMLElement;
+      if (!el.closest('[data-event-card-root]')) {
+        setActiveEventId(null);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [activeEventId]);
 
   // Get formatted date range for header
   const getHeaderDate = () => {
@@ -1062,8 +1476,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
     <div className="h-full flex flex-col overflow-hidden bg-white">
       {/* Mobile-Responsive Calendar Header */}
       <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-200">
-        {/* Left side - Mobile: Simplified, Desktop: Full */}
-        <div className="flex items-center space-x-2 md:space-x-4">
+        {/* Left side - Mobile: compact so filter/search fit in same row */}
+        <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1 md:flex-initial">
           {/* Mobile hamburger menu - only visible on mobile */}
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -1088,45 +1502,51 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </div>
           
           {/* Date with navigation arrows and view button */}
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 flex-1">
             {/* Left arrow */}
             {view !== 'agenda' && (
               <button
                 onClick={goToPrevDate}
-                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
                 aria-label="Previous"
               >
                 <ArrowLeftIcon className="w-4 h-4 text-gray-600" />
               </button>
             )}
             
-            <div className="flex items-center pr-3">
-              {/* Date display - show date range inputs for agenda view */}
+            <div className="flex items-center pr-2 md:pr-3 min-w-0 flex-1 md:flex-initial">
+              {/* Date display - compact on mobile so filter/search icons fit */}
               {view === 'agenda' ? (
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-1">
-                    <label className="text-sm font-medium text-gray-600">From:</label>
+                <div className="flex items-center gap-1 md:gap-2 min-w-0 w-full">
+                  <div className="flex items-center gap-0.5 md:gap-1 min-w-0 flex-1">
+                    <label className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap flex-shrink-0 hidden sm:inline">From:</label>
                     <input
                       type="date"
                       value={format(agendaDateRange.startDate, 'yyyy-MM-dd')}
                       onChange={handleStartDateChange}
-                      className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="From date"
+                      className="flex-1 min-w-0 max-w-[100px] md:max-w-none px-1.5 md:px-2 py-0.5 md:py-1 text-xs md:text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <label className="text-sm font-medium text-gray-600">To:</label>
+                  <div className="flex items-center gap-0.5 md:gap-1 min-w-0 flex-1">
+                    <label className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap flex-shrink-0 hidden sm:inline">To:</label>
                     <input
                       type="date"
                       value={format(agendaDateRange.endDate, 'yyyy-MM-dd')}
                       onChange={handleEndDateChange}
-                      className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="To date"
+                      className="flex-1 min-w-0 max-w-[100px] md:max-w-none px-1.5 md:px-2 py-0.5 md:py-1 text-xs md:text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
               ) : (
-                <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                <button
+                  type="button"
+                  className="text-sm md:text-lg font-bold text-slate-800 hover:text-[#1a73e8] px-2 py-1 rounded-md whitespace-nowrap md:text-xl md:font-semibold md:text-gray-800 md:hover:text-gray-800"
+                  aria-label="Change date"
+                >
                   {getHeaderDate()}
-                </h2>
+                </button>
               )}
               
               {/* Show only the relevant button based on current view */}
@@ -1174,7 +1594,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
         {/* Middle section - Hidden on mobile, shown on desktop */}
         <div className="hidden md:flex flex-1 max-w-4xl mx-8">
           <div className="flex items-center space-x-2">
-            <div className="relative flex-1" ref={searchOverlayRef}>
+            <div className="relative min-w-0 flex-1 md:min-w-[18rem]" ref={searchOverlayRef}>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
               </div>
@@ -1184,183 +1604,228 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 placeholder="Search appointments or click for advanced filters..."
                 value={currentSearchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                onClick={() => setShowSearchOverlay(true)}
+                onClick={() => {
+                  setShowSearchOverlay(true);
+                  setHasSearched(false);
+                }}
               />
               
-              {/* Modern Search Overlay */}
+              {/* Desktop Advanced Search */}
               {showSearchOverlay && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden min-w-[600px]">
-                  <div className="p-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Advanced Search</h3>
+                <div className="absolute top-full left-0 mt-2 w-[600px] bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col">
+                  <div className="p-3 grid grid-cols-2 gap-x-3 gap-y-2 bg-slate-50 border-b border-slate-200">
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Keywords</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          className="h-7 flex-1 rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                          value={advancedFilters.keywords}
+                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, keywords: e.target.value })}
+                        />
+                        <div className="inline-flex h-7 items-stretch rounded-md border border-slate-300 bg-slate-100 overflow-hidden shrink-0">
+                          {(['AND', 'OR'] as const).map((op, idx) => (
+                            <button
+                              key={op}
+                              type="button"
+                              onClick={() => setAdvancedFilters({ ...advancedFilters, operator: op })}
+                              className={`h-full min-w-[2rem] px-1.5 text-[11px] font-semibold leading-none transition-all duration-200 ${
+                                advancedFilters.operator === op
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'text-gray-500 hover:text-gray-800'
+                              } ${idx === 1 ? 'border-l border-slate-300' : ''}`}
+                            >
+                              {op}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Service Type</label>
+                      <div className="relative">
+                        <select
+                          className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                          value={advancedFilters.serviceType}
+                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, serviceType: e.target.value })}
+                        >
+                          <option>Any Service Type</option>
+                          <option>Individual Therapy</option>
+                          <option>Group Therapy</option>
+                          <option>Assessment</option>
+                          <option>Consultation</option>
+                          <option>Follow-up</option>
+                          <option>Medication Review</option>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-500" aria-hidden />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Start Date</label>
+                      <input
+                        type="date"
+                        className="h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                        value={advancedFilters.dateFrom}
+                        onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateFrom: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">End Date</label>
+                      <input
+                        type="date"
+                        className="h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                        value={advancedFilters.dateTo}
+                        onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateTo: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Provider</label>
+                      <div className="relative">
+                        <select
+                          className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                          value={advancedFilters.provider}
+                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, provider: e.target.value })}
+                        >
+                          <option value="Admin, Ensoftek">Admin, Ensoftek</option>
+                          {ADVANCED_SEARCH_PROVIDER_TYPE_OPTIONS.map((label) => (
+                            <option key={label} value={label}>
+                              {label}
+                            </option>
+                          ))}
+                          {providersToShow.map((p) => (
+                            <option key={p.id} value={p.label}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-500" aria-hidden />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Facility</label>
+                      <div className="relative">
+                        <select
+                          className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                          value={advancedFilters.facility}
+                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, facility: e.target.value })}
+                        >
+                          <option>All Facilities</option>
+                          {optionsDrawerLocations.map((loc) => (
+                            <option key={loc} value={loc}>{loc}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-500" aria-hidden />
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 flex justify-end gap-2 mt-1.5 pt-2 border-t border-slate-200">
                       <button
-                        onClick={() => setShowSearchOverlay(false)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        type="button"
+                        onClick={() => setHasSearched(false)}
+                        className="px-3 py-1 text-[12px] font-medium text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        Clear
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHasSearched(true)}
+                        className="px-3 py-1 text-[12px] font-semibold text-primary-foreground bg-primary rounded-md hover:brightness-110"
+                      >
+                        Submit
                       </button>
                     </div>
-                    
-                    {/* Filter Grid */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      {/* Service Type */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
-                        <Select
-                          value={advancedFilters.serviceType}
-                          onValueChange={(value) => setAdvancedFilters({...advancedFilters, serviceType: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Any Service Type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Any Service Type">Any Service Type</SelectItem>
-                            <SelectItem value="Individual Therapy">Individual Therapy</SelectItem>
-                            <SelectItem value="Group Therapy">Group Therapy</SelectItem>
-                            <SelectItem value="Assessment">Assessment</SelectItem>
-                            <SelectItem value="Consultation">Consultation</SelectItem>
-                            <SelectItem value="Follow-up">Follow-up</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {/* Program */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Program</label>
-                        <Select
-                          value={advancedFilters.program}
-                          onValueChange={(value) => setAdvancedFilters({...advancedFilters, program: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="All Programs" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="All Programs">All Programs</SelectItem>
-                            <SelectItem value="Outpatient">Outpatient</SelectItem>
-                            <SelectItem value="Intensive Outpatient">Intensive Outpatient</SelectItem>
-                            <SelectItem value="Partial Hospitalization">Partial Hospitalization</SelectItem>
-                            <SelectItem value="Residential">Residential</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {/* Status */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                        <Select
-                          value={advancedFilters.status}
-                          onValueChange={(value) => setAdvancedFilters({...advancedFilters, status: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="All Statuses" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="All Statuses">All Statuses</SelectItem>
-                            <SelectItem value="Scheduled">Scheduled</SelectItem>
-                            <SelectItem value="Confirmed">Confirmed</SelectItem>
-                            <SelectItem value="In Progress">In Progress</SelectItem>
-                            <SelectItem value="Completed">Completed</SelectItem>
-                            <SelectItem value="Cancelled">Cancelled</SelectItem>
-                            <SelectItem value="No Show">No Show</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {/* Provider */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Provider</label>
-                        <Select
-                          value={advancedFilters.provider}
-                          onValueChange={(value) => setAdvancedFilters({...advancedFilters, provider: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="All Providers" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="All Providers">All Providers</SelectItem>
-                            <SelectItem value="Dr. Sarah Johnson">Dr. Sarah Johnson</SelectItem>
-                            <SelectItem value="Dr. Michael Chen">Dr. Michael Chen</SelectItem>
-                            <SelectItem value="Dr. Emily Rodriguez">Dr. Emily Rodriguez</SelectItem>
-                            <SelectItem value="Dr. David Kim">Dr. David Kim</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    {/* Date Range */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <input
-                            type="date"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            value={advancedFilters.dateFrom}
-                            onChange={(e) => setAdvancedFilters({...advancedFilters, dateFrom: e.target.value})}
-                            placeholder="From"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="date"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            value={advancedFilters.dateTo}
-                            onChange={(e) => setAdvancedFilters({...advancedFilters, dateTo: e.target.value})}
-                            placeholder="To"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex justify-between pt-4 border-t border-gray-200">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          setAdvancedFilters({
-                            serviceType: 'Any Service Type',
-                            dateFrom: '',
-                            dateTo: '',
-                            program: 'All Programs',
-                            status: 'All Statuses',
-                            provider: 'All Providers'
-                          });
-                          handleSearchChange('');
-                        }}
-                      >
-                        Clear All
-                      </Button>
-                      <div className="flex space-x-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowSearchOverlay(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => {
-                            // Apply filters logic here
-                            setShowSearchOverlay(false);
-                          }}
-                        >
-                          Apply Filters
-                        </Button>
-                      </div>
-                    </div>
                   </div>
+
+                  {hasSearched && (
+                    <div className="flex flex-col max-h-[350px]">
+                      <div className="flex justify-between items-center px-4 py-2.5 bg-blue-50/50 border-y border-blue-100 shrink-0">
+                        <div className="flex items-center gap-3 text-[13px] font-medium text-blue-800">
+                          <span>{searchResults.length} Results found</span>
+                          <span className="text-blue-200">|</span>
+                          <span>Total: {totalResultsDurationMinutes} mins</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#0ea5e9] text-[#0ea5e9] font-bold text-[11px] rounded uppercase tracking-wider shadow-sm hover:bg-[#f0f9ff] transition-colors">
+                            <Printer size={14} />
+                            Print
+                          </button>
+                          <button className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#0ea5e9] text-[#0ea5e9] font-bold text-[11px] rounded uppercase tracking-wider shadow-sm hover:bg-[#f0f9ff] transition-colors">
+                            <Download size={14} />
+                            Export CSV
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-2">
+                        {searchResults.map((event) => {
+                          const duration = event.durationMins;
+                          const tone = getDesktopResultTone(event.status);
+                          const providerName = event.provider;
+                          const residentName = event.resident;
+                          const programName = event.program;
+                          const commentText = event.comments?.trim();
+                          return (
+                            <button
+                              key={event.id}
+                              type="button"
+                              onClick={() => navigate(`/view-appointment/${event.id}`)}
+                              className={`w-full text-left rounded-lg p-3 hover:shadow-md transition-all mb-2 last:mb-0 border relative group cursor-pointer flex flex-col gap-2.5 ${tone.container}`}
+                            >
+                              <div className="flex items-center justify-between mb-2.5">
+                                <div className="flex items-center gap-2 min-w-0 pr-3">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border shrink-0 ${tone.badge}`}>
+                                    {event.status}
+                                  </span>
+                                  <h4 className="text-[14px] font-bold text-slate-800 truncate">{event.category}</h4>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-700 pr-6 shrink-0">
+                                  <Clock size={14} className="text-slate-400" />
+                                  <span>{duration} Mins</span>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px] text-slate-600 pr-8">
+                                <div className="flex items-center gap-1.5">
+                                  <CalendarLucide size={16} className="opacity-60 shrink-0" />
+                                  <span>{event.date} • {event.time}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Users size={16} className="opacity-60 shrink-0" />
+                                  <span className="truncate">{residentName}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <User size={14} className="opacity-60 shrink-0" />
+                                  <span className="truncate">{providerName}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Folder size={14} className="opacity-60 shrink-0" />
+                                  <span className="truncate">{programName}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-1.5 text-[12px] text-slate-500 bg-white/60 p-2 rounded border border-blue-100/50 mr-8 mt-0.5">
+                                <MessageSquare size={14} className="opacity-60 shrink-0 mt-0.5" />
+                                <span className="italic line-clamp-2">{commentText ? `"${commentText}"` : '"No comments"'}</span>
+                              </div>
+
+                              <ChevronRight size={22} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300 group-hover:text-blue-600 transition-colors" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
             
-            {/* Filter toggle button with dropdown */}
-            <div className="relative" ref={filterDropdownRef}>
+            {/* Filter toggle button with dropdown (desktop only; mobile has its own dropdown) */}
+            <div className="relative hidden md:block" ref={filterDropdownRef}>
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`relative flex items-center justify-center w-10 h-10 border rounded-lg transition-colors ${
@@ -1502,8 +1967,137 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </div>
         </div>
         
-        {/* Right side - Mobile: Essential controls, Desktop: Full controls */}
-        <div className="flex items-center space-x-2 md:space-x-3">
+        {/* Right side - Filter and Search (never shrink so they always show) */}
+        <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
+          {/* Mobile: Filter icon with dropdown (same Filter by options as desktop) */}
+          <div className="relative md:hidden" ref={mobileFilterDropdownRef}>
+            <button
+              type="button"
+              className={`relative flex items-center justify-center w-10 h-10 border rounded-lg transition-colors ${
+                showFilters || hasActiveFilters()
+                  ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
+                  : 'text-slate-600 border-gray-200 hover:bg-slate-100'
+              }`}
+              aria-label="Filter"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <FunnelIcon className="w-5 h-5" />
+              {hasActiveFilters() && (
+                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {[filters.personAppts, filters.providerReserv, filters.groupAppts, filters.nextHours].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+            {showFilters && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-2rem)]">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <FunnelIcon className="w-4 h-4 text-gray-600" />
+                    <h3 className="text-sm font-semibold text-gray-800">Filter by:</h3>
+                    {hasActiveFilters() && view === 'agenda' && (
+                      <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">
+                        {agendaData.length}
+                      </span>
+                    )}
+                    {hasActiveFilters() && view !== 'agenda' && (
+                      <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">
+                        {myCalendarFilteredEvents.length}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:bg-blue-50 px-2 py-1 rounded"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="p-3">
+                  <div className="space-y-1">
+                    <label className="flex items-center justify-between cursor-pointer hover:bg-blue-50 px-2 py-1.5 rounded group transition-colors">
+                      <div className="flex items-center">
+                        <UserIcon className="w-4 h-4 text-gray-500 group-hover:text-blue-600 mr-2 transition-colors" />
+                        <input
+                          type="checkbox"
+                          checked={filters.personAppts}
+                          onChange={(e) => setFilters(prev => ({ ...prev, personAppts: e.target.checked }))}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1 mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Person appointments only</span>
+                      </div>
+                      {filters.personAppts && <CheckIcon className="w-4 h-4 text-blue-600" />}
+                    </label>
+                    <label className="flex items-center justify-between cursor-pointer hover:bg-green-50 px-2 py-1.5 rounded group transition-colors">
+                      <div className="flex items-center">
+                        <UserGroupIcon className="w-4 h-4 text-gray-500 group-hover:text-green-600 mr-2 transition-colors" />
+                        <input
+                          type="checkbox"
+                          checked={filters.groupAppts}
+                          onChange={(e) => setFilters(prev => ({ ...prev, groupAppts: e.target.checked }))}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500 focus:ring-1 mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Group appointments only</span>
+                      </div>
+                      {filters.groupAppts && <CheckIcon className="w-4 h-4 text-green-600" />}
+                    </label>
+                    <label className="flex items-center justify-between cursor-pointer hover:bg-purple-50 px-2 py-1.5 rounded group transition-colors">
+                      <div className="flex items-center">
+                        <Cog6ToothIcon className="w-4 h-4 text-gray-500 group-hover:text-purple-600 mr-2 transition-colors" />
+                        <input
+                          type="checkbox"
+                          checked={filters.providerReserv}
+                          onChange={(e) => setFilters(prev => ({ ...prev, providerReserv: e.target.checked }))}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:ring-1 mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Provider reservations only</span>
+                      </div>
+                      {filters.providerReserv && <CheckIcon className="w-4 h-4 text-purple-600" />}
+                    </label>
+                    <div className="hover:bg-orange-50 px-2 py-1.5 rounded group transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <ClockIcon className="w-4 h-4 text-gray-500 group-hover:text-orange-600 mr-2 transition-colors" />
+                          <input
+                            type="checkbox"
+                            checked={filters.nextHours}
+                            onChange={(e) => setFilters(prev => ({ ...prev, nextHours: e.target.checked }))}
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Appointments in next</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          {filters.nextHours && <CheckIcon className="w-4 h-4 text-orange-600 mr-1" />}
+                          <select
+                            value={filters.hoursValue}
+                            onChange={(e) => setFilters(prev => ({ ...prev, hoursValue: parseInt(e.target.value) }))}
+                            className={`text-xs border rounded px-1.5 py-0.5 font-medium min-w-[40px] ${
+                              filters.nextHours
+                                ? 'border-orange-300 text-gray-700 bg-white focus:ring-orange-500 focus:border-orange-500'
+                                : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                            }`}
+                            disabled={!filters.nextHours}
+                          >
+                            <option value={1}>1</option>
+                            <option value={2}>2</option>
+                            <option value={3}>3</option>
+                            <option value={4}>4</option>
+                            <option value={6}>6</option>
+                            <option value={8}>8</option>
+                            <option value={12}>12</option>
+                            <option value={24}>24</option>
+                          </select>
+                          <span className={`text-xs font-medium ${filters.nextHours ? 'text-gray-600' : 'text-gray-400'}`}>
+                            hours
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           {/* Mobile: Search button */}
           <button 
             onClick={() => setShowSearchOverlay(true)}
@@ -1778,289 +2372,300 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </div>
         </div>
       </div>
-      
-      {/* Mobile Search Overlay - Only visible on mobile when search is clicked */}
+
+      {/* Mobile Search Overlay — same fields as desktop, stacked for small screens */}
       {showSearchOverlay && (
-        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowSearchOverlay(false)}>
-          <div className="bg-white h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">Search Appointments</h3>
-                <button
-                  onClick={() => setShowSearchOverlay(false)}
-                  className="p-2 rounded-full hover:bg-gray-100"
-                >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+        <div
+          ref={mobileSearchOverlayRef}
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50"
+          onClick={() => {
+            setShowSearchOverlay(false);
+            setShowResults(false);
+          }}
+        >
+          <div className="bg-white h-full" onClick={(e) => e.stopPropagation()}>
+            <div className="h-full flex flex-col bg-slate-50 relative">
+              <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-800">Search Appointments</h3>
+                  <button
+                    onClick={() => {
+                      setShowSearchOverlay(false);
+                      setShowResults(false);
+                    }}
+                    className="p-2 rounded-full hover:bg-gray-100"
+                  >
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            <div className="p-4">
-              {/* Mobile Search Input */}
-              <div className="mb-6">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-                  </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+            <div className="flex flex-col gap-2.5 p-3 bg-white border-b border-slate-200">
+              {/* Keywords + Operator */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5 block">Keywords</label>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Search appointments, providers, patients..."
-                    value={currentSearchQuery}
-                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="h-8 py-1 px-2 text-[13px] border border-slate-300 rounded-md w-full bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter keywords..."
+                    value={advancedFilters.keywords}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, keywords: e.target.value })}
+                  />
+                  {/* Operator — 3D toggle switch */}
+                  <div className="inline-flex rounded-lg bg-gray-100 p-0.5 shadow-inner shrink-0">
+                    {(['AND', 'OR'] as const).map((op) => (
+                      <button
+                        key={op}
+                        type="button"
+                        onClick={() => setAdvancedFilters({ ...advancedFilters, operator: op })}
+                        className={`relative z-10 h-8 px-4 text-xs rounded-md transition-all duration-200 ${
+                          advancedFilters.operator === op
+                            ? 'bg-primary text-primary-foreground font-bold shadow-md'
+                            : 'text-gray-500 font-medium hover:text-gray-700'
+                        }`}
+                      >
+                        {op}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Type */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5 block">in Service Type</label>
+                <div className="relative w-full">
+                  <select
+                    className="h-8 py-1 px-2 text-[13px] border border-slate-300 rounded-md w-full bg-slate-50 focus:bg-white appearance-none pr-9 focus:ring-2 focus:ring-blue-500"
+                    value={advancedFilters.serviceType}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, serviceType: e.target.value })}
+                  >
+                    <option>Any Service Type</option>
+                    <option>Individual Therapy</option>
+                    <option>Group Therapy</option>
+                    <option>Assessment</option>
+                    <option>Consultation</option>
+                    <option>Follow-up</option>
+                    <option>Medication Review</option>
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500"
+                    aria-hidden
                   />
                 </div>
               </div>
 
-              {/* Advanced Search Options */}
-              <div className="space-y-6">
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Advanced Filters</h4>
-                  
-                  {/* Service Type */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
-                    <Select
-                      value={advancedFilters.serviceType}
-                      onValueChange={(value) => setAdvancedFilters({...advancedFilters, serviceType: value})}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Any Service Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Any Service Type">Any Service Type</SelectItem>
-                        <SelectItem value="Individual Therapy">Individual Therapy</SelectItem>
-                        <SelectItem value="Group Therapy">Group Therapy</SelectItem>
-                        <SelectItem value="Assessment">Assessment</SelectItem>
-                        <SelectItem value="Consultation">Consultation</SelectItem>
-                        <SelectItem value="Follow-up">Follow-up</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Program */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Program</label>
-                    <Select
-                      value={advancedFilters.program}
-                      onValueChange={(value) => setAdvancedFilters({...advancedFilters, program: value})}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Programs" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="All Programs">All Programs</SelectItem>
-                        <SelectItem value="Outpatient">Outpatient</SelectItem>
-                        <SelectItem value="Intensive Outpatient">Intensive Outpatient</SelectItem>
-                        <SelectItem value="Partial Hospitalization">Partial Hospitalization</SelectItem>
-                        <SelectItem value="Residential">Residential</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Status */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                    <Select
-                      value={advancedFilters.status}
-                      onValueChange={(value) => setAdvancedFilters({...advancedFilters, status: value})}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="All Statuses">All Statuses</SelectItem>
-                        <SelectItem value="Scheduled">Scheduled</SelectItem>
-                        <SelectItem value="Confirmed">Confirmed</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                        <SelectItem value="No Show">No Show</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Provider */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Provider</label>
-                    <Select
-                      value={advancedFilters.provider}
-                      onValueChange={(value) => setAdvancedFilters({...advancedFilters, provider: value})}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Providers" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="All Providers">All Providers</SelectItem>
-                        <SelectItem value="Dr. Sarah Johnson">Dr. Sarah Johnson</SelectItem>
-                        <SelectItem value="Dr. Michael Chen">Dr. Michael Chen</SelectItem>
-                        <SelectItem value="Dr. Emily Rodriguez">Dr. Emily Rodriguez</SelectItem>
-                        <SelectItem value="Dr. David Kim">Dr. David Kim</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {/* Date Range */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">From</label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        value={advancedFilters.dateFrom}
-                        onChange={(e) => setAdvancedFilters({...advancedFilters, dateFrom: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">To</label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        value={advancedFilters.dateTo}
-                        onChange={(e) => setAdvancedFilters({...advancedFilters, dateTo: e.target.value})}
-                      />
-                    </div>
-                  </div>
+              {/* Date Range */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5 block">between</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    className="h-8 px-2 text-[12px] border border-slate-300 rounded-md flex-1 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
+                    value={advancedFilters.dateFrom}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateFrom: e.target.value })}
+                  />
+                  <span className="text-[11px] text-slate-400 font-medium shrink-0">and</span>
+                  <input
+                    type="date"
+                    className="h-8 px-2 text-[12px] border border-slate-300 rounded-md flex-1 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
+                    value={advancedFilters.dateTo}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateTo: e.target.value })}
+                  />
                 </div>
               </div>
-              
-              {/* Action Buttons */}
-              <div className="sticky bottom-0 bg-white pt-6 mt-6 border-t border-gray-200">
-                <div className="space-y-3">
-                  <Button
-                    variant="default"
-                    size="lg"
-                    className="w-full"
-                    onClick={() => {
-                      // Apply filters logic here
-                      setShowSearchOverlay(false);
-                    }}
+
+              {/* Provider */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5 block">for Provider</label>
+                <div className="relative w-full">
+                  <select
+                    className="h-8 py-1 px-2 text-[13px] border border-slate-300 rounded-md w-full bg-slate-50 focus:bg-white appearance-none pr-9 focus:ring-2 focus:ring-blue-500"
+                    value={advancedFilters.provider}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, provider: e.target.value })}
                   >
-                    Apply Search & Filters
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full"
-                    onClick={() => {
-                      setAdvancedFilters({
-                        serviceType: 'Any Service Type',
-                        dateFrom: '',
-                        dateTo: '',
-                        program: 'All Programs',
-                        status: 'All Statuses',
-                        provider: 'All Providers'
-                      });
-                      handleSearchChange('');
-                    }}
-                  >
-                    Clear All
-                  </Button>
+                    <option value="Admin, Ensoftek">Admin, Ensoftek</option>
+                    {ADVANCED_SEARCH_PROVIDER_TYPE_OPTIONS.map((label) => (
+                      <option key={label} value={label}>
+                        {label}
+                      </option>
+                    ))}
+                    {providersToShow.map((p) => (
+                      <option key={p.id} value={p.label}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500"
+                    aria-hidden
+                  />
                 </div>
+              </div>
+
+              {/* Facility */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5 block">at Facility</label>
+                <div className="relative w-full">
+                  <select
+                    className="h-8 py-1 px-2 text-[13px] border border-slate-300 rounded-md w-full bg-slate-50 focus:bg-white appearance-none pr-9 focus:ring-2 focus:ring-blue-500"
+                    value={advancedFilters.facility}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, facility: e.target.value })}
+                  >
+                    <option>All Facilities</option>
+                    {optionsDrawerLocations.map((loc) => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500"
+                    aria-hidden
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="sticky bottom-0 bg-white pt-3 mt-1 border-t border-gray-200">
+                <div className="flex items-center gap-2 mt-1">
+                <Button
+                  variant="default"
+                  size="lg"
+                  className="flex-1 h-9 bg-primary text-primary-foreground hover:brightness-110 text-[13px] font-semibold rounded-md transition-colors"
+                  onClick={() => setShowResults(true)}
+                >
+                  Submit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1 h-9 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-[13px] font-medium rounded-md transition-colors"
+                  onClick={() => {
+                    setShowSearchOverlay(false);
+                    setShowResults(false);
+                  }}
+                >
+                  Return
+                </Button>
+                </div>
+              </div>
+
+              {showResults && (
+                <div className="mt-6 pt-6 border-t border-slate-200 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex justify-between items-center text-[13px] font-medium text-blue-700 bg-blue-50/50 p-2 rounded-md border border-blue-100">
+                    <span>{searchResults.length} Results found</span>
+                    <span>Total: {totalResultsDurationMinutes} mins</span>
+                  </div>
+
+                  {/* Mobile Action Buttons */}
+                  <div className="flex items-center gap-2 mt-2 mb-3">
+                    <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-white border border-[#0ea5e9] text-[#0ea5e9] font-semibold text-[13px] rounded-md shadow-sm hover:bg-[#f0f9ff] transition-colors">
+                      <Printer size={14} />
+                      Print
+                    </button>
+                    <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-white border border-[#0ea5e9] text-[#0ea5e9] font-semibold text-[13px] rounded-md shadow-sm hover:bg-[#f0f9ff] transition-colors">
+                      <Download size={14} />
+                      Export CSV
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-3 pb-8">
+                    {searchResults.map((event) => {
+                      const duration = event.durationMins;
+                      const providerName = event.provider;
+                      const residentName = event.resident;
+                      const programName = event.program;
+                      const commentText = event.comments?.trim();
+                      return (
+                        <button
+                          key={event.id}
+                          type="button"
+                          onClick={() => navigate(`/view-appointment/${event.id}`)}
+                          className="w-full text-left bg-white rounded-lg border-l-[4px] border-l-blue-500 border border-slate-200 p-3 shadow-sm hover:shadow-md transition-all flex items-center justify-between group"
+                        >
+                          <div className="flex flex-col gap-1.5 flex-1 min-w-0 pr-2 pb-1">
+                            <div className="flex justify-between items-start gap-2">
+                              <h4 className="text-[14px] font-bold text-slate-900 leading-tight truncate">{event.category}</h4>
+                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded shrink-0">
+                                {event.status}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-[12px] text-slate-700 font-semibold">
+                              <span>{event.date} • {event.time}</span>
+                              <span className="text-slate-300">•</span>
+                              <span>{duration} Mins</span>
+                            </div>
+
+                            <div className="flex items-center gap-3 text-[12px] text-slate-500 mt-0.5">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Users size={14} className="shrink-0 text-slate-400" />
+                                <span className="truncate">{residentName}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Folder size={14} className="shrink-0 text-slate-400" />
+                                <span className="truncate">{programName}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1 mt-1 pt-2 border-t border-slate-100">
+                              <div className="flex items-center gap-1.5 text-[12px] text-slate-600">
+                                <ProviderDoctorIcon size={14} className="shrink-0 text-slate-400 fill-current" />
+                                <span className="truncate">{providerName}</span>
+                              </div>
+                              {commentText && (
+                                <div className="flex items-start gap-1.5 text-[11px] text-slate-400">
+                                  <MessageSquare size={12} className="shrink-0 mt-0.5" />
+                                  <span className="italic line-clamp-1">"{commentText}"</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 text-slate-300 group-hover:text-blue-500 pt-1 transition-colors">
+                            <ChevronRight size={22} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Mobile Menu Overlay - Only visible on mobile when hamburger is clicked */}
+      {/* Mobile Menu Overlay - Options (Go to Today + Locations, Providers, Programs) */}
       {showMobileMenu && (
         <div className="md:hidden absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 z-40" onClick={() => setShowMobileMenu(false)}>
-          <div className="bg-white w-64 h-full shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b border-gray-200">
+          <div className="bg-white w-56 h-full shadow-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-3 py-2.5 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">Calendar Views</h3>
+                <h3 className="text-base font-semibold text-gray-800">Options</h3>
                 <button
                   onClick={() => setShowMobileMenu(false)}
-                  className="p-1 rounded-full hover:bg-gray-100"
+                  className="p-0.5 rounded-full hover:bg-gray-100"
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
             </div>
-            
-            <div className="p-4">
-              <div className="space-y-2">
-                {/* Day View */}
-                <button
-                  onClick={() => {
-                    onViewChange('day');
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
-                    view === 'day'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="font-medium">Day</span>
-                  {view === 'day' && <CheckIcon className="w-5 h-5" />}
-                </button>
-                
-                {/* Week View */}
-                <button
-                  onClick={() => {
-                    onViewChange('week');
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
-                    view === 'week'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="font-medium">Week</span>
-                  {view === 'week' && <CheckIcon className="w-5 h-5" />}
-                </button>
-                
-                {/* Month View */}
-                <button
-                  onClick={() => {
-                    onViewChange('month');
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
-                    view === 'month'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="font-medium">Month</span>
-                  {view === 'month' && <CheckIcon className="w-5 h-5" />}
-                </button>
-                
-                {/* Agenda View */}
-                <button
-                  onClick={() => {
-                    onViewChange('agenda');
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
-                    view === 'agenda'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="font-medium">Agenda</span>
-                  {view === 'agenda' && <CheckIcon className="w-5 h-5" />}
-                </button>
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                {/* Today Button */}
+
+            <div className="p-3 flex-1 flex flex-col min-h-0">
+              <div className="flex-shrink-0 pt-2.5 border-t border-gray-200">
                 <button
                   onClick={() => {
                     goToToday();
                     setShowMobileMenu(false);
                   }}
-                  className={`w-full p-3 rounded-lg transition-colors ${
+                  className={`w-full py-2 px-2.5 rounded-md text-sm transition-colors ${
                     isTodayActive()
                       ? 'bg-blue-50 text-blue-700 border border-blue-200'
                       : 'text-gray-700 hover:bg-gray-50 border border-gray-200'
@@ -2069,205 +2674,282 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                   <span className="font-medium">Go to Today</span>
                 </button>
               </div>
-              
-              {/* Filter Options Section */}
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold text-gray-800">Filters</h4>
-                  {hasActiveFilters() && (
-                    <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {[filters.personAppts, filters.providerReserv, filters.groupAppts, filters.nextHours].filter(Boolean).length}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="space-y-3">
-                  {/* Person appointments filter */}
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.personAppts}
-                      onChange={(e) => setFilters(prev => ({ ...prev, personAppts: e.target.checked }))}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">Person appointments only</span>
-                  </label>
-                  
-                  {/* Group appointments filter */}
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.groupAppts}
-                      onChange={(e) => setFilters(prev => ({ ...prev, groupAppts: e.target.checked }))}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">Group appointments only</span>
-                  </label>
-                  
-                  {/* Provider reservations filter */}
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.providerReserv}
-                      onChange={(e) => setFilters(prev => ({ ...prev, providerReserv: e.target.checked }))}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">Provider reservations only</span>
-                  </label>
-                  
-                  {/* Next hours filter */}
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.nextHours}
-                        onChange={(e) => setFilters(prev => ({ ...prev, nextHours: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">Appointments in next</span>
-                    </label>
-                    
-                    {filters.nextHours && (
-                      <div className="ml-7 flex items-center space-x-2">
-                        <select
-                          value={filters.hoursValue}
-                          onChange={(e) => setFilters(prev => ({ ...prev, hoursValue: parseInt(e.target.value) }))}
-                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          {[1, 2, 3, 4, 5, 6, 12, 24].map(hour => (
-                            <option key={hour} value={hour}>{hour}</option>
-                          ))}
-                        </select>
-                        <span className="text-sm text-gray-600">hours</span>
-                      </div>
-                    )}
+
+              {/* Mini Calendar - monthly view matching desktop */}
+              <div className="w-full bg-white border border-slate-200 rounded-md p-2.5 mb-4 flex-shrink-0 mt-2.5">
+                <div className="flex justify-between items-center mb-2.5">
+                  <h3 className="text-[14px] font-bold text-[#1e293b]">{format(selectedDate, 'MMMM yyyy')}</h3>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onDateChange(subMonths(selectedDate, 1))}
+                      className="p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDateChange(addMonths(selectedDate, 1))}
+                      className="p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
                   </div>
                 </div>
-                
-                {/* Clear filters button */}
-                {hasActiveFilters() && (
+                <div className="grid grid-cols-7 gap-0.5 text-center mb-1.5">
+                  {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((day) => (
+                    <span key={day} className="text-[10px] font-semibold text-slate-400 uppercase">{day}</span>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-0.5 text-center">
+                  {(() => {
+                    const monthStart = startOfMonth(selectedDate);
+                    const startOffset = (monthStart.getDay() + 6) % 7;
+                    const daysInMonth = getDaysInMonth(selectedDate);
+                    const selectedDay = selectedDate.getDate();
+                    const cells = [];
+                    for (let i = 0; i < startOffset; i++) {
+                      cells.push(<div key={`empty-${i}`} />);
+                    }
+                    for (let d = 1; d <= daysInMonth; d++) {
+                      const isActive = d === selectedDay;
+                      cells.push(
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => onDateChange(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), d))}
+                          className={`w-6 h-6 mx-auto flex items-center justify-center text-[12px] rounded-full hover:bg-slate-100 ${isActive ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700'}`}
+                        >
+                          {d}
+                        </button>
+                      );
+                    }
+                    return cells;
+                  })()}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto flex flex-col gap-6 pb-20 pr-2 custom-scrollbar">
+                {/* Locations accordion */}
+                <div className="flex flex-col gap-2 border-b border-slate-100 pb-4">
                   <button
-                    onClick={() => {
-                      setFilters({
-                        personAppts: false,
-                        groupAppts: false,
-                        providerReserv: false,
-                        nextHours: false,
-                        hoursValue: 3
-                      });
-                    }}
-                    className="w-full mt-4 p-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+                    type="button"
+                    onClick={() => setOpenSection(openSection === 'locations' ? '' : 'locations')}
+                    className="w-full flex justify-between items-center py-2 focus:outline-none"
                   >
-                    Clear all filters
+                    <h3 className="text-[15px] font-bold text-[#1e293b]">Locations</h3>
+                    <ChevronDown size={18} className={`text-slate-500 transition-transform ${openSection === 'locations' ? 'rotate-180' : ''}`} />
                   </button>
-                )}
+                  {openSection === 'locations' && (
+                    <div className="animate-in slide-in-from-top-2 duration-200">
+                      <div className="relative mb-2">
+                        <input
+                          type="text"
+                          placeholder="Search locations..."
+                          value={optionsSearchLocations}
+                          onChange={(e) => setOptionsSearchLocations(e.target.value)}
+                          className="w-full pl-3 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="flex flex-col mt-1 border border-slate-200 rounded-md overflow-hidden max-h-[240px] overflow-y-auto custom-scrollbar">
+                        {optionsDrawerLocations
+                          .filter(loc => !optionsSearchLocations.trim() || loc.toLowerCase().includes(optionsSearchLocations.toLowerCase()))
+                          .map((location) => (
+                            <label key={location} className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-100 bg-white hover:bg-slate-50 cursor-pointer last:border-b-0">
+                              <input
+                                type="checkbox"
+                                checked={selectedLocationIds.includes(location)}
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedLocationIds(prev => [...prev, location]);
+                                  else setSelectedLocationIds(prev => prev.filter(id => id !== location));
+                                }}
+                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-slate-700">{location}</span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Providers accordion */}
+                <div className="flex flex-col gap-2 border-b border-slate-100 pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenSection(openSection === 'providers' ? '' : 'providers')}
+                    className="w-full flex justify-between items-center py-2 focus:outline-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[15px] font-bold text-[#1e293b]">Providers</h3>
+                      <Filter size={14} className="text-slate-400" />
+                    </div>
+                    <ChevronDown size={18} className={`text-slate-500 transition-transform ${openSection === 'providers' ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openSection === 'providers' && (
+                    <div className="animate-in slide-in-from-top-2 duration-200">
+                      <div className="relative mb-2">
+                        <input
+                          type="text"
+                          placeholder="Search providers..."
+                          value={optionsSearchProviders}
+                          onChange={(e) => setOptionsSearchProviders(e.target.value)}
+                          className="w-full pl-3 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="flex flex-col mt-1 border border-slate-200 rounded-md overflow-hidden max-h-[240px] overflow-y-auto custom-scrollbar">
+                        <div className="flex justify-between items-center px-3 py-2 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+                          <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 rounded bg-[#ef4444] flex items-center justify-center text-white">
+                              <Minus size={12} />
+                            </div>
+                            <span className="text-sm text-slate-600 font-medium">Provider</span>
+                          </div>
+                          <span className="text-sm text-slate-600 font-medium">Clients</span>
+                        </div>
+                        {providersToShow
+                          .filter(p => !optionsSearchProviders.trim() || p.label.toLowerCase().includes(optionsSearchProviders.toLowerCase()))
+                          .map((provider) => {
+                            const isSelected = selectedProvidersList.includes(provider.value);
+                            const parts = provider.label.includes(',') ? provider.label.split(/,\s*/) : [provider.label, ''];
+                            const name = parts[0] || provider.label;
+                            const credential = parts[1] || '';
+                            return (
+                              <label
+                                key={provider.id}
+                                className={`flex justify-between items-center px-3 py-2.5 border-b border-slate-100 cursor-pointer last:border-b-0 ${isSelected ? 'bg-blue-50/50 hover:bg-slate-50' : 'bg-white hover:bg-slate-50'}`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {
+                                      if (!onProviderSelectionChange) return;
+                                      if (isSelected) {
+                                        onProviderSelectionChange(selectedProvidersList.filter(id => id !== provider.value));
+                                      } else {
+                                        onProviderSelectionChange([...selectedProvidersList, provider.value]);
+                                      }
+                                    }}
+                                    className={`w-4 h-4 mt-0.5 rounded focus:ring-[#f97316] ${isSelected ? 'border-orange-500 text-[#f97316]' : 'border-slate-300 text-blue-600'}`}
+                                  />
+                                  <span className="text-sm text-slate-700 leading-tight">
+                                    {name}
+                                    {credential && (
+                                      <>
+                                        , <br /><span className="text-slate-500">{credential}</span>
+                                      </>
+                                    )}
+                                  </span>
+                                </div>
+                                <span className="text-sm text-blue-600 font-medium">{provider.clientCount}</span>
+                              </label>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Programs accordion */}
+                <div className="flex flex-col gap-2 border-b border-slate-100 pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenSection(openSection === 'programs' ? '' : 'programs')}
+                    className="w-full flex justify-between items-center py-2 focus:outline-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[15px] font-bold text-[#1e293b]">Programs</h3>
+                      <Filter size={14} className="text-slate-400" />
+                    </div>
+                    <ChevronDown size={18} className={`text-slate-500 transition-transform ${openSection === 'programs' ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openSection === 'programs' && (
+                    <div className="animate-in slide-in-from-top-2 duration-200">
+                      <div className="relative mb-2">
+                        <input
+                          type="text"
+                          placeholder="Search programs..."
+                          value={optionsSearchPrograms}
+                          onChange={(e) => setOptionsSearchPrograms(e.target.value)}
+                          className="w-full pl-3 pr-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="flex flex-col mt-1 border border-slate-200 rounded-md overflow-hidden max-h-[240px] overflow-y-auto custom-scrollbar">
+                        {optionsDrawerPrograms
+                          .filter(prog => !optionsSearchPrograms.trim() || prog.toLowerCase().includes(optionsSearchPrograms.toLowerCase()))
+                          .map((program) => (
+                            <label key={program} className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-100 bg-white hover:bg-slate-50 cursor-pointer last:border-b-0">
+                              <input
+                                type="checkbox"
+                                checked={selectedProgramIds.includes(program)}
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedProgramIds(prev => [...prev, program]);
+                                  else setSelectedProgramIds(prev => prev.filter(id => id !== program));
+                                }}
+                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-slate-700">{program}</span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
       
-      {/* Provider Tabs - Only show if providers are selected and in tabs mode */}
-      {displayProviders.length > 0 && effectiveLayoutMode === 'tabs' && (
-        <div className="border-b border-gray-200 bg-gray-50/50">
-          <div className="px-6 py-2">
-            <div className="flex items-center justify-between">
-              {/* Provider tabs */}
-              <div className="flex space-x-1 overflow-x-auto">
-                {displayProviders.map((provider) => (
-                  <button
-                    key={provider.id}
-                    onClick={() => setActiveProviderId(provider.value)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
-                      activeProviderId === provider.value
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-white border border-transparent'
-                    }`}
-                  >
-                    {provider.label}
-                    {provider.clientCount > 0 && (
-                      <span className={`ml-1.5 text-xs ${
-                        activeProviderId === provider.value ? 'text-blue-600' : 'text-gray-400'
-                      }`}>
-                        ({provider.clientCount})
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              
-              {/* Export Button with Dropdown */}
-              {view === 'agenda' && (
-                <DropdownMenu>
-                  <TooltipProvider>
-                    <TooltipRoot>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <button className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors">
-                            <ArrowUpOnSquareStackIcon className="w-4 h-4 mr-1.5" />
-                            Export
-                            <ChevronRightIcon className="w-3 h-3 ml-1 rotate-90" />
-                          </button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Export agenda data</p>
-                      </TooltipContent>
-                    </TooltipRoot>
-                  </TooltipProvider>
-                  
-                  <DropdownMenuContent align="end" className="w-48">
-                    {/* Export as CSV */}
-                    <DropdownMenuItem 
-                      onClick={() => {
-                        console.log('Exporting as CSV:', agendaData.length, 'appointments');
-                        // Add CSV export logic here
-                        // Example: exportToCSV(agendaData);
-                      }}
-                      className="flex items-center"
-                    >
-                      <svg className="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                      Export as CSV
-                    </DropdownMenuItem>
-                    
-                    {/* Export as PDF */}
-                    <DropdownMenuItem 
-                      onClick={() => {
-                        console.log('Exporting as PDF:', agendaData.length, 'appointments');
-                        // Add PDF export logic here
-                        // Example: exportToPDF(agendaData);
-                      }}
-                      className="flex items-center"
-                    >
-                      <svg className="w-4 h-4 mr-2 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                      Export as PDF
-                    </DropdownMenuItem>
-                    
-                    {/* Export as Excel */}
-                    <DropdownMenuItem 
-                      onClick={() => {
-                        console.log('Exporting as Excel:', agendaData.length, 'appointments');
-                        // Add Excel export logic here
-                        // Example: exportToExcel(agendaData);
-                      }}
-                      className="flex items-center"
-                    >
-                      <svg className="w-4 h-4 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                      Export as Excel
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+      {/* Mobile Active Provider Banner - shows active provider above the view switcher on mobile */}
+      {activeProvider && (
+        <div className={`md:hidden ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-2`}>
+          <div className="flex items-center justify-center gap-2">
+            <h3 className={`text-sm font-semibold ${activeTab === 'provider' ? 'text-blue-900' : 'text-green-900'} truncate`}>{activeProvider.label}</h3>
+            {activeTab === 'provider' && activeProvider.clientCount > 0 && (
+              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 font-medium">
+                {activeProvider.clientCount} clients
+              </span>
+            )}
           </div>
         </div>
       )}
+
+      {/* Mobile View Switchers - Provider View and Calendar View dropdowns side by side */}
+      <div className="md:hidden px-4 py-1.5 bg-white border-b border-slate-100">
+        <div className="flex gap-2 w-full">
+          <div className="relative flex-1 min-w-0">
+            <select
+              className="w-full h-8 appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a73e8]"
+              value={activeTab}
+              onChange={(e) => onTabChange(e.target.value as 'provider' | 'room' | 'patient')}
+            >
+              <option value="provider">Provider View</option>
+              <option value="room">Room View</option>
+              <option value="patient">Patient View</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">
+              <ChevronDown size={14} />
+            </div>
+          </div>
+          <div className="relative flex-1 min-w-0">
+            <select
+              className="w-full h-8 appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a73e8]"
+              value={view}
+              onChange={(e) => onViewChange(e.target.value as 'day' | 'week' | 'month' | 'agenda')}
+            >
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="agenda">Agenda</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">
+              <ChevronDown size={14} />
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Calendar Body - Conditional layout based on provider layout mode */}
       <div className="flex-1 overflow-hidden bg-white smart-scrollbar calendar-main-scroll w-full min-w-0">
@@ -2284,8 +2966,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 }`}
                 style={{ minWidth: (activeTab === 'provider' ? displayProviders : displayPatients).length > 2 ? '300px' : 'auto' }}
               >
-                {/* Entity Header */}
-                <div className={`sticky top-0 z-20 ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-2`}>
+                {/* Entity Header - hidden on mobile (shown via mobile banner above) */}
+                <div className={`hidden md:block sticky top-0 z-20 ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-2`}>
                   <div className="flex items-center justify-center">
                     <div className="text-center">
                       <div className="flex items-center justify-center gap-2">
@@ -2303,46 +2985,39 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 {/* Provider Day Calendar Content */}
                 <div className="h-full overflow-y-auto smart-scrollbar calendar-main-scroll">
                   {/* All-day events */}
-                  <div className="border-b border-gray-200 min-h-[40px] flex items-center px-2 text-sm text-gray-500">
-                    <div className="w-12 pr-1 text-right text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
-                      All day
-                    </div>
-                    <div className="flex-1 relative">
-                      {allDayEvents.map(event => (
-                        <EventCard 
-                          key={event.id} 
-                          event={event}
-                          onViewEvent={handleViewEvent}
-                          onEditEvent={handleEditEvent}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <DayScheduleTimelineRow timeLabel="All day" variant="allDay">
+                    {allDayEvents.map(event => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        onViewEvent={handleViewEvent}
+                        onEditEvent={handleEditEvent}
+                        activeEventId={activeEventId}
+                        onActivateEventId={setActiveEventId}
+                      />
+                    ))}
+                  </DayScheduleTimelineRow>
                   
-                  {/* Time slots */}
+                  {/* Time slots — mobile time gutter + continuous vertical rule */}
                   <div className="relative">
                     {timeSlots.map((time, index) => (
-                      <div key={index} className="flex border-b border-gray-100">
-                        <div className="w-12 pr-1 text-right text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
-                          {time}
-                        </div>
-                        <div className="flex-1 min-h-[48px] relative">
-                          {timeEvents
-                            .filter(event => {
-                              const eventHour = parseInt(event.startTime.split(':')[0]);
-                              return eventHour === index;
-                            })
-                            .map(event => (
-                              <EventCard 
-                                key={event.id} 
-                                event={event}
-                                onViewEvent={handleViewEvent}
-                                onEditEvent={handleEditEvent}
-                              />
-                            ))
-                          }
-                        </div>
-                      </div>
+                      <DayScheduleTimelineRow key={index} timeLabel={time}>
+                        {timeEvents
+                          .filter(event => {
+                            const eventHour = parseInt(event.startTime.split(':')[0], 10);
+                            return eventHour === index;
+                          })
+                          .map(event => (
+                            <EventCard
+                              key={event.id}
+                              event={event}
+                              onViewEvent={handleViewEvent}
+                              onEditEvent={handleEditEvent}
+                              activeEventId={activeEventId}
+                              onActivateEventId={setActiveEventId}
+                            />
+                          ))}
+                      </DayScheduleTimelineRow>
                     ))}
                   </div>
                 </div>
@@ -2353,8 +3028,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           <div className="h-full overflow-y-auto">
             {(activeTab === 'provider' ? displayProviders : displayPatients).map((entity, _) => (
               <div key={entity.id} className="border-b border-gray-200 last:border-b-0">
-                {/* Entity Header */}
-                <div className={`sticky top-0 z-20 ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-6 py-3`}>
+                {/* Entity Header - hidden on mobile (shown via mobile banner above) */}
+                <div className={`hidden md:block sticky top-0 z-20 ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-6 py-3`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       {activeTab === 'provider' ? <UserIcon className="w-5 h-5 text-blue-600" /> : <UserIcon className="w-5 h-5 text-green-600" />}
@@ -2389,44 +3064,37 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                   ) : view === 'day' ? (
                     <div className="relative">
                       {/* All-day events */}
-                      <div className="border-b border-gray-200 min-h-[40px] flex items-center px-4 text-sm text-gray-500">
-                        <div className="w-16 pr-2 text-right text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
-                          All day
-                        </div>
-                        <div className="flex-1 relative">
-                          {allDayEvents.map(event => (
-                            <EventCard 
-                              key={event.id} 
-                              event={event}
-                              onViewEvent={handleViewEvent}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      <DayScheduleTimelineRow timeLabel="All day" variant="allDay">
+                        {allDayEvents.map(event => (
+                          <EventCard
+                            key={event.id}
+                            event={event}
+                            onViewEvent={handleViewEvent}
+                            activeEventId={activeEventId}
+                            onActivateEventId={setActiveEventId}
+                          />
+                        ))}
+                      </DayScheduleTimelineRow>
                       
-                      {/* Time slots */}
+                      {/* Time slots — mobile time gutter */}
                       <div className="relative">
                         {timeSlots.map((time, index) => (
-                          <div key={index} className="flex border-b border-gray-100">
-                            <div className="w-16 pr-2 text-right text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
-                              {time}
-                            </div>
-                            <div className="flex-1 min-h-[48px] relative">
-                              {timeEvents
-                                .filter(event => {
-                                  const eventHour = parseInt(event.startTime.split(':')[0]);
-                                  return eventHour === index;
-                                })
-                                .map(event => (
-                                  <EventCard 
-                                    key={event.id} 
-                                    event={event}
-                                    onViewEvent={handleViewEvent}
-                                  />
-                                ))
-                              }
-                            </div>
-                          </div>
+                          <DayScheduleTimelineRow key={index} timeLabel={time}>
+                            {timeEvents
+                              .filter(event => {
+                                const eventHour = parseInt(event.startTime.split(':')[0], 10);
+                                return eventHour === index;
+                              })
+                              .map(event => (
+                                <EventCard
+                                  key={event.id}
+                                  event={event}
+                                  onViewEvent={handleViewEvent}
+                                  activeEventId={activeEventId}
+                                  onActivateEventId={setActiveEventId}
+                                />
+                              ))}
+                          </DayScheduleTimelineRow>
                         ))}
                       </div>
                     </div>
@@ -2468,44 +3136,37 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
             ) : view === 'day' ? (
               <div className="relative h-full">
                 {/* All-day events */}
-                <div className="border-b border-gray-200 min-h-[40px] flex items-center px-4 text-sm text-gray-500">
-                  <div className="w-16 pr-2 text-right text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
-                    All day
-                  </div>
-                  <div className="flex-1 relative">
-                    {allDayEvents.map(event => (
-                      <EventCard 
-                        key={event.id} 
-                        event={event}
-                        onEditEvent={handleEditEvent}
-                      />
-                    ))}
-                  </div>
-                </div>
+                <DayScheduleTimelineRow timeLabel="All day" variant="allDay">
+                  {allDayEvents.map(event => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      onEditEvent={handleEditEvent}
+                      activeEventId={activeEventId}
+                      onActivateEventId={setActiveEventId}
+                    />
+                  ))}
+                </DayScheduleTimelineRow>
                 
-                {/* Time slots */}
+                {/* Time slots — mobile time gutter */}
                 <div className="relative">
                   {timeSlots.map((time, index) => (
-                    <div key={index} className="flex border-b border-gray-100">
-                      <div className="w-16 pr-2 text-right text-xs text-gray-500 py-2 sticky left-0 bg-white z-10">
-                        {time}
-                      </div>
-                      <div className="flex-1 min-h-[48px] relative">
-                        {timeEvents
-                          .filter(event => {
-                            const eventHour = parseInt(event.startTime.split(':')[0]);
-                            return eventHour === index;
-                          })
-                          .map(event => (
-                            <EventCard 
-                              key={event.id} 
-                              event={event}
-                              onEditEvent={handleEditEvent}
-                            />
-                          ))
-                        }
-                      </div>
-                    </div>
+                    <DayScheduleTimelineRow key={index} timeLabel={time}>
+                      {timeEvents
+                        .filter(event => {
+                          const eventHour = parseInt(event.startTime.split(':')[0], 10);
+                          return eventHour === index;
+                        })
+                        .map(event => (
+                          <EventCard
+                            key={event.id}
+                            event={event}
+                            onEditEvent={handleEditEvent}
+                            activeEventId={activeEventId}
+                            onActivateEventId={setActiveEventId}
+                          />
+                        ))}
+                    </DayScheduleTimelineRow>
                   ))}
                 </div>
               </div>

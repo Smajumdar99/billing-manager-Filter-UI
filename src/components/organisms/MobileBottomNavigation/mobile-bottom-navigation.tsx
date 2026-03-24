@@ -5,7 +5,7 @@ import {
   CalendarDaysIcon, 
   UsersIcon, 
   BellIcon,
-  Bars3Icon,
+  EllipsisHorizontalIcon,
   XMarkIcon,
   MagnifyingGlassIcon,
   ClipboardDocumentIcon,
@@ -17,12 +17,6 @@ import {
   InboxIcon,
   Cog8ToothIcon
 } from '@heroicons/react/24/outline';
-import { 
-  HomeIcon as HomeIconSolid,
-  CalendarDaysIcon as CalendarIconSolid,
-  UsersIcon as UsersIconSolid,
-  BellIcon as BellIconSolid
-} from '@heroicons/react/24/solid';
 
 /**
  * MobileBottomNavigation Component
@@ -41,32 +35,12 @@ interface MobileBottomNavigationProps {
   onSearch?: (searchTerm: string) => void;
 }
 
-// Primary navigation items for bottom bar (most important/frequently used)
+// Primary navigation items for bottom bar (Dashboard, Schedule, Clients, Notifications, More)
 const primaryNavItems = [
-  { 
-    name: 'Dashboard', 
-    icon: HomeIcon, 
-    iconSolid: HomeIconSolid, 
-    route: '/old-ui-dashboard' 
-  },
-  { 
-    name: 'Schedule', 
-    icon: CalendarDaysIcon, 
-    iconSolid: CalendarIconSolid, 
-    route: '/my-calendar' 
-  },
-  { 
-    name: 'Clients', 
-    icon: UsersIcon, 
-    iconSolid: UsersIconSolid, 
-    route: '/clients' 
-  },
-  { 
-    name: 'Notifications', 
-    icon: BellIcon, 
-    iconSolid: BellIconSolid, 
-    route: '/notifications' 
-  },
+  { name: 'Dashboard', icon: HomeIcon, route: '/old-ui-dashboard' },
+  { name: 'Schedule', icon: CalendarDaysIcon, route: '/my-calendar' },
+  { name: 'Clients', icon: UsersIcon, route: '/clients' },
+  { name: 'Notifications', icon: BellIcon, route: '/notifications' },
 ];
 
 // Secondary navigation items for overlay menu
@@ -155,43 +129,39 @@ const MobileBottomNavigation: React.FC<MobileBottomNavigationProps> = ({
           </div>
         )}
 
-        {/* Main Bottom Navigation */}
-        <div className="bg-white border-t border-gray-200 shadow-lg">
-          <div className="flex items-center justify-around py-2">
-            {/* Primary Navigation Items */}
+        {/* Main Bottom Navigation - matches Billing Manager mobile tab label size (text-[10px]) */}
+        <div
+          className="bg-white border-t border-gray-200"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="flex justify-between items-center px-2 py-1">
             {primaryNavItems.map((item) => {
               const isActive = currentActiveItem === item.name;
-              const IconComponent = isActive ? item.iconSolid : item.icon;
-              
+              const Icon = item.icon;
               return (
                 <button
                   key={item.name}
                   onClick={() => handleNavClick(item.name, item.route)}
-                  className={`flex flex-col items-center justify-center px-3 py-2 min-w-0 transition-colors ${
-                    isActive 
-                      ? 'text-blue-600' 
-                      : 'text-gray-500 hover:text-gray-700'
+                  className={`flex flex-col items-center p-2 min-w-[64px] transition-colors ${
+                    isActive ? 'text-blue-600' : 'text-slate-500'
                   }`}
                 >
-                  <IconComponent className="h-6 w-6 mb-1" />
-                  <span className="text-xs font-medium truncate max-w-[60px]">
+                  <Icon className="h-6 w-6" />
+                  <span className="text-[10px] mt-1 font-medium truncate w-full text-center">
                     {item.name}
                   </span>
                 </button>
               );
             })}
-
-            {/* Menu Button */}
+            {/* More - opens overlay menu */}
             <button
               onClick={() => setShowOverlay(true)}
-              className={`flex flex-col items-center justify-center px-3 py-2 min-w-0 transition-colors ${
-                showOverlay 
-                  ? 'text-blue-600' 
-                  : 'text-gray-500 hover:text-gray-700'
+              className={`flex flex-col items-center p-2 min-w-[64px] transition-colors ${
+                showOverlay ? 'text-blue-600' : 'text-slate-500'
               }`}
             >
-              <Bars3Icon className="h-6 w-6 mb-1" />
-              <span className="text-xs font-medium">Menu</span>
+              <EllipsisHorizontalIcon className="h-6 w-6" />
+              <span className="text-[10px] mt-1 font-medium">More</span>
             </button>
           </div>
         </div>
@@ -240,8 +210,7 @@ const MobileBottomNavigation: React.FC<MobileBottomNavigationProps> = ({
               <div className="grid grid-cols-2 gap-2 mb-6">
                 {primaryNavItems.map((item) => {
                   const isActive = currentActiveItem === item.name;
-                  const IconComponent = isActive ? item.iconSolid : item.icon;
-                  
+                  const Icon = item.icon;
                   return (
                     <button
                       key={`overlay-${item.name}`}
@@ -252,7 +221,7 @@ const MobileBottomNavigation: React.FC<MobileBottomNavigationProps> = ({
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      <IconComponent className="h-5 w-5 flex-shrink-0" />
+                      <Icon className="h-5 w-5 flex-shrink-0" />
                       <span className="font-medium">{item.name}</span>
                     </button>
                   );

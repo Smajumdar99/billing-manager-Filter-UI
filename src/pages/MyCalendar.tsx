@@ -315,6 +315,7 @@ const MyCalendar: React.FC = () => {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onMyCalendarToggle={handleMyCalendarToggle}
+            onProviderSelectionChange={setSelectedProviders}
           />
         </div>
       </div>
