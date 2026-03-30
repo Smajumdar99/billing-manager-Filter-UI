@@ -1,4 +1,4 @@
-import { FC, useState, useMemo, useCallback, useEffect } from 'react'
+import { FC, useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useNavigate } from 'react-router-dom'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
@@ -38,12 +38,21 @@ import {
   ChartBarIcon,
   InboxIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
   ChevronUpDownIcon,
   FunnelIcon,
   ArrowsUpDownIcon,
 } from '@heroicons/react/24/outline'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { AlertTriangle, Edit3, FileText, Clock, ChevronDown, MoreHorizontal, Settings } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/atoms/Select/select'
 import { 
   mockBillingEncounters, 
   getBillingQueueStats, 
@@ -111,6 +120,10 @@ export const BillingManagerPage: FC = () => {
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
   const [billingTypeDropdownOpen, setBillingTypeDropdownOpen] = useState(false)
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
+  const [showInsurance, setShowInsurance] = useState(true)
+  const [showForms, setShowForms] = useState(false)
+  const [showClaims, setShowClaims] = useState(false)
+  const [openInsuranceLineId, setOpenInsuranceLineId] = useState<string | null>(null)
   const [showMetrics, setShowMetrics] = useState(false)
   const [expandedMenuItems, setExpandedMenuItems] = useState<Set<string>>(new Set())
 
@@ -134,6 +147,9 @@ export const BillingManagerPage: FC = () => {
   const [showOverrideDialog, setShowOverrideDialog] = useState(false)
   const [overrideActionType, setOverrideActionType] = useState<'override' | 'override_and_generate'>('override')
   const [collapsedEncounterIds, setCollapsedEncounterIds] = useState<Set<string>>(new Set())
+  const [overriddenEncounterIds, setOverriddenEncounterIds] = useState<string[]>([])
+  /** Snapshot of row IDs when Override modal opens — used on Confirm so IDs match even if selection state shifts */
+  const overrideDialogSelectionRef = useRef<string[]>([])
 
   // Handle navigation in the main nav bar
   const handleMainNavigation = (itemName: string) => {
@@ -269,12 +285,12 @@ export const BillingManagerPage: FC = () => {
         break
       case 'override_billing':
       case 'override':
-        // Show override dialog
+        overrideDialogSelectionRef.current = encounterIds.map((id) => String(id).trim())
         setOverrideActionType('override')
         setShowOverrideDialog(true)
         break
       case 'override_and_generate':
-        // Show override dialog for override and generate
+        overrideDialogSelectionRef.current = encounterIds.map((id) => String(id).trim())
         setOverrideActionType('override_and_generate')
         setShowOverrideDialog(true)
         break
@@ -298,14 +314,12 @@ export const BillingManagerPage: FC = () => {
   // Filter and sort encounters based on current filter criteria and sort options
   const filteredEncounters = useMemo(() => {
     let filtered = encounters.filter(encounter => {
-      // Tab-based filtering
+      // Tab-based filtering — overridden encounters always stay visible in "ready"
       if (activeTab === 'ready') {
-        // Show only encounters that are ready to bill (no blocking errors)
-        if (encounter.billingOverrideEnabled || encounter.hasErrors) {
+        if (encounter.hasErrors) {
           return false
         }
       } else if (activeTab === 'blocked') {
-        // Show only encounters that are blocked from billing
         if (!encounter.hasErrors && !encounter.billingOverrideEnabled) {
           return false
         }
@@ -421,14 +435,23 @@ export const BillingManagerPage: FC = () => {
 
   // Handle override confirmation from dialog
   const handleOverrideConfirm = useCallback((reason: string, notes: string) => {
-    const encounterIds = selectedEncounters
-    
-    console.log('Override confirmed:', { reason, notes, encounterIds, actionType: overrideActionType })
+    const fromSnapshot = overrideDialogSelectionRef.current
+    const encounterIds =
+      fromSnapshot.length > 0
+        ? fromSnapshot
+        : selectedEncounters.map((id) => String(id).trim())
+
+    const normalizedIds = [...new Set(encounterIds.map((id) => String(id).trim()))]
+
+    setOverriddenEncounterIds((prev) => [...new Set([...prev.map((id) => String(id).trim()), ...normalizedIds])])
+    overrideDialogSelectionRef.current = []
+
+    console.log('Override confirmed:', { reason, notes, encounterIds: normalizedIds, actionType: overrideActionType })
     
     if (overrideActionType === 'override_and_generate') {
       // Override and generate claims
       setEncounters(prev => prev.map(enc => 
-        encounterIds.includes(enc.id) 
+        normalizedIds.includes(String(enc.id).trim()) 
           ? { 
               ...enc, 
               billingOverrideEnabled: true, 
@@ -444,7 +467,7 @@ export const BillingManagerPage: FC = () => {
     } else {
       // Just override
       setEncounters(prev => prev.map(enc => 
-        encounterIds.includes(enc.id) 
+        normalizedIds.includes(String(enc.id).trim()) 
           ? { 
               ...enc, 
               billingOverrideEnabled: true, 
@@ -875,21 +898,21 @@ export const BillingManagerPage: FC = () => {
         <div className="flex-1 overflow-hidden bg-zinc-100">
           <div className="h-full flex flex-col">
             {/* Header Section with Statistics */}
-            <div className="bg-white border-b border-gray-200 px-3 sm:px-4 py-0.5">
+            <div className="bg-white border-b border-gray-200 px-3 sm:px-4 py-0">
               <div className="flex flex-col">
                 {/* Desktop: Single Row with Title, Metrics, and Actions */}
                 <div className="hidden lg:block">
-                  <div className="p-1">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+                  <div className="py-1 px-0">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 mb-0">
                       {/* Title Section */}
                       <div className="flex-shrink-0">
-                        <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                          <Icon icon="file-invoice-dollar" className="w-4 h-4" />
+                        <h1 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                          <Icon icon="file-invoice-dollar" className="w-3.5 h-3.5" />
                           Billing Manager
                         </h1>
-                        <div className="mt-1">
+                        <div className="mt-0">
                           <div className="flex items-center justify-center gap-2 flex-wrap">
-                            <p className="text-xs text-gray-600">Queue-based billing workflow</p>
+                            <p className="text-[11px] text-gray-500">Queue-based billing workflow</p>
                             {/* Active Filters Display */}
                             {activeFilterCards.length > 0 && (
                               <>
@@ -936,10 +959,10 @@ export const BillingManagerPage: FC = () => {
                           <TooltipTrigger asChild>
                             <button
                               type="button"
-                              className="flex items-center justify-center p-1.5 text-primary hover:text-primary hover:bg-primary/10 rounded-full transition-colors"
+                              className="flex items-center justify-center p-1 text-primary hover:text-primary hover:bg-primary/10 rounded-full transition-colors"
                               aria-label="Billing queue info"
                             >
-                              <Icon icon="info-circle" className="w-4 h-4" />
+                              <Icon icon="info-circle" className="w-3.5 h-3.5" />
                             </button>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
@@ -950,45 +973,45 @@ export const BillingManagerPage: FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setRefreshKey(prev => prev + 1)}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                          className="flex items-center gap-1 text-[11px] px-2 py-1 h-6 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         >
-                          <Icon icon="sync" className="w-3.5 h-3.5" />
+                          <Icon icon="sync" className="w-3 h-3" />
                           Refresh
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => navigate('/billing-reports')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                          className="flex items-center gap-1 text-[11px] px-2 py-1 h-6 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         >
-                          <Icon icon="chart-bar" className="w-3.5 h-3.5" />
+                          <Icon icon="chart-bar" className="w-3 h-3" />
                           Reports
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => navigate('/invoice-manager')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                          className="flex items-center gap-1 text-[11px] px-2 py-1 h-6 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         >
-                          <Icon icon="file-invoice" className="w-3.5 h-3.5" />
+                          <Icon icon="file-invoice" className="w-3 h-3" />
                           Invoice Manager
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => navigate('/encounter-details')}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                          className="flex items-center gap-1 text-[11px] px-2 py-1 h-6 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         >
-                          <Icon icon="file-medical" className="w-3.5 h-3.5" />
+                          <Icon icon="file-medical" className="w-3 h-3" />
                           Encounter Details
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={handleExportCSV}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                          className="flex items-center gap-1 text-[11px] px-2 py-1 h-6 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         >
-                          <Icon icon="download" className="w-3.5 h-3.5" />
+                          <Icon icon="download" className="w-3 h-3" />
                           Export
                         </Button>
                       </div>
@@ -1203,14 +1226,6 @@ export const BillingManagerPage: FC = () => {
                           ? { field: currentSort.field, direction: currentSort.direction }
                           : undefined
                       }
-                      billingTypeValue={billingTypeFilter}
-                      onBillingTypeChange={setBillingTypeFilter}
-                      billingTypeOptions={[
-                        { value: 'all', label: `All Types (${encounters.length})` },
-                        { value: 'hcfa', label: `HCFA (${encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length})` },
-                        { value: 'ub04', label: `UB-04 (${encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length})` },
-                        { value: 'not_set', label: `Not Set (${encounters.filter(e => !e.billType && !e.hcfaBillType).length})` },
-                      ]}
                     />
                   </div>
 
@@ -1250,6 +1265,22 @@ export const BillingManagerPage: FC = () => {
                             ? `${selectedEncounters.length}`
                             : 'All'}
                         </span>
+                      </div>
+
+                      {/* Bill type dropdown */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-sm font-medium text-gray-700">Bill type</span>
+                        <Select value={billingTypeFilter} onValueChange={setBillingTypeFilter}>
+                          <SelectTrigger className="w-[160px] h-8 text-sm bg-slate-50/80 border-gray-200">
+                            <SelectValue placeholder="All" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">{`All (${encounters.length})`}</SelectItem>
+                            <SelectItem value="hcfa">{`HCFA (${encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length})`}</SelectItem>
+                            <SelectItem value="ub04">{`UB-04 (${encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length})`}</SelectItem>
+                            <SelectItem value="not_set">{`Not Set (${encounters.filter(e => !e.billType && !e.hcfaBillType).length})`}</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Center: Tabs + Total immediately after */}
@@ -1305,10 +1336,9 @@ export const BillingManagerPage: FC = () => {
                           }}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 transition-all duration-150 shadow-sm h-8"
                         >
-                          <ChevronUpDownIcon className="w-3.5 h-3.5" />
                           {filteredEncounters.length > 0 && collapsedEncounterIds.size === filteredEncounters.length
-                            ? 'Expand All'
-                            : 'Collapse All'}
+                            ? <><ChevronDownIcon className="w-3.5 h-3.5" /> Expand All</>
+                            : <><ChevronUpIcon className="w-3.5 h-3.5" /> Collapse All</>}
                         </button>
                       </div>
                     </div>
@@ -1347,6 +1377,7 @@ export const BillingManagerPage: FC = () => {
                           onEncounterClick={handleEncounterClick}
                           collapsedEncounterIds={collapsedEncounterIds}
                           onCollapsedEncounterIdsChange={setCollapsedEncounterIds}
+                          overriddenEncounterIds={overriddenEncounterIds}
                           className="h-full"
                         />
                       )
@@ -1362,39 +1393,56 @@ export const BillingManagerPage: FC = () => {
                                 : enc.status === 'paid' || enc.status === 'claim_accepted'
                                   ? 'bg-emerald-50 text-emerald-700'
                                   : 'bg-slate-50 text-slate-700'
+                          const patientInitials = enc.patientName
+                            .split(' ')
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map(part => part[0]?.toUpperCase() ?? '')
+                            .join('')
 
                           return (
                             <div
                               key={enc.id}
                               className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col mx-4"
                             >
+                              {/* Header — name + badge */}
                               <div className="flex justify-between items-start mb-1">
-                                <div>
-                                  <div className="text-[15px] font-semibold text-slate-800">{enc.patientName}</div>
-                                  <div className="text-xs text-slate-500">MRN: {enc.patientMrn}</div>
+                                <div className="flex items-center min-w-0">
+                                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-sm shrink-0">
+                                    {patientInitials}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 ml-1 mr-2">
+                                    <AlertTriangle size={18} className="text-amber-500 fill-amber-100" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-[15px] font-semibold text-slate-800 truncate">{enc.patientName}</div>
+                                    <div className="text-xs text-slate-500">MRN: {enc.patientMrn}</div>
+                                  </div>
                                 </div>
                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium ${statusStyle}`}>
                                   {enc.status.replace(/_/g, ' ')}
                                 </span>
                               </div>
+
+                              {/* Time & Provider */}
                               <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
                                 <span>{enc.treatmentTime || 'N/A'}</span>
                                 <span className="text-slate-300">•</span>
                                 <span>{enc.provider}</span>
                               </div>
+
+                              {/* Billing details */}
                               <div className="mt-3 pt-3 border-t border-slate-50 flex flex-col gap-1">
                                 <span className="text-sm text-slate-600">Code: {enc.hcfaBillType || enc.encounterType}</span>
                                 <span className="text-sm text-slate-600">Facility: {enc.department}</span>
                               </div>
+
+                              {/* Footer — total + actions */}
                               <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center">
                                 <div className="text-sm font-bold text-slate-800">
                                   Total: ${enc.totalCharges.toFixed(2)}
                                 </div>
-                                <button
-                                  type="button"
-                                  className="p-2 text-slate-400 hover:bg-slate-50 rounded-full"
-                                  aria-label="Encounter actions"
-                                >
+                                <button type="button" className="p-2 text-slate-400 hover:bg-slate-50 rounded-full" aria-label="Encounter actions">
                                   <Icon icon="ellipsis-h" className="w-4 h-4" />
                                 </button>
                               </div>
@@ -1611,7 +1659,7 @@ export const BillingManagerPage: FC = () => {
                       {/* ── Billing Type dropdown ── */}
                       {(() => {
                         const billingOpts = [
-                          { value: 'all', label: 'All Types', count: encounters.length },
+                          { value: 'all', label: 'All', count: encounters.length },
                           { value: 'hcfa', label: 'HCFA', count: encounters.filter(e => e.billType === 'professional' || e.hcfaBillType?.includes('HCFA')).length },
                           { value: 'ub04', label: 'UB-04', count: encounters.filter(e => e.billType === 'institutional' || e.hcfaBillType?.includes('UB-04')).length },
                           { value: 'not_set', label: 'Not Set', count: encounters.filter(e => !e.billType && !e.hcfaBillType).length },
@@ -1679,58 +1727,344 @@ export const BillingManagerPage: FC = () => {
                     ) : (
                       <div className="w-full space-y-3 pb-32 bg-slate-50 pt-2">
                         {filteredEncounters.map((enc) => {
-                          const statusStyle = enc.hasErrors
-                            ? 'bg-red-50 text-red-700'
-                            : enc.status === 'ready_to_bill'
-                              ? 'bg-green-50 text-green-700'
-                              : enc.status === 'claim_generated' || enc.status === 'claim_submitted'
-                                ? 'bg-purple-50 text-purple-700'
-                                : enc.status === 'paid' || enc.status === 'claim_accepted'
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : 'bg-slate-50 text-slate-700'
+                          const patientInitials = enc.patientName
+                            .split(' ')
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map(part => part[0]?.toUpperCase() ?? '')
+                            .join('')
+
+                          const mEncStatus = enc.status === 'claim_rejected' || enc.status === 'unauthorized'
+                            ? 'Closed on Error'
+                            : enc.status === 'paid' || enc.status === 'claim_accepted' ? 'Closed' : 'Open'
+
+                          const mBillStatusMap: Record<string, string> = {
+                            'unauthorized': 'Unbilled', 'ready_to_bill': 'No claims generated',
+                            'in_review': 'No claims generated', 'claim_generated': 'Claims generated',
+                            'claim_submitted': 'Claims submitted', 'claim_accepted': 'Billed',
+                            'paid': 'Billed', 'claim_rejected': 'Denied', 'write_off': 'Denied',
+                          }
+
+                          const mFacility: Record<string, string> = {
+                            'Cardiology': 'Community Health Center', 'Emergency': 'CMHC Outpatient - 1.0',
+                            'Neurology': 'Community Health Center', 'Radiology': 'CMHC Outpatient - 1.0',
+                            'Orthopedics': 'Community Health Center', 'Internal Medicine': 'CMHC Outpatient - 1.0',
+                            'Pathology': 'Community Health Center', 'Obstetrics': 'CMHC Outpatient - 1.0',
+                            'Preventive Medicine': 'Community Health Center', 'Critical Care': 'CMHC Outpatient - 1.0',
+                          }
+
+                          const mServiceLines = [
+                            { id: 's1', insurance: 'Primary: Blue Cross Blue Shield', code: '99213', dx: ['Z00.00'], unit: 1, unitPrice: 120, total: 120, type: 'HCFA', pos: '11', rend: enc.provider.replace(/^Dr\.\s*/i, ''), x12: '-', levels: { p: true, s: false, t: false } },
+                            { id: 's2', insurance: 'Primary: Blue Cross Blue Shield', code: '85025', dx: ['Z00.00'], unit: 1, unitPrice: 25, total: 25, type: 'HCFA', pos: '11', rend: enc.provider.replace(/^Dr\.\s*/i, ''), x12: '-', levels: { p: false, s: false, t: false } },
+                          ]
+
+                          const mClaimsHistory = [
+                            { id: 'c1', label: 'Re-opened', date: '01/20/2026' },
+                            { id: 'c2', label: 'Re-opened', date: '01/18/2026' },
+                            { id: 'c3', label: 'Re-opened', date: '01/15/2026' },
+                          ]
 
                           return (
                             <div
                               key={enc.id}
-                              className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col mx-4"
+                              className="bg-white border border-slate-100 rounded-xl shadow-sm flex flex-col mx-4 overflow-hidden"
                             >
-                              {/* Header — name + badge */}
-                              <div className="flex justify-between items-start mb-1">
-                                <div>
-                                  <div className="text-[15px] font-semibold text-slate-800">{enc.patientName}</div>
-                                  <div className="text-xs text-slate-500">MRN: {enc.patientMrn}</div>
+                              {/* ── Collapsed Header ── */}
+                              <div className="p-4 flex flex-col">
+                                {/* Row 1: Avatar + Name + actions */}
+                                <div className="flex justify-between items-start">
+                                  <div className="flex items-center min-w-0 gap-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedEncounters.includes(enc.id)}
+                                      onChange={(e) => handleEncounterSelect(enc.id, e.target.checked)}
+                                      className="w-4 h-4 accent-blue-600 rounded border-slate-300 shrink-0"
+                                    />
+                                    <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                                      {patientInitials}
+                                    </div>
+                                    <AlertTriangle size={16} className="text-amber-500 fill-amber-100 shrink-0" />
+                                    <div className="min-w-0">
+                                      <div className="text-[14px] font-bold text-slate-900 truncate leading-tight">{enc.patientName}</div>
+                                      <div className="text-[11px] text-slate-500 leading-tight">MRN: {enc.patientMrn}</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-slate-400 -mr-2 shrink-0 ml-2">
+                                    <button
+                                      type="button"
+                                      className="p-3 rounded-xl hover:bg-slate-100/50 hover:text-slate-600 transition-colors active:bg-slate-100"
+                                      aria-label="Settings"
+                                    >
+                                      <Settings size={18} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="p-3 rounded-xl hover:bg-slate-100/50 hover:text-slate-600 transition-colors active:bg-slate-100"
+                                      aria-label="More options"
+                                    >
+                                      <MoreHorizontal size={18} />
+                                    </button>
+                                  </div>
                                 </div>
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium ${statusStyle}`}>
-                                  {enc.status.replace(/_/g, ' ')}
-                                </span>
-                              </div>
 
-                              {/* Time & Provider */}
-                              <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                                <span>{enc.treatmentTime || 'N/A'}</span>
-                                <span className="text-slate-300">•</span>
-                                <span>{enc.provider}</span>
-                              </div>
+                                {/* Detailed Encounter Stats (Compact Mobile) */}
+                                <div className="grid grid-cols-2 gap-y-2.5 gap-x-3 my-2">
+                                  {/* Row 1 */}
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Encounter ID</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEncounterClick(enc)}
+                                      className="text-[11.5px] text-blue-600 hover:underline truncate leading-tight text-left"
+                                    >
+                                      {enc.id} ({new Date(enc.dateOfService).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })})
+                                    </button>
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Treatment Time</span>
+                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{enc.treatmentTime || 'N/A'}</span>
+                                  </div>
 
-                              {/* Billing details */}
-                              <div className="mt-3 pt-3 border-t border-slate-50 flex flex-col gap-1">
-                                <span className="text-sm text-slate-600">Code: {enc.hcfaBillType || enc.encounterType}</span>
-                                <span className="text-sm text-slate-600">Facility: {enc.department}</span>
-                              </div>
+                                  {/* Row 2 */}
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Provider</span>
+                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{enc.provider}</span>
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Rend. Prov.</span>
+                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{enc.provider.replace(/^Dr\.\s*/i, '')}</span>
+                                  </div>
 
-                              {/* Footer — total + actions */}
-                              <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center">
-                                <div className="text-sm font-bold text-slate-800">
-                                  Total: ${enc.totalCharges.toFixed(2)}
+                                  {/* Row 3 */}
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Facility</span>
+                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{mFacility[enc.department] || 'Community Health Center'}</span>
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Place of Serv.</span>
+                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">11 - Office</span>
+                                  </div>
+
+                                  {/* Row 4 */}
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Enc. Status</span>
+                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{mEncStatus}</span>
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Bill Status</span>
+                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{mBillStatusMap[enc.status] || 'Unbilled'}</span>
+                                  </div>
+
+                                  {/* Row 5 - Fee Sheet & Total */}
+                                  <div className="flex flex-col pt-2 border-t border-slate-100 mt-0.5">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Fee Sheet</span>
+                                    <a
+                                      href="#"
+                                      className="text-[11.5px] text-blue-600 hover:underline truncate w-fit leading-tight"
+                                      onClick={(e) => e.preventDefault()}
+                                    >
+                                      View Fee Sheet
+                                    </a>
+                                  </div>
+                                  <div className="flex flex-col pt-2 border-t border-slate-100 mt-0.5 items-start">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Total Amount</span>
+                                    <span className="text-[13px] font-bold text-slate-900 leading-tight tabular-nums">
+                                      ${enc.totalCharges.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  className="p-2 text-slate-400 hover:bg-slate-50 rounded-full"
-                                  aria-label="Encounter actions"
-                                >
-                                  <Icon icon="ellipsis-h" className="w-4 h-4" />
-                                </button>
                               </div>
+
+                              {/* ── Accordions (always visible) ── */}
+                              <div className="flex flex-col gap-2 mt-1.5 px-4 pb-3">
+                                  {/* [3B] Insurance Sub-Cards */}
+                                  <div className="flex flex-col">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setShowInsurance(!showInsurance)
+                                      }}
+                                      className="flex items-center justify-between w-full px-3.5 py-1.5 bg-white border border-slate-200/80 rounded-md shadow-sm hover:border-slate-300 active:bg-slate-50 transition-all duration-150 group"
+                                    >
+                                      <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-widest">Insurance &amp; Codes</span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-slate-400 font-medium tabular-nums">{mServiceLines.length} lines</span>
+                                        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showInsurance ? 'rotate-180' : ''}`} />
+                                      </div>
+                                    </button>
+                                    {showInsurance && (
+                                      <div className="mt-2 mb-2 rounded-lg border border-slate-100 bg-slate-50/70 p-2.5">
+                                      <div className="flex flex-col gap-3">
+                                      {mServiceLines.map((svc) => (
+                                        <div key={svc.id} className="bg-white border border-slate-100 rounded-xl shadow-sm p-3.5 flex flex-col gap-3 mb-0 last:mb-0">
+                                          <div className="flex items-center justify-between gap-2 min-w-0">
+                                            <button
+                                              type="button"
+                                              onClick={() => setOpenInsuranceLineId(prev => (prev === svc.id ? null : svc.id))}
+                                              className="flex items-center justify-between flex-1 min-w-0 mr-3 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-[12px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors active:bg-slate-200"
+                                            >
+                                              <span className="truncate text-left">{svc.insurance}</span>
+                                              <ChevronDown
+                                                size={14}
+                                                className={`text-slate-400 shrink-0 ml-2 transition-transform ${openInsuranceLineId === svc.id ? 'rotate-180' : ''}`}
+                                              />
+                                            </button>
+                                            <div className="flex items-center gap-0.5 shrink-0">
+                                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${svc.levels.p ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                {svc.levels.p ? '✓' : '⏱'} 1
+                                              </span>
+                                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${svc.levels.s ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
+                                                {svc.levels.s ? '✓' : '–'} 2
+                                              </span>
+                                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${svc.levels.t ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
+                                                {svc.levels.t ? '✓' : '–'} 3
+                                              </span>
+                                            </div>
+                                          </div>
+                                          {openInsuranceLineId === svc.id && (
+                                            <div className="flex flex-col rounded-lg border border-slate-100 bg-white shadow-sm overflow-hidden">
+                                              {[
+                                                'Primary: Blue Cross Blue Shield',
+                                                'Secondary: Aetna',
+                                                'Tertiary: Self Pay',
+                                              ].map((label) => (
+                                                <button
+                                                  key={label}
+                                                  type="button"
+                                                  onClick={() => setOpenInsuranceLineId(null)}
+                                                  className="w-full text-left px-3 py-2.5 text-[12px] text-slate-700 hover:bg-slate-50 active:bg-slate-100 border-b border-slate-100 last:border-b-0"
+                                                >
+                                                  {label}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                          <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
+                                            <div className="flex flex-col min-w-0">
+                                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-0.5">Code</span>
+                                              <span className="text-[12px] text-blue-600 font-medium truncate">
+                                                {svc.code} ({svc.dx.join(', ')})
+                                              </span>
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-0.5">Diagnosis</span>
+                                              <span className="text-[12px] text-slate-700 font-medium truncate">
+                                                {svc.dx.length ? svc.dx.join(', ') : '—'}
+                                              </span>
+                                            </div>
+                                            <div className="flex flex-col items-end min-w-0">
+                                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-0.5">Total</span>
+                                              <span className="text-[13px] text-slate-900 font-bold tabular-nums">${svc.total.toFixed(2)}</span>
+                                            </div>
+                                          </div>
+                                          <div className="grid grid-cols-3 gap-y-2.5 gap-x-2 border-t border-slate-100 pt-3 mt-1">
+                                            <div className="flex flex-col">
+                                              <span className="text-[9px] font-semibold text-slate-500 uppercase">Unit</span>
+                                              <span className="text-[11px] text-slate-700">{svc.unit}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-[9px] font-semibold text-slate-500 uppercase">Unit Price</span>
+                                              <span className="text-[11px] text-slate-700">${svc.unitPrice.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-[9px] font-semibold text-slate-500 uppercase">Billing Type</span>
+                                              <span className="text-[11px] text-slate-700">{svc.type}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-[9px] font-semibold text-slate-500 uppercase">POS</span>
+                                              <span className="text-[11px] text-slate-700">{svc.pos}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-[9px] font-semibold text-slate-500 uppercase">Rend</span>
+                                              <span className="text-[11px] text-slate-700">{svc.rend}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-[9px] font-semibold text-slate-500 uppercase">X12 Partner</span>
+                                              <span className="text-[11px] text-slate-700">{svc.x12}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* [3C] Edit Forms + Claims History */}
+                                  <div className="flex flex-col">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setShowForms(!showForms)
+                                        }}
+                                        className="flex items-center justify-between w-full px-3.5 py-1.5 bg-white border border-slate-200/80 rounded-md shadow-sm hover:border-slate-300 active:bg-slate-50 transition-all duration-150 group"
+                                      >
+                                        <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-700 uppercase tracking-widest">
+                                          <Edit3 size={13} className="text-slate-400" /> Edit Forms
+                                        </div>
+                                        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showForms ? 'rotate-180' : ''}`} />
+                                      </button>
+                                      {showForms && (
+                                        <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50/70 p-2.5">
+                                        <div className="flex flex-col gap-1.5 pl-0.5">
+                                          <button type="button" className="flex items-center justify-between py-2.5 text-left w-full active:bg-slate-100 transition-colors">
+                                            <div className="flex items-center gap-2 text-[13px] font-medium text-blue-600">
+                                              <FileText size={14} className="text-blue-400 shrink-0" />
+                                              New Patient Encounter
+                                            </div>
+                                            <ChevronDown size={14} className="text-slate-400 -rotate-90 shrink-0" />
+                                          </button>
+                                          <button type="button" className="flex items-center justify-between py-2.5 text-left w-full active:bg-slate-100 transition-colors">
+                                            <div className="flex items-center gap-2 text-[13px] font-medium text-blue-600">
+                                              <FileText size={14} className="text-blue-400 shrink-0" />
+                                              Services Conclusion Plan
+                                            </div>
+                                            <ChevronDown size={14} className="text-slate-400 -rotate-90 shrink-0" />
+                                          </button>
+                                        </div>
+                                        </div>
+                                      )}
+                                  </div>
+
+                                  <div className="flex flex-col">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setShowClaims(!showClaims)
+                                        }}
+                                        className="flex items-center justify-between w-full px-3.5 py-1.5 bg-white border border-slate-200/80 rounded-md shadow-sm hover:border-slate-300 active:bg-slate-50 transition-all duration-150 group"
+                                      >
+                                        <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-700 uppercase tracking-widest">
+                                          <Clock size={13} className="text-slate-400" /> Claims History
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[9px] font-semibold text-slate-500">Last 30 Days</span>
+                                          <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showClaims ? 'rotate-180' : ''}`} />
+                                        </div>
+                                      </button>
+                                      {showClaims && (
+                                        <div className="mt-2 mb-2 rounded-lg border border-slate-100 bg-slate-50/70 p-2">
+                                          <div className="flex flex-col gap-0 overflow-hidden rounded-md border border-slate-100 bg-white">
+                                          <div className="flex flex-col max-h-[100px] overflow-y-auto divide-y divide-slate-100 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                                            {mClaimsHistory.map((entry) => (
+                                              <div key={entry.id} className="flex items-center justify-between py-2.5 px-3">
+                                                <div className="flex items-center gap-2 text-[12px] text-slate-700 font-medium">
+                                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                                                  {entry.label}
+                                                </div>
+                                                <span className="text-[11px] text-slate-400 tabular-nums shrink-0">{entry.date}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                  </div>
+
+                                </div>
                             </div>
                           )
                         })}
@@ -1878,7 +2212,10 @@ export const BillingManagerPage: FC = () => {
       {/* Override Dialog */}
       <OverrideDialog
         open={showOverrideDialog}
-        onClose={() => setShowOverrideDialog(false)}
+        onClose={() => {
+          overrideDialogSelectionRef.current = []
+          setShowOverrideDialog(false)
+        }}
         encounters={selectedEncounterObjects}
         onConfirm={handleOverrideConfirm}
         actionType={overrideActionType}

@@ -1,13 +1,9 @@
 import { Dispatch, FC, SetStateAction, useState, useCallback, useEffect } from 'react'
 import { BillingEncounter } from '@/types/billing-manager'
-import {
-  ChevronDownIcon,
-  DocumentTextIcon,
-  ClockIcon,
-  PencilSquareIcon,
-} from '@heroicons/react/24/outline'
+import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExclamationTriangle, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons'
+import { AlertTriangle, Edit3, Clock, FileText } from 'lucide-react'
 import {
   TooltipProvider,
   TooltipRoot,
@@ -32,6 +28,8 @@ export interface BillingViewCardsListingProps {
   collapsedEncounterIds?: Set<string>
   onCollapsedEncounterIdsChange?: Dispatch<SetStateAction<Set<string>>>
   className?: string
+  /** Encounter IDs with confirmed override — red override indicator per row */
+  overriddenEncounterIds?: string[]
 }
 
 /**
@@ -42,6 +40,9 @@ export interface BillingViewCardsListingProps {
  * Mobile-first responsive design with proper information hierarchy.
  */
 // Service line item interface for billing
+const formatUsd = (amount: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
+
 interface ServiceLineItem {
   id: string
   serviceCode: string
@@ -67,7 +68,8 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
   onEncounterClick,
   collapsedEncounterIds: externalCollapsedIds,
   onCollapsedEncounterIdsChange,
-  className = ''
+  className = '',
+  overriddenEncounterIds = []
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEncounterId, setSelectedEncounterId] = useState<string>('');
@@ -366,7 +368,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 
   return (
     <TooltipProvider>
-      <div className={`space-y-2 overflow-y-auto pt-0 ${className}`}>
+      <div className={`space-y-1 overflow-y-auto pt-0 ${className}`}>
         <style>
           {`
             .ag-header-cell-center .ag-header-cell-label {
@@ -399,103 +401,127 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
             return (
               <div
                 key={encounter.id}
-                className={`bg-white rounded-lg border transition-all duration-200 hover:shadow-md ${
+                className={`bg-white rounded-md border transition-all duration-150 hover:shadow-sm ${
                   isSelected 
                     ? 'border-blue-500 shadow-sm' 
                     : 'border-slate-200 hover:border-slate-300 shadow-sm'
                 }`}
               >
-                {/* Card Header — Clean flexbox layout */}
-                <div className="flex items-center justify-between w-full p-4 bg-white border-b border-slate-200 rounded-t-lg">
+                {/* Card Header — Compact flexbox layout */}
+                <div className="flex items-center justify-between w-full py-2 px-4 bg-white border-b border-slate-200 rounded-t-md">
 
                   {/* LEFT — Patient identity (fixed width) */}
-                  <div className="flex items-center gap-3 w-[210px] shrink-0">
+                  <div className="flex items-center gap-2 w-56 shrink-0">
                     <input
                       type="checkbox"
                       id={`encounter-select-${encounter.id}`}
                       checked={isSelected}
                       onChange={(e) => onEncounterSelect(encounter.id, e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 accent-blue-600 cursor-pointer shrink-0"
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 accent-blue-600 cursor-pointer shrink-0"
                       aria-label={`Select encounter ${encounter.id} for ${encounter.patientName}`}
                     />
 
-                    {encounter.hasErrors && encounter.errorSeverity === 'critical' && (
-                      <TooltipRoot>
-                        <TooltipTrigger asChild>
-                          <button className="p-0.5 shrink-0" aria-label="Critical error">
-                            <FontAwesomeIcon icon={faExclamationTriangle} className="w-3.5 h-3.5 text-red-500" aria-hidden="true" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent><p className="text-xs">Form completion error</p></TooltipContent>
-                      </TooltipRoot>
-                    )}
-
-                    <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0 select-none">
+                    <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] leading-none font-bold shrink-0 select-none">
                       {encounter.patientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
 
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-bold text-slate-900 truncate">{encounter.patientName}</span>
-                      <span className="text-xs text-slate-500">MRN: {encounter.patientMrn}</span>
+                    <div className="flex items-center gap-1 ml-0.5">
+                      <div className="relative flex items-center justify-center group cursor-help">
+                        <AlertTriangle size={14} className="text-amber-500" style={{ fill: '#fef3c7' }} />
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] pointer-events-none">
+                          <div className="font-semibold text-amber-300 mb-1">[Golden Thread Rule]</div>
+                          One or more forms do not meet the golden thread rules: GT
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                        </div>
+                      </div>
+                      {/* Alert 2: Override Indicator */}
+                      {overriddenEncounterIds.some(
+                        (oid) => String(oid).trim() === String(encounter.id).trim()
+                      ) && (
+                        <div className="relative flex items-center justify-center group cursor-help">
+                          <AlertTriangle size={14} className="text-red-500 fill-red-100" />
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] pointer-events-none">
+                            <div className="font-semibold text-red-300 mb-1">Override Applied</div>
+                            Overridden by: Admin Ensoftek on 25/03/2026 20:04:35
+                            <br />
+                            <span className="text-slate-300">CANS Assessment Only</span>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col truncate ml-0.5">
+                      <span className="text-[14px] font-bold text-slate-900 leading-none truncate">{encounter.patientName}</span>
+                      <span className="text-[11.5px] text-slate-500 truncate leading-none mt-0.5">MRN: {encounter.patientMrn}</span>
                     </div>
                   </div>
 
-                  {/* MIDDLE — Data columns */}
-                  <div className="flex items-center gap-5 flex-1 pl-5 border-l border-slate-100 min-w-0 overflow-x-auto scrollbar-hide">
+                  <div className="h-8 w-px bg-slate-200 mx-5 shrink-0"></div>
 
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Encounter ID</span>
-                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  {/* MIDDLE — Data columns */}
+                  <div className="flex items-center gap-7 flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+
+                    <div className="flex flex-col shrink-0">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Encounter ID</span>
+                      <div className="flex items-center whitespace-nowrap">
                         <button
                           onClick={() => handleEncounterClick(encounter)}
-                          className="text-[13px] font-medium text-[#1a73e8] hover:underline cursor-pointer"
+                          className="text-[12.5px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
                           aria-label={`View details for encounter ${encounter.id}`}
                         >
                           {encounter.id} ({new Date(encounter.dateOfService).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })})
                         </button>
-                        <span className="text-slate-300">&bull;</span>
+                        <span className="text-slate-300 mx-1.5">•</span>
                         <button
                           onClick={() => console.log('View Fee Sheet for', encounter.id)}
-                          className="text-[12px] text-[#1a73e8] hover:underline cursor-pointer"
+                          className="text-[12.5px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
                         >
                           View Fee Sheet
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Treatment Time</span>
-                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{encounter.treatmentTime || '-'}</span>
+                    <div className="flex flex-col shrink-0">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Treatment Time</span>
+                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.treatmentTime || '-'}</span>
                     </div>
 
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Provider</span>
-                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{encounter.provider}</span>
+                    <div className="flex flex-col shrink-0">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Provider</span>
+                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider}</span>
                     </div>
 
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Rend</span>
-                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{encounter.provider.replace(/^Dr\.\s*/i, '')}</span>
+                    <div className="flex flex-col shrink-0">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Rend</span>
+                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider.replace(/^Dr\.\s*/i, '')}</span>
                     </div>
 
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Facility</span>
-                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap" title={getFacilityName(encounter.department)}>{getFacilityName(encounter.department)}</span>
+                    <div className="flex flex-col shrink-0">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Facility</span>
+                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap" title={getFacilityName(encounter.department)}>{getFacilityName(encounter.department)}</span>
                     </div>
 
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Enc. Status</span>
-                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{encounterStatus}</span>
+                    <div className="flex flex-col shrink-0">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Enc. Status</span>
+                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounterStatus}</span>
                     </div>
 
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Bill Status</span>
-                      <span className="text-[13px] font-medium text-slate-800 whitespace-nowrap">{billingStatus}</span>
+                    <div className="flex flex-col shrink-0">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Bill Status</span>
+                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{billingStatus}</span>
+                    </div>
+
+                    <div className="flex flex-col shrink-0 min-w-[5rem] items-end text-right">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Amount</span>
+                      <span className="text-[13px] font-bold text-slate-900 leading-none whitespace-nowrap tabular-nums">
+                        {formatUsd(encounter.totalCharges ?? 0)}
+                      </span>
                     </div>
                   </div>
 
-                  {/* RIGHT — Actions (dropdown chevron, gear, kebab) */}
-                  <div className="flex items-center gap-3 shrink-0 pl-4 border-l border-slate-100">
+                  {/* RIGHT — Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0 pl-3 border-l border-slate-100">
                     <TooltipRoot>
                       <TooltipTrigger asChild>
                         <button
@@ -637,25 +663,25 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 
                 {/* Card Body — hidden in collapsed mode (only underlined header details visible) */}
                 {!collapsedDetailsIds.has(encounter.id) && (
-                <div className="p-3 md:p-4 relative" style={{ zIndex: 1 }}>
+                <div className="px-2 py-1.5 relative" style={{ zIndex: 1 }}>
 
                   {/* Insurance/Billing data table */}
-                  <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
-                    <table className="w-full min-w-[800px] text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="pl-3 pr-0 py-2 text-center font-medium text-gray-700 w-6"></th>
-                          <th className="pl-0 pr-1 py-2 text-center font-medium text-gray-700">Insurance Levels</th>
-                          <th className="px-3 py-2 text-left font-medium text-gray-700 w-48">Insurance</th>
-                          <th className="px-3 py-2 text-center font-medium text-gray-700">Billing Type</th>
-                          <th className="px-3 py-2 text-center font-medium text-gray-700">X12 Partner</th>
-                          <th className="px-3 py-2 text-left font-medium text-gray-700">Code</th>
-                          <th className="px-3 py-2 text-center font-medium text-gray-700">Unit</th>
-                          <th className="px-3 py-2 text-right font-medium text-gray-700">Unit Price</th>
-                          <th className="px-3 py-2 text-center font-medium text-gray-700">POS</th>
-                          <th className="px-3 py-2 text-left font-medium text-gray-700">Diagnosis</th>
-                          <th className="px-3 py-2 text-left font-medium text-gray-700">Rend</th>
-                          <th className="px-3 py-2 text-right font-medium text-gray-700">Total</th>
+                  <div className="overflow-x-auto -mx-2 md:mx-0 px-2 md:px-0">
+                    <table className="w-full min-w-[800px] text-[11.5px] border-collapse">
+                      <thead className="bg-slate-50 border-y border-slate-200">
+                        <tr>
+                          <th className="pl-2 pr-0 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-6"></th>
+                          <th className="pl-0 pr-1 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Insurance Levels</th>
+                          <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-44">Insurance</th>
+                          <th className="px-2 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Billing Type</th>
+                          <th className="px-2 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">X12 Partner</th>
+                          <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Code</th>
+                          <th className="px-2 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Unit</th>
+                          <th className="px-2 py-1.5 text-right text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Unit Price</th>
+                          <th className="px-2 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">POS</th>
+                          <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Diagnosis</th>
+                          <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Rend</th>
+                          <th className="px-2 py-1.5 text-right text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -669,16 +695,16 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                           <>
                           <tr
                             key={service.id}
-                            className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${service.hasError ? 'bg-red-50' : 'bg-white'}`}
+                            className={`border-b border-slate-100 last:border-0 hover:bg-blue-50/20 transition-colors ${service.hasError ? 'bg-red-50' : 'bg-white'}`}
                           >
                             {/* Status Icon */}
-                            <td className="pl-3 pr-0 py-1.5 text-center">
+                            <td className="pl-2 pr-0 py-1 text-center">
                               <TooltipRoot>
                                 <TooltipTrigger asChild>
                                   <span className="inline-block cursor-help">
                                     <FontAwesomeIcon 
                                       icon={faFileInvoiceDollar} 
-                                      className={`w-4 h-4 ${isServiceBilled ? 'text-green-600' : 'text-gray-400'}`}
+                                      className={`w-3.5 h-3.5 ${isServiceBilled ? 'text-green-600' : 'text-gray-400'}`}
                                     />
                                   </span>
                                 </TooltipTrigger>
@@ -689,18 +715,18 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </td>
                             
                             {/* Insurance Levels */}
-                            <td className="pl-0 pr-1 py-1.5 text-center">
+                            <td className="pl-0 pr-1 py-1 text-center">
                               {service.insuranceLevels ? (
                                 <TooltipRoot>
                                   <TooltipTrigger asChild>
-                                    <div className="inline-flex items-center border border-gray-300 rounded-md overflow-hidden cursor-help">
+                                    <div className="inline-flex items-center border border-slate-200 rounded-md overflow-hidden cursor-help">
                                       {/* Primary - 1 */}
-                                      <div className={`px-2 py-1 text-xs font-medium flex items-center justify-center gap-1 min-w-[28px] border-r border-gray-300 ${
+                                      <div className={`py-0.5 px-1.5 text-[10px] font-medium flex items-center justify-center gap-0.5 min-w-[22px] border-r border-slate-200 ${
                                         service.insuranceLevels.primary.billed 
-                                          ? 'bg-emerald-100 text-emerald-700' 
+                                          ? 'bg-emerald-50 text-emerald-700' 
                                           : service.insuranceLevels.primary.status === 'not_applicable'
-                                          ? 'bg-gray-100 text-gray-400'
-                                          : 'bg-amber-100 text-amber-700'
+                                          ? 'bg-slate-100 text-slate-400'
+                                          : 'bg-amber-50 text-amber-700'
                                       }`}>
                                         {service.insuranceLevels.primary.billed && (
                                           <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 448 512">
@@ -716,14 +742,14 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                                       </div>
                                       
                                       {/* Secondary - 2 */}
-                                      <div className={`px-2 py-1 text-xs font-medium flex items-center justify-center gap-1 min-w-[28px] border-r border-gray-300 ${
+                                      <div className={`py-0.5 px-1.5 text-[10px] font-medium flex items-center justify-center gap-0.5 min-w-[22px] border-r border-slate-200 ${
                                         service.insuranceLevels.secondary.billed 
-                                          ? 'bg-emerald-100 text-emerald-700' 
+                                          ? 'bg-emerald-50 text-emerald-700' 
                                           : service.insuranceLevels.secondary.status === 'not_applicable'
-                                          ? 'bg-gray-100 text-gray-400'
+                                          ? 'bg-slate-100 text-slate-400'
                                           : service.insuranceLevels.primary.billed
-                                          ? 'bg-amber-100 text-amber-700'
-                                          : 'bg-gray-100 text-gray-400'
+                                          ? 'bg-amber-50 text-amber-700'
+                                          : 'bg-slate-100 text-slate-400'
                                       }`}>
                                         {service.insuranceLevels.secondary.billed && (
                                           <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 448 512">
@@ -739,14 +765,14 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                                       </div>
                                       
                                       {/* Tertiary - 3 */}
-                                      <div className={`px-2 py-1 text-xs font-medium flex items-center justify-center gap-1 min-w-[28px] ${
+                                      <div className={`py-0.5 px-1.5 text-[10px] font-medium flex items-center justify-center gap-0.5 min-w-[22px] ${
                                         service.insuranceLevels.tertiary.billed 
-                                          ? 'bg-emerald-100 text-emerald-700' 
+                                          ? 'bg-emerald-50 text-emerald-700' 
                                           : service.insuranceLevels.tertiary.status === 'not_applicable'
-                                          ? 'bg-gray-100 text-gray-400'
+                                          ? 'bg-slate-100 text-slate-400'
                                           : service.insuranceLevels.secondary.billed
-                                          ? 'bg-amber-100 text-amber-700'
-                                          : 'bg-gray-100 text-gray-400'
+                                          ? 'bg-amber-50 text-amber-700'
+                                          : 'bg-slate-100 text-slate-400'
                                       }`}>
                                         {service.insuranceLevels.tertiary.billed && (
                                           <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 448 512">
@@ -781,9 +807,9 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </td>
                             
                             {/* Insurance Select */}
-                            <td className="px-3 py-2.5">
+                            <td className="px-2 py-1.5">
                               <Select defaultValue="primary">
-                                <SelectTrigger className="h-8 text-xs w-full [&>span]:truncate [&>span]:block [&>span]:overflow-hidden [&>span]:whitespace-nowrap">
+                                <SelectTrigger className="h-6 text-[11px] w-full bg-transparent border border-slate-200 text-slate-600 shadow-sm hover:bg-white [&>span]:truncate [&>span]:block [&>span]:overflow-hidden [&>span]:whitespace-nowrap">
                                   <SelectValue placeholder="Select insurance" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -796,50 +822,49 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </td>
                             
                             {/* Billing Type */}
-                            <td className="px-3 py-2.5 text-center text-gray-900">HCFA</td>
+                            <td className="px-2 py-1.5 text-center text-slate-700">HCFA</td>
                             
                             {/* X12 Partner */}
-                            <td className="px-3 py-2.5 text-center text-gray-900">-</td>
+                            <td className="px-2 py-1.5 text-center text-slate-700">-</td>
                             
                             {/* CPT Code */}
-                            <td className="px-3 py-2.5">
-                              <div className="flex flex-col gap-0.5">
+                            <td className="px-2 py-1.5">
+                              <div className="flex flex-col">
                                 <button
-                                  className="font-medium text-blue-700 hover:text-blue-900 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded text-left"
+                                  className="text-[11.5px] leading-tight font-medium text-blue-700 hover:text-blue-900 hover:underline focus:outline-none rounded text-left"
                                   onClick={() => {
-                                    // Handle CPT code click - can open modal or navigate
                                     console.log('CPT Code clicked:', service.serviceCode)
                                   }}
                                 >
                                   {service.serviceCode} {service.diagnosisCodes && service.diagnosisCodes.length > 0 && `(${service.diagnosisCodes.join(', ')})`}
                                 </button>
-                                <span className="text-[10px] text-gray-500 uppercase">CPT4</span>
+                                <span className="text-[9px] text-gray-500 uppercase leading-none">CPT4</span>
                               </div>
                             </td>
                             
                             {/* Quantity */}
-                            <td className="px-3 py-2.5 text-center text-gray-900">{service.quantity}</td>
+                            <td className="px-2 py-1.5 text-center text-slate-700">{service.quantity}</td>
                             
                             {/* Unit Price */}
-                            <td className="px-3 py-2.5 text-right text-gray-900">${service.unitPrice.toFixed(2)}</td>
+                            <td className="px-2 py-1.5 text-right text-slate-700">${service.unitPrice.toFixed(2)}</td>
                             
                             {/* POS */}
-                            <td className="px-3 py-2.5 text-center text-gray-600">{service.placeOfService || '-'}</td>
+                            <td className="px-2 py-1.5 text-center text-slate-600">{service.placeOfService || '-'}</td>
                             
                             {/* Diagnosis */}
-                            <td className="px-3 py-2.5 text-gray-600">{service.diagnosisCodes?.join(', ') || '-'}</td>
+                            <td className="px-2 py-1.5 text-slate-600">{service.diagnosisCodes?.join(', ') || '-'}</td>
                             
                             {/* Rendering Provider */}
-                            <td className="px-3 py-2.5 text-gray-900">{encounter.provider.replace(/^Dr\.\s*/i, '')}</td>
+                            <td className="px-2 py-1.5 text-slate-700">{encounter.provider.replace(/^Dr\.\s*/i, '')}</td>
                             
                             {/* Total */}
-                            <td className="px-3 py-2.5 text-right font-semibold text-gray-900">${service.totalPrice.toFixed(2)}</td>
+                            <td className="px-2 py-1.5 text-right font-semibold text-slate-800">${service.totalPrice.toFixed(2)}</td>
                           </tr>
                           {service.hasError && service.errorMessage && (
                             <tr className="bg-red-50">
-                              <td colSpan={12} className="px-3 py-2 text-left">
-                                <div className="flex items-center gap-2 text-red-700">
-                                  <span className="text-sm font-medium">{service.errorMessage}</span>
+                              <td colSpan={12} className="px-2 py-1 text-left">
+                                <div className="flex items-center gap-1.5 text-red-700">
+                                  <span className="text-[11px] font-medium">{service.errorMessage}</span>
                                 </div>
                               </td>
                             </tr>
@@ -851,58 +876,57 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                     </table>
                   </div>
 
-                  {/* ── More Details (always visible) ── */}
-                  <div className="mt-3 border-t border-slate-100 pt-3 grid grid-cols-2 gap-4 px-2 pb-3">
+                  {/* ── Split footer: Edit Forms | Claims History ── */}
+                  <div className="w-full grid grid-cols-2 divide-x divide-slate-200 border-t border-slate-200 bg-slate-50/50">
 
-                    {/* Left — Edit Forms box */}
-                    <div className="border border-slate-200 rounded-lg overflow-hidden">
-                      {/* Box header */}
-                      <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border-b border-slate-200">
-                        <PencilSquareIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Edit Forms</span>
+                    <div className="py-2 px-4 flex flex-col">
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        <Edit3 size={12} className="opacity-60" />
+                        <span>Edit Forms</span>
                       </div>
-                      {/* Box body */}
-                      <div className="px-3 py-2.5 space-y-2">
-                        <a
-                          href="#"
-                          className="flex items-center gap-1.5 text-xs text-[#1a73e8] hover:underline"
+                      <div className="flex flex-wrap gap-x-5 gap-y-1">
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-[11.5px] text-[#0ea5e9] font-medium hover:bg-blue-50 rounded px-1 -ml-1 transition-colors"
                           onClick={(e) => e.preventDefault()}
                         >
-                          <DocumentTextIcon className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                          New Patient Encounter
-                        </a>
-                        <a
-                          href="#"
-                          className="flex items-center gap-1.5 text-xs text-[#1a73e8] hover:underline"
+                          <FileText size={12} className="text-blue-400 shrink-0" />
+                          <span>New Patient Encounter</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-[11.5px] text-[#0ea5e9] font-medium hover:bg-blue-50 rounded px-1 -ml-1 transition-colors"
                           onClick={(e) => e.preventDefault()}
                         >
-                          <DocumentTextIcon className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                          Services Conclusion Plan
-                        </a>
+                          <FileText size={12} className="text-blue-400 shrink-0" />
+                          <span>Services Conclusion Plan</span>
+                        </button>
                       </div>
                     </div>
 
-                    {/* Right — Claims History box */}
-                    <div className="border border-slate-200 rounded-lg overflow-hidden transition-shadow duration-200 hover:shadow-md hover:border-slate-300">
-                      {/* Box header */}
-                      <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border-b border-slate-200">
-                        <ClockIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Claims History</span>
+                    <div className="py-2 px-4 flex flex-col pl-6">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                          <Clock size={12} className="opacity-60 shrink-0" />
+                          <span>Claims History</span>
+                        </div>
+                        <span className="text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">
+                          Last 30 Days
+                        </span>
                       </div>
-                      {/* Box body */}
-                      <div className="px-3 py-2.5 space-y-1">
+                      <div className="flex flex-col gap-0 max-h-[65px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
                         {getClaimsHistory(encounter).map((entry) => (
                           <div
                             key={entry.id}
-                            className="flex items-center justify-between gap-2 py-2 px-2 -mx-1 rounded-md text-xs text-slate-600 cursor-pointer transition-colors hover:bg-slate-100"
+                            className="flex items-center justify-between py-0.5 px-1.5 hover:bg-white rounded transition-colors"
                           >
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <svg className="w-3.5 h-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                              </svg>
-                              <span className="font-medium text-slate-700">{entry.label}</span>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium min-w-0">
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                              <span className="truncate">{entry.label}</span>
                             </div>
-                            <span className="text-slate-400 text-[11px] shrink-0 tabular-nums">{entry.date}</span>
+                            <span className="text-[10px] text-slate-400 tabular-nums shrink-0 ml-2">
+                              {entry.date}
+                            </span>
                           </div>
                         ))}
                       </div>

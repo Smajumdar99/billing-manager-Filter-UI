@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Filter, ChevronDown, Minus, ChevronLeft, ChevronRight, User, Users, Folder, Calendar as CalendarLucide, MessageSquare, Printer, Download, Clock } from 'lucide-react';
+import { Filter, ChevronDown, Minus, ChevronLeft, ChevronRight, User, Users, Folder, Calendar as CalendarLucide, MessageSquare, Printer, Download, Clock, X, Search, Settings, ArrowRightLeft, RefreshCw, Upload, Menu, Palette } from 'lucide-react';
 import { 
   Cog6ToothIcon,
   ArrowLeftIcon,
@@ -542,6 +542,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   // State for advanced search overlay
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
     keywords: '',
     operator: 'AND',
@@ -564,6 +565,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   
   // State for mobile hamburger menu
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isSettingsSheetOpen, setIsSettingsSheetOpen] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
   /** Mobile day view: which event detail popup is open (tap same/other card to toggle/switch) */
@@ -1475,13 +1477,13 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white">
       {/* Mobile-Responsive Calendar Header */}
-      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-200">
+      <div className="flex items-center justify-between px-3.5 md:px-6 py-2.5 border-b border-gray-200">
         {/* Left side - Mobile: compact so filter/search fit in same row */}
         <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1 md:flex-initial">
           {/* Mobile hamburger menu - only visible on mobile */}
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
             title="Menu"
           >
             <Bars3Icon className="w-5 h-5 text-gray-600" />
@@ -1507,7 +1509,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
             {view !== 'agenda' && (
               <button
                 onClick={goToPrevDate}
-                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
                 aria-label="Previous"
               >
                 <ArrowLeftIcon className="w-4 h-4 text-gray-600" />
@@ -1582,7 +1584,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
             {view !== 'agenda' && (
               <button
                 onClick={goToNextDate}
-                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                 aria-label="Next"
               >
                 <ArrowRightIcon className="w-4 h-4 text-gray-600" />
@@ -1595,240 +1597,24 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
         <div className="hidden md:flex flex-1 max-w-4xl mx-8">
           <div className="flex items-center space-x-2">
             <div className="relative min-w-0 flex-1 md:min-w-[18rem]" ref={searchOverlayRef}>
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Search appointments or click for advanced filters..."
-                value={currentSearchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
+              <button
+                type="button"
                 onClick={() => {
-                  setShowSearchOverlay(true);
                   setHasSearched(false);
+                  setIsSearchModalOpen(true);
                 }}
-              />
-              
-              {/* Desktop Advanced Search */}
-              {showSearchOverlay && (
-                <div className="absolute top-full left-0 mt-2 w-[600px] bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col">
-                  <div className="p-3 grid grid-cols-2 gap-x-3 gap-y-2 bg-slate-50 border-b border-slate-200">
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Keywords</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          className="h-7 flex-1 rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
-                          value={advancedFilters.keywords}
-                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, keywords: e.target.value })}
-                        />
-                        <div className="inline-flex h-7 items-stretch rounded-md border border-slate-300 bg-slate-100 overflow-hidden shrink-0">
-                          {(['AND', 'OR'] as const).map((op, idx) => (
-                            <button
-                              key={op}
-                              type="button"
-                              onClick={() => setAdvancedFilters({ ...advancedFilters, operator: op })}
-                              className={`h-full min-w-[2rem] px-1.5 text-[11px] font-semibold leading-none transition-all duration-200 ${
-                                advancedFilters.operator === op
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'text-gray-500 hover:text-gray-800'
-                              } ${idx === 1 ? 'border-l border-slate-300' : ''}`}
-                            >
-                              {op}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Service Type</label>
-                      <div className="relative">
-                        <select
-                          className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
-                          value={advancedFilters.serviceType}
-                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, serviceType: e.target.value })}
-                        >
-                          <option>Any Service Type</option>
-                          <option>Individual Therapy</option>
-                          <option>Group Therapy</option>
-                          <option>Assessment</option>
-                          <option>Consultation</option>
-                          <option>Follow-up</option>
-                          <option>Medication Review</option>
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-500" aria-hidden />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Start Date</label>
-                      <input
-                        type="date"
-                        className="h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
-                        value={advancedFilters.dateFrom}
-                        onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateFrom: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">End Date</label>
-                      <input
-                        type="date"
-                        className="h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
-                        value={advancedFilters.dateTo}
-                        onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateTo: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Provider</label>
-                      <div className="relative">
-                        <select
-                          className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
-                          value={advancedFilters.provider}
-                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, provider: e.target.value })}
-                        >
-                          <option value="Admin, Ensoftek">Admin, Ensoftek</option>
-                          {ADVANCED_SEARCH_PROVIDER_TYPE_OPTIONS.map((label) => (
-                            <option key={label} value={label}>
-                              {label}
-                            </option>
-                          ))}
-                          {providersToShow.map((p) => (
-                            <option key={p.id} value={p.label}>
-                              {p.label}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-500" aria-hidden />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Facility</label>
-                      <div className="relative">
-                        <select
-                          className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
-                          value={advancedFilters.facility}
-                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, facility: e.target.value })}
-                        >
-                          <option>All Facilities</option>
-                          {optionsDrawerLocations.map((loc) => (
-                            <option key={loc} value={loc}>{loc}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-500" aria-hidden />
-                      </div>
-                    </div>
-
-                    <div className="col-span-2 flex justify-end gap-2 mt-1.5 pt-2 border-t border-slate-200">
-                      <button
-                        type="button"
-                        onClick={() => setHasSearched(false)}
-                        className="px-3 py-1 text-[12px] font-medium text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
-                      >
-                        Clear
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHasSearched(true)}
-                        className="px-3 py-1 text-[12px] font-semibold text-primary-foreground bg-primary rounded-md hover:brightness-110"
-                      >
-                        Submit
-                      </button>
-                    </div>
-                  </div>
-
-                  {hasSearched && (
-                    <div className="flex flex-col max-h-[350px]">
-                      <div className="flex justify-between items-center px-4 py-2.5 bg-blue-50/50 border-y border-blue-100 shrink-0">
-                        <div className="flex items-center gap-3 text-[13px] font-medium text-blue-800">
-                          <span>{searchResults.length} Results found</span>
-                          <span className="text-blue-200">|</span>
-                          <span>Total: {totalResultsDurationMinutes} mins</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#0ea5e9] text-[#0ea5e9] font-bold text-[11px] rounded uppercase tracking-wider shadow-sm hover:bg-[#f0f9ff] transition-colors">
-                            <Printer size={14} />
-                            Print
-                          </button>
-                          <button className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#0ea5e9] text-[#0ea5e9] font-bold text-[11px] rounded uppercase tracking-wider shadow-sm hover:bg-[#f0f9ff] transition-colors">
-                            <Download size={14} />
-                            Export CSV
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-2">
-                        {searchResults.map((event) => {
-                          const duration = event.durationMins;
-                          const tone = getDesktopResultTone(event.status);
-                          const providerName = event.provider;
-                          const residentName = event.resident;
-                          const programName = event.program;
-                          const commentText = event.comments?.trim();
-                          return (
-                            <button
-                              key={event.id}
-                              type="button"
-                              onClick={() => navigate(`/view-appointment/${event.id}`)}
-                              className={`w-full text-left rounded-lg p-3 hover:shadow-md transition-all mb-2 last:mb-0 border relative group cursor-pointer flex flex-col gap-2.5 ${tone.container}`}
-                            >
-                              <div className="flex items-center justify-between mb-2.5">
-                                <div className="flex items-center gap-2 min-w-0 pr-3">
-                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border shrink-0 ${tone.badge}`}>
-                                    {event.status}
-                                  </span>
-                                  <h4 className="text-[14px] font-bold text-slate-800 truncate">{event.category}</h4>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-700 pr-6 shrink-0">
-                                  <Clock size={14} className="text-slate-400" />
-                                  <span>{duration} Mins</span>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px] text-slate-600 pr-8">
-                                <div className="flex items-center gap-1.5">
-                                  <CalendarLucide size={16} className="opacity-60 shrink-0" />
-                                  <span>{event.date} • {event.time}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={16} className="opacity-60 shrink-0" />
-                                  <span className="truncate">{residentName}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <User size={14} className="opacity-60 shrink-0" />
-                                  <span className="truncate">{providerName}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Folder size={14} className="opacity-60 shrink-0" />
-                                  <span className="truncate">{programName}</span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-start gap-1.5 text-[12px] text-slate-500 bg-white/60 p-2 rounded border border-blue-100/50 mr-8 mt-0.5">
-                                <MessageSquare size={14} className="opacity-60 shrink-0 mt-0.5" />
-                                <span className="italic line-clamp-2">{commentText ? `"${commentText}"` : '"No comments"'}</span>
-                              </div>
-
-                              <ChevronRight size={22} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300 group-hover:text-blue-600 transition-colors" />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                className="flex items-center gap-2 w-full max-w-md px-3 py-1.5 bg-white border border-blue-400 rounded-md text-slate-500 text-[13px] text-left hover:bg-slate-50 transition-colors"
+              >
+                <Search size={16} className="text-blue-500" />
+                <span>Search appointments or click for advanced search...</span>
+              </button>
             </div>
             
             {/* Filter toggle button with dropdown (desktop only; mobile has its own dropdown) */}
             <div className="relative hidden md:block" ref={filterDropdownRef}>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`relative flex items-center justify-center w-10 h-10 border rounded-lg transition-colors ${
+            className={`relative flex items-center justify-center w-9 h-9 border rounded-lg transition-colors ${
                   showFilters || hasActiveFilters()
                     ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
                     : 'text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -2101,7 +1887,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           {/* Mobile: Search button */}
           <button 
             onClick={() => setShowSearchOverlay(true)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="md:hidden flex items-center justify-center w-9 h-9 border rounded-lg transition-colors text-slate-600 border-gray-200 hover:bg-slate-100"
+            aria-label="Search"
           >
             <MagnifyingGlassIcon className="w-5 h-5 text-gray-600" />
           </button>
@@ -2904,7 +2691,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       
       {/* Mobile Active Provider Banner - shows active provider above the view switcher on mobile */}
       {activeProvider && (
-        <div className={`md:hidden ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-2`}>
+        <div className={`md:hidden ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-1.5`}>
           <div className="flex items-center justify-center gap-2">
             <h3 className={`text-sm font-semibold ${activeTab === 'provider' ? 'text-blue-900' : 'text-green-900'} truncate`}>{activeProvider.label}</h3>
             {activeTab === 'provider' && activeProvider.clientCount > 0 && (
@@ -2917,11 +2704,11 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       )}
 
       {/* Mobile View Switchers - Provider View and Calendar View dropdowns side by side */}
-      <div className="md:hidden px-4 py-1.5 bg-white border-b border-slate-100">
-        <div className="flex gap-2 w-full">
+      <div className="md:hidden px-4 py-1 bg-white border-b border-slate-100">
+        <div className="flex items-center gap-2 w-full">
           <div className="relative flex-1 min-w-0">
             <select
-              className="w-full h-8 appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a73e8]"
+              className="w-full h-9 appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a73e8]"
               value={activeTab}
               onChange={(e) => onTabChange(e.target.value as 'provider' | 'room' | 'patient')}
             >
@@ -2935,7 +2722,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </div>
           <div className="relative flex-1 min-w-0">
             <select
-              className="w-full h-8 appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a73e8]"
+              className="w-full h-9 appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a73e8]"
               value={view}
               onChange={(e) => onViewChange(e.target.value as 'day' | 'week' | 'month' | 'agenda')}
             >
@@ -2948,6 +2735,14 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
               <ChevronDown size={14} />
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsSettingsSheetOpen(true)}
+            className="flex items-center justify-center w-9 h-9 border rounded-lg transition-colors text-slate-600 border-gray-200 hover:bg-slate-100"
+            aria-label="Open schedule settings"
+          >
+            <Settings size={16} />
+          </button>
         </div>
       </div>
       
@@ -3189,6 +2984,304 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </>
         )}
       </div>
+
+      {isSearchModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setIsSearchModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+              <h2 className="text-base font-bold text-slate-800">Search Appointments</h2>
+              <button onClick={() => setIsSearchModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-md ml-2">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 shrink-0">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Keywords</label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      className="h-7 flex-1 rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      value={advancedFilters.keywords}
+                      onChange={(e) => setAdvancedFilters({ ...advancedFilters, keywords: e.target.value })}
+                    />
+                    <div className="inline-flex h-7 items-stretch rounded-md border border-slate-300 bg-slate-100 overflow-hidden shrink-0">
+                      {(['AND', 'OR'] as const).map((op, idx) => (
+                        <button
+                          key={op}
+                          type="button"
+                          onClick={() => setAdvancedFilters({ ...advancedFilters, operator: op })}
+                          className={`h-full min-w-[2rem] px-1.5 text-[11px] font-semibold leading-none transition-all duration-200 ${
+                            advancedFilters.operator === op
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-gray-500 hover:text-gray-800'
+                          } ${idx === 1 ? 'border-l border-slate-300' : ''}`}
+                        >
+                          {op}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Service Type</label>
+                  <div className="relative">
+                    <select
+                      className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      value={advancedFilters.serviceType}
+                      onChange={(e) => setAdvancedFilters({ ...advancedFilters, serviceType: e.target.value })}
+                    >
+                      <option>Any Service Type</option>
+                      <option>Individual Therapy</option>
+                      <option>Group Therapy</option>
+                      <option>Assessment</option>
+                      <option>Consultation</option>
+                      <option>Follow-up</option>
+                      <option>Medication Review</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" aria-hidden />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Start Date</label>
+                  <input
+                    type="date"
+                    className="h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                    value={advancedFilters.dateFrom}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateFrom: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">End Date</label>
+                  <input
+                    type="date"
+                    className="h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                    value={advancedFilters.dateTo}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, dateTo: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Provider</label>
+                  <div className="relative">
+                    <select
+                      className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      value={advancedFilters.provider}
+                      onChange={(e) => setAdvancedFilters({ ...advancedFilters, provider: e.target.value })}
+                    >
+                      <option value="Admin, Ensoftek">Admin, Ensoftek</option>
+                      {ADVANCED_SEARCH_PROVIDER_TYPE_OPTIONS.map((label) => (
+                        <option key={label} value={label}>
+                          {label}
+                        </option>
+                      ))}
+                      {providersToShow.map((p) => (
+                        <option key={p.id} value={p.label}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" aria-hidden />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Facility</label>
+                  <div className="relative">
+                    <select
+                      className="h-7 w-full appearance-none rounded-md border border-slate-300 bg-white py-0 pl-2 pr-7 text-[12px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      value={advancedFilters.facility}
+                      onChange={(e) => setAdvancedFilters({ ...advancedFilters, facility: e.target.value })}
+                    >
+                      <option>All Facilities</option>
+                      {optionsDrawerLocations.map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" aria-hidden />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button onClick={() => setHasSearched(false)} className="px-4 py-1.5 text-[12px] font-medium text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50">Clear</button>
+                <button onClick={() => setHasSearched(true)} className="px-4 py-1.5 text-[12px] font-semibold text-white bg-primary text-primary-foreground rounded-md hover:brightness-110">Submit</button>
+              </div>
+            </div>
+
+            {hasSearched && (
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-slate-200 shrink-0">
+                  <div className="text-[12px] font-medium text-slate-600">
+                    <span className="text-blue-700 font-bold">{searchResults.length} Results found</span> <span className="mx-2 text-slate-300">|</span> Total: {totalResultsDurationMinutes} mins
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#0ea5e9] text-[#0ea5e9] font-semibold text-[12px] rounded shadow-sm hover:bg-[#f0f9ff]">
+                      <Printer size={13} /> Print
+                    </button>
+                    <button className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#0ea5e9] text-[#0ea5e9] font-semibold text-[12px] rounded shadow-sm hover:bg-[#f0f9ff]">
+                      <Download size={13} /> Export CSV
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  <table className="w-full text-left border-collapse min-w-[900px]">
+                    <thead className="sticky top-0 bg-slate-50 border-y border-slate-200 z-10">
+                      <tr>
+                        <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date-Time</th>
+                        <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Duration (Mins)</th>
+                        <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Program</th>
+                        <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Provider</th>
+                        <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Category</th>
+                        <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Resident (Lived Name)</th>
+                        <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Comments</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {searchResults.map((event) => {
+                        return (
+                          <tr key={event.id} className="hover:bg-blue-50/30 transition-colors border-b border-slate-100 last:border-0">
+                            <td className="py-4 px-4 text-[13px] text-slate-600 whitespace-nowrap">{event.date} {event.time}:00</td>
+                            <td className="py-4 px-4 text-[13px] text-slate-600">{event.durationMins}</td>
+                            <td className="py-4 px-4 text-[13px] text-slate-600">{event.program}</td>
+                            <td className="py-4 px-4 text-[13px] text-slate-600">{event.provider}</td>
+                            <td className="py-4 px-4 text-[13px] text-slate-600">{event.category}</td>
+                            <td className="py-4 px-4">
+                              <span className="px-2 py-1 rounded text-[10px] font-bold bg-blue-100 text-blue-800 uppercase tracking-wide border border-blue-200/50">{event.status}</span>
+                            </td>
+                            <td className="py-4 px-4 text-[13px] text-slate-600">{event.resident}</td>
+                            <td className="py-4 px-4 text-[13px] text-slate-600 max-w-[200px] truncate" title={event.comments}>{event.comments}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-200 bg-white">
+                  <span className="text-[12px] text-slate-500">Showing 1 to {searchResults.length} of {searchResults.length} entries</span>
+                  <div className="flex items-center gap-1">
+                    <button className="px-2.5 py-1 border border-slate-200 rounded text-[12px] text-slate-400 cursor-not-allowed">Previous</button>
+                    <button className="px-2.5 py-1 bg-blue-50 border border-blue-200 rounded text-[12px] text-blue-600 font-medium">1</button>
+                    <button className="px-2.5 py-1 border border-slate-200 rounded text-[12px] text-slate-600 hover:bg-slate-50">Next</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isSettingsSheetOpen && (
+        <div className="fixed inset-0 z-[100] flex flex-col justify-end md:hidden">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setIsSettingsSheetOpen(false)}
+          />
+
+          <div className="relative bg-white w-full rounded-t-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-full duration-300 ease-out">
+            <div className="flex flex-col items-center pt-3 pb-2 border-b border-slate-100 shrink-0">
+              <div className="w-10 h-1.5 bg-slate-200 rounded-full mb-3" />
+              <div className="w-full flex justify-between items-center px-4">
+                <h3 className="text-base font-bold text-slate-800">Schedule Settings</h3>
+                <button
+                  onClick={() => setIsSettingsSheetOpen(false)}
+                  className="p-1.5 bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200"
+                  aria-label="Close schedule settings"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-1 pb-8">
+              <button
+                className="flex items-center gap-3 w-full py-3.5 px-2 text-[14px] text-slate-700 font-medium hover:bg-slate-50 rounded-lg"
+                onClick={() => {
+                  handleTransfer();
+                  setIsSettingsSheetOpen(false);
+                }}
+              >
+                <ArrowRightLeft size={18} className="text-slate-400" />
+                Transfer
+              </button>
+              <button
+                className="flex items-center gap-3 w-full py-3.5 px-2 text-[14px] text-slate-700 font-medium hover:bg-slate-50 rounded-lg"
+                onClick={() => {
+                  handlePrint();
+                  setIsSettingsSheetOpen(false);
+                }}
+              >
+                <Printer size={18} className="text-slate-400" />
+                Print
+              </button>
+              <button
+                className="flex items-center gap-3 w-full py-3.5 px-2 text-[14px] text-slate-700 font-medium hover:bg-slate-50 rounded-lg"
+                onClick={handleRefresh}
+              >
+                <RefreshCw size={18} className="text-slate-400" />
+                Refresh
+              </button>
+              <button
+                className="flex items-center gap-3 w-full py-3.5 px-2 text-[14px] text-slate-700 font-medium hover:bg-slate-50 rounded-lg"
+                onClick={handleExportToOutlook}
+              >
+                <Upload size={18} className="text-slate-400" />
+                Export to Outlook
+              </button>
+
+              <hr className="my-1 border-slate-100" />
+
+              <div className="flex items-center justify-between w-full py-3.5 px-2 hover:bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-3 text-[14px] text-slate-700 font-medium">
+                  <CalendarLucide size={18} className="text-slate-400" />
+                  My calendar
+                </div>
+                <Switch
+                  checked={isMyCalendar}
+                  onCheckedChange={handleMyCalendarToggle}
+                  className="ml-2"
+                />
+              </div>
+
+              <hr className="my-1 border-slate-100" />
+
+              <button
+                className="flex items-center justify-between w-full py-3.5 px-2 text-[14px] text-slate-700 font-medium hover:bg-slate-50 rounded-lg"
+                onClick={() => setProviderLayoutMode((prev) => (prev === 'tabs' ? 'vertical' : prev === 'vertical' ? 'columns' : 'tabs'))}
+              >
+                <div className="flex items-center gap-3">
+                  <Menu size={18} className="text-slate-400" />
+                  Provider Layout
+                </div>
+                <ChevronRight size={16} className="text-slate-300" />
+              </button>
+              <button
+                className="flex items-center justify-between w-full py-3.5 px-2 text-[14px] text-slate-700 font-medium hover:bg-slate-50 rounded-lg"
+                onClick={() => handleColorSchemeChange('facility')}
+              >
+                <div className="flex items-center gap-3">
+                  <Palette size={18} className="text-slate-400" />
+                  Color Schemes
+                </div>
+                <ChevronRight size={16} className="text-slate-300" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Floating Action Button - New Appointment */}
       <button

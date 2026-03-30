@@ -40,7 +40,7 @@ export interface BillingFilterToolbarProps {
   className?: string
   externalOpen?: boolean
   onExternalOpenChange?: (open: boolean) => void
-  /** Billing Type dropdown in filter section (right-aligned when provided) */
+  /** Bill type dropdown in filter section (right-aligned when provided) */
   billingTypeValue?: string
   onBillingTypeChange?: (value: string) => void
   billingTypeOptions?: { value: string; label: string }[]
@@ -237,32 +237,92 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
   // ---- Handlers ----
 
   const handleCategoryClick = (catId: string) => {
-    if (draftFilter || selectedCategoryIds.has(catId)) return
+    const existing = selectedFilters.find(f => f.categoryId === catId)
     setDraftFilter(catId)
-    setDraftValue(undefined)
+    setDraftValue(existing?.value)
+
+    // Add a category immediately when opened so selections can update instantly.
+    if (!existing) {
+      setSelectedFilters(prev => [...prev, { categoryId: catId, value: undefined }])
+    }
   }
 
-  const handleConfirmDraft = () => {
+  const handleDraftValueChange = (val: any) => {
     if (!draftFilter) return
-    setSelectedFilters(prev => [...prev, { categoryId: draftFilter, value: draftValue }])
+    setDraftValue(val)
+    setSelectedFilters(prev => {
+      const has = prev.some(f => f.categoryId === draftFilter)
+      if (!has) return [...prev, { categoryId: draftFilter, value: val }]
+      return prev.map(f => (f.categoryId === draftFilter ? { ...f, value: val } : f))
+    })
+  }
+
+  const handleSinglePillAutoSave = (option: string) => {
+    if (!draftCat) return
+
+    const singleValue = [option]
+    const has = selectedFilters.some(f => f.categoryId === draftCat.id)
+    const nextSelected = has
+      ? selectedFilters.map(f =>
+          f.categoryId === draftCat.id ? { ...f, value: singleValue } : f,
+        )
+      : [...selectedFilters, { categoryId: draftCat.id, value: singleValue }]
+
+    setDraftValue(singleValue)
+    setSelectedFilters(nextSelected)
+    setAppliedFilters(nextSelected)
+
+    const catIds = nextSelected.map(f => f.categoryId)
+    const vals: FilterValues = {}
+    for (const f of nextSelected) {
+      if (f.value !== undefined) vals[f.categoryId] = f.value
+    }
+    onApplyFilters(catIds)
+    onFilterValuesChange(vals)
+
+    // Return right pane to summary view.
     setDraftFilter(null)
     setDraftValue(undefined)
   }
 
-  const handleCancelDraft = () => {
+  const handleEnterCommit = () => {
+    if (!draftFilter) return
+
+    const has = selectedFilters.some(f => f.categoryId === draftFilter)
+    const nextSelected = has
+      ? selectedFilters.map(f =>
+          f.categoryId === draftFilter ? { ...f, value: draftValue } : f,
+        )
+      : [...selectedFilters, { categoryId: draftFilter, value: draftValue }]
+
+    setSelectedFilters(nextSelected)
+    setAppliedFilters(nextSelected)
+
+    const catIds = nextSelected.map(f => f.categoryId)
+    const vals: FilterValues = {}
+    for (const f of nextSelected) {
+      if (f.value !== undefined) vals[f.categoryId] = f.value
+    }
+    onApplyFilters(catIds)
+    onFilterValuesChange(vals)
+
+    // Return to summary view.
     setDraftFilter(null)
     setDraftValue(undefined)
   }
 
   const handleEditFilter = (catId: string) => {
     const existing = selectedFilters.find(f => f.categoryId === catId)
-    setSelectedFilters(prev => prev.filter(f => f.categoryId !== catId))
     setDraftFilter(catId)
     setDraftValue(existing?.value)
   }
 
   const handleDeleteFilter = (catId: string) => {
     setSelectedFilters(prev => prev.filter(f => f.categoryId !== catId))
+    if (draftFilter === catId) {
+      setDraftFilter(null)
+      setDraftValue(undefined)
+    }
   }
 
   const handleApply = () => {
@@ -313,19 +373,15 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
     }
   }
 
-  const handleMobileConfirm = () => {
-    if (!mobileExpandedCat) return
+  const handleMobileDraftValueChange = (catId: string, val: any) => {
+    setMobileDraftValue(val)
     setSelectedFilters(prev => {
-      const without = prev.filter(f => f.categoryId !== mobileExpandedCat)
-      return [...without, { categoryId: mobileExpandedCat, value: mobileDraftValue }]
+      const existing = prev.some(f => f.categoryId === catId)
+      if (existing) {
+        return prev.map(f => (f.categoryId === catId ? { ...f, value: val } : f))
+      }
+      return [...prev, { categoryId: catId, value: val }]
     })
-    setMobileExpandedCat(null)
-    setMobileDraftValue(undefined)
-  }
-
-  const handleMobileCancel = () => {
-    setMobileExpandedCat(null)
-    setMobileDraftValue(undefined)
   }
 
   const handleMobileDeleteFilter = (catId: string) => {
@@ -453,26 +509,12 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
                 {/* Expanded configuration panel */}
                 {isExpanded && mobileDraftCat && (
                   <div className="bg-white px-4 py-4 border-b border-slate-200 shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)]">
-                    <h4 className="text-[#1a73e8] font-medium text-sm mb-3">
-                      Configure: {mobileDraftCat.label}
-                    </h4>
-                    <MobileCardBody cat={mobileDraftCat} value={mobileDraftValue} onChange={setMobileDraftValue} />
-                    <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 mt-4">
-                      <button
-                        type="button"
-                        onClick={handleMobileCancel}
-                        className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg active:bg-slate-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleMobileConfirm}
-                        className="px-5 py-2 text-sm font-medium text-white bg-[#1a73e8] rounded-lg active:bg-blue-700 transition-colors"
-                      >
-                        Confirm
-                      </button>
-                    </div>
+                    <h4 className="text-[#1a73e8] font-medium text-sm mb-3">{mobileDraftCat.label}</h4>
+                    <MobileCardBody
+                      cat={mobileDraftCat}
+                      value={mobileDraftValue}
+                      onChange={(val) => handleMobileDraftValueChange(mobileDraftCat.id, val)}
+                    />
                   </div>
                 )}
               </div>
@@ -492,8 +534,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
           <button
             type="button"
             onClick={handleMobileApply}
-            disabled={mobileExpandedCat !== null}
-            className="flex-1 py-2.5 text-sm font-semibold text-white bg-[#1a73e8] rounded-xl active:bg-blue-700 transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-[#1a73e8] rounded-xl active:bg-blue-700 transition-colors"
           >
             Apply Filters ({selectedFilters.length})
           </button>
@@ -554,7 +595,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
                   {visibleCategories.map(cat => {
                     const isAlreadySelected = selectedCategoryIds.has(cat.id)
                     const isCurrentDraft = draftFilter === cat.id
-                    const isDisabled = (draftFilter !== null && !isCurrentDraft) || isAlreadySelected
+                    const isDisabled = false
 
                     return (
                       <button
@@ -565,7 +606,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
                           isCurrentDraft
                             ? 'bg-blue-50 text-blue-700 font-medium border border-blue-200'
                             : isAlreadySelected
-                            ? 'bg-gray-50 text-gray-400 cursor-default'
+                            ? 'bg-gray-50 text-gray-700'
                             : isDisabled
                             ? 'text-gray-300 cursor-not-allowed'
                             : 'text-gray-700 hover:bg-gray-50 cursor-pointer'
@@ -588,32 +629,26 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
               <div className="w-2/3 bg-slate-50 flex flex-col min-h-0">
                 {/* Header */}
                 <div className="shrink-0 p-4 border-b border-gray-200 flex justify-between items-center">
-                  <span className="text-lg font-bold text-slate-800">Selected Criteria</span>
-                  <span className="text-base text-slate-500">{selectedFilters.length} selected</span>
+                  <span className="text-lg font-bold text-slate-800">
+                    {draftCat ? draftCat.label : 'Selected Criteria'}
+                  </span>
+                  {!draftCat && (
+                    <span className="text-base text-slate-500">{selectedFilters.length} selected</span>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4">
                   {/* Draft configuration card */}
                   {draftCat && (
                     <div className="bg-white border-2 border-blue-200 rounded-lg shadow-sm p-3 mb-3">
-                      <h4 className="text-sm font-semibold text-blue-800 mb-2.5">
-                        Configure: {draftCat.label}
-                      </h4>
-                      <CardBody cat={draftCat} value={draftValue} onChange={setDraftValue} />
-                      <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t border-gray-100">
-                        <button
-                          onClick={handleCancelDraft}
-                          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleConfirmDraft}
-                          className="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                          Confirm
-                        </button>
-                      </div>
+                      <h4 className="text-sm font-semibold text-blue-800 mb-2.5">{draftCat.label}</h4>
+                      <CardBody
+                        cat={draftCat}
+                        value={draftValue}
+                        onChange={handleDraftValueChange}
+                        onMultiselectOptionClick={handleSinglePillAutoSave}
+                        onEnterCommit={handleEnterCommit}
+                      />
                     </div>
                   )}
 
@@ -625,6 +660,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
                   ) : (
                     <div className="flex flex-col space-y-2">
                       {selectedFilters.map(f => {
+                        if (draftCat && f.categoryId === draftCat.id) return null
                         const cat = CATEGORY_MAP.get(f.categoryId)!
                         return (
                           <div
@@ -668,8 +704,7 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
               </button>
               <button
                 onClick={handleApply}
-                disabled={draftFilter !== null}
-                className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Apply Filters
               </button>
@@ -766,14 +801,14 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
       </div>
       </div>
 
-      {/* ===== Right Side: Billing Type (right-aligned) + Action Buttons (children) ===== */}
+      {/* ===== Right Side: Bill type (right-aligned) + Action Buttons (children) ===== */}
       <div className="ml-auto flex items-center gap-3 flex-shrink-0">
         {(billingTypeValue != null && onBillingTypeChange && billingTypeOptions.length > 0) && (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Billing Type:</span>
+            <span className="text-sm font-medium text-gray-700">Bill type</span>
             <Select value={billingTypeValue} onValueChange={onBillingTypeChange}>
               <SelectTrigger className="w-[160px] h-8 text-sm bg-slate-50/80 border-gray-200">
-                <SelectValue placeholder="All Types" />
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
                 {billingTypeOptions.map((opt) => (
@@ -801,7 +836,9 @@ const CardBody: FC<{
   cat: FilterCategory
   value: any
   onChange: (val: any) => void
-}> = ({ cat, value, onChange }) => {
+  onMultiselectOptionClick?: (option: string) => void
+  onEnterCommit?: () => void
+}> = ({ cat, value, onChange, onMultiselectOptionClick, onEnterCommit }) => {
   switch (cat.template) {
     case 'multiselect': {
       const selected: string[] = Array.isArray(value) ? value : []
@@ -815,10 +852,17 @@ const CardBody: FC<{
             return (
               <button
                 key={opt}
-                onClick={() => toggle(opt)}
+                type="button"
+                onClick={() => {
+                  if (onMultiselectOptionClick) {
+                    onMultiselectOptionClick(opt)
+                    return
+                  }
+                  toggle(opt)
+                }}
                 className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
                   active
-                    ? 'bg-primary border-primary text-primary-foreground'
+                    ? 'bg-[#1a73e8] border-[#1a73e8] text-white shadow-sm'
                     : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -842,10 +886,11 @@ const CardBody: FC<{
           ] as const).map(opt => (
             <button
               key={opt.label}
+              type="button"
               onClick={() => onChange(opt.v)}
               className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
                 value === opt.v
-                  ? 'bg-primary border-primary text-primary-foreground'
+                  ? 'bg-[#1a73e8] border-[#1a73e8] text-white shadow-sm'
                   : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -856,7 +901,7 @@ const CardBody: FC<{
       )
 
     case 'service_code':
-      return <ServiceCodeCard value={value} onChange={onChange} />
+      return <ServiceCodeCard value={value} onChange={onChange} onEnterCommit={onEnterCommit} />
 
     case 'text':
       return (
@@ -864,6 +909,12 @@ const CardBody: FC<{
           type="text"
           value={value ?? ''}
           onChange={e => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              onEnterCommit?.()
+            }
+          }}
           placeholder={`Enter ${cat.label.toLowerCase()}...`}
           className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
@@ -875,10 +926,11 @@ const CardBody: FC<{
           {(cat.options ?? []).map(opt => (
             <button
               key={opt}
+              type="button"
               onClick={() => onChange(value === opt ? null : opt)}
               className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
                 value === opt
-                  ? 'bg-primary border-primary text-primary-foreground'
+                  ? 'bg-[#1a73e8] border-[#1a73e8] text-white shadow-sm'
                   : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -899,6 +951,12 @@ const CardBody: FC<{
               type="number"
               value={min}
               onChange={e => onChange({ min: e.target.value, max })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  onEnterCommit?.()
+                }
+              }}
               placeholder="0"
               className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
@@ -909,6 +967,12 @@ const CardBody: FC<{
               type="number"
               value={max}
               onChange={e => onChange({ min, max: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  onEnterCommit?.()
+                }
+              }}
               placeholder="1000"
               className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
@@ -996,7 +1060,8 @@ const DateRangeCard: FC<{
 const ServiceCodeCard: FC<{
   value: any
   onChange: (val: any) => void
-}> = ({ value, onChange }) => {
+  onEnterCommit?: () => void
+}> = ({ value, onChange, onEnterCommit }) => {
   const [activeTab, setActiveTab] = useState<typeof SERVICE_CODE_TABS[number]>('All')
   const searchVal: string = value?.search ?? ''
 
@@ -1023,6 +1088,12 @@ const ServiceCodeCard: FC<{
           type="text"
           value={searchVal}
           onChange={e => onChange({ ...value, search: e.target.value, tab: activeTab })}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              onEnterCommit?.()
+            }
+          }}
           placeholder="Search by code, description..."
           className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
