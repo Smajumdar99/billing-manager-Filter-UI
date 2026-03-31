@@ -45,7 +45,23 @@ import {
 } from '@heroicons/react/24/outline'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
-import { AlertTriangle, Edit3, FileText, Clock, ChevronDown, MoreHorizontal, Settings } from 'lucide-react'
+import {
+  AlertTriangle,
+  Edit3,
+  FileText,
+  Clock,
+  User,
+  Building2,
+  MapPin,
+  ChevronDown,
+  MoreHorizontal,
+  Settings,
+  Plus,
+  Send,
+  ShieldAlert,
+  CheckCircle,
+  Download,
+} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -124,6 +140,9 @@ export const BillingManagerPage: FC = () => {
   const [showForms, setShowForms] = useState(false)
   const [showClaims, setShowClaims] = useState(false)
   const [openInsuranceLineId, setOpenInsuranceLineId] = useState<string | null>(null)
+  /** Which encounter card has the header Settings / More popover open (mobile list shows many cards). */
+  const [mobileSettingsOpenId, setMobileSettingsOpenId] = useState<string | null>(null)
+  const [mobileMoreOpenId, setMobileMoreOpenId] = useState<string | null>(null)
   const [showMetrics, setShowMetrics] = useState(false)
   const [expandedMenuItems, setExpandedMenuItems] = useState<Set<string>>(new Set())
 
@@ -1084,14 +1103,13 @@ export const BillingManagerPage: FC = () => {
                   <div>
                     {/* Top Row - Title and Actions */}
                     <div className="flex items-center gap-3 w-full px-4 py-3 sm:px-5">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={handleMobileSidebarToggle}
-                        className="p-2"
+                        className="p-2 -ml-2 text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-md transition-colors active:bg-slate-200 flex-shrink-0"
                       >
-                        <Icon icon="bars" className="w-5 h-5" />
-                      </Button>
+                        <Icon icon="bars" className="w-6 h-6 text-slate-700" />
+                      </button>
 
                       <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate flex items-center gap-2 flex-1">
                         <Icon icon="file-invoice-dollar" className="w-5 h-5" />
@@ -1764,15 +1782,22 @@ export const BillingManagerPage: FC = () => {
                             { id: 'c3', label: 'Re-opened', date: '01/15/2026' },
                           ]
 
+                          const showSettings = mobileSettingsOpenId === enc.id
+                          const showMore = mobileMoreOpenId === enc.id
+                          const posLabel = enc.hcfaBillType?.trim() ? enc.hcfaBillType : '11 - Office'
+                          const posDisplay = posLabel === '11 - Office' ? 'Office (11)' : posLabel
+                          const rendName = enc.provider.replace(/^Dr\.\s*/i, '')
+                          const billStatusLabel = mBillStatusMap[enc.status] || 'Unbilled'
+
                           return (
                             <div
                               key={enc.id}
                               className="bg-white border border-slate-100 rounded-xl shadow-sm flex flex-col mx-4 overflow-hidden"
                             >
                               {/* ── Collapsed Header ── */}
-                              <div className="p-4 flex flex-col">
+                              <div className="p-4 flex flex-col" style={{ height: '295px' }}>
                                 {/* Row 1: Avatar + Name + actions */}
-                                <div className="flex justify-between items-start">
+                                <div className="flex justify-between items-start border-b border-slate-100 pb-3 mb-3">
                                   <div className="flex items-center min-w-0 gap-2">
                                     <input
                                       type="checkbox"
@@ -1789,94 +1814,192 @@ export const BillingManagerPage: FC = () => {
                                       <div className="text-[11px] text-slate-500 leading-tight">MRN: {enc.patientMrn}</div>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-1 text-slate-400 -mr-2 shrink-0 ml-2">
-                                    <button
-                                      type="button"
-                                      className="p-3 rounded-xl hover:bg-slate-100/50 hover:text-slate-600 transition-colors active:bg-slate-100"
-                                      aria-label="Settings"
-                                    >
-                                      <Settings size={18} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="p-3 rounded-xl hover:bg-slate-100/50 hover:text-slate-600 transition-colors active:bg-slate-100"
-                                      aria-label="More options"
-                                    >
-                                      <MoreHorizontal size={18} />
-                                    </button>
+                                  <div className="relative flex items-center gap-1 text-slate-400 -mr-2 shrink-0 ml-2">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              setMobileSettingsOpenId(showSettings ? null : enc.id)
+                                              setMobileMoreOpenId(null)
+                                            }}
+                                            className={`p-3 rounded-xl transition-colors ${showSettings ? 'bg-slate-100 text-slate-800' : 'hover:bg-slate-100/50 hover:text-slate-600 active:bg-slate-100'}`}
+                                            aria-label="Settings"
+                                          >
+                                            <Settings size={18} />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              setMobileMoreOpenId(showMore ? null : enc.id)
+                                              setMobileSettingsOpenId(null)
+                                            }}
+                                            className={`p-3 rounded-xl transition-colors ${showMore ? 'bg-slate-100 text-slate-800' : 'hover:bg-slate-100/50 hover:text-slate-600 active:bg-slate-100'}`}
+                                            aria-label="More options"
+                                          >
+                                            <MoreHorizontal size={18} />
+                                          </button>
+                                          {showSettings && (
+                                            <>
+                                              <div
+                                                role="presentation"
+                                                className="fixed inset-0 z-40"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  setMobileSettingsOpenId(null)
+                                                }}
+                                              />
+                                              <div
+                                                className="absolute top-12 right-12 w-[260px] bg-white rounded-xl shadow-xl border border-slate-200 z-50 p-4 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-150"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex flex-col gap-2">
+                                                  <span className="text-[11px] font-bold text-slate-700">Place of Service (POS)</span>
+                                                  <button
+                                                    type="button"
+                                                    className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-800"
+                                                  >
+                                                    <span className="truncate">{posLabel}</span>
+                                                    <ChevronDown size={14} className="text-slate-400 shrink-0 ml-2" />
+                                                  </button>
+                                                </div>
+                                                <div className="flex flex-col gap-2.5">
+                                                  <span className="text-[11px] font-bold text-slate-700">Additional Info</span>
+                                                  <div className="flex flex-col gap-3 pl-1">
+                                                    <a
+                                                      href="#"
+                                                      className="text-[12.5px] text-blue-600 hover:underline"
+                                                      onClick={(e) => e.preventDefault()}
+                                                    >
+                                                      Treatment Time: {enc.treatmentTime || 'N/A'}
+                                                    </a>
+                                                    <a
+                                                      href="#"
+                                                      className="text-[12.5px] text-blue-600 hover:underline"
+                                                      onClick={(e) => e.preventDefault()}
+                                                    >
+                                                      Referring Provider: Dr. Smith
+                                                    </a>
+                                                    <a
+                                                      href="#"
+                                                      className="text-[12.5px] text-blue-600 hover:underline"
+                                                      onClick={(e) => e.preventDefault()}
+                                                    >
+                                                      Authorization: {enc.authorizationNumber || '—'}
+                                                    </a>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </>
+                                          )}
+                                          {showMore && (
+                                            <>
+                                              <div
+                                                role="presentation"
+                                                className="fixed inset-0 z-40"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  setMobileMoreOpenId(null)
+                                                }}
+                                              />
+                                              <div
+                                                className="absolute top-12 right-2 w-[220px] bg-white rounded-xl shadow-xl border border-slate-200 z-50 flex flex-col py-1.5 animate-in fade-in slide-in-from-top-2 duration-150"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <button type="button" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-[13px] text-slate-700 transition-colors text-left w-full">
+                                                  <Plus size={15} className="text-slate-400 shrink-0" /> Add &amp; Justify
+                                                </button>
+                                                <button type="button" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-[13px] text-slate-700 transition-colors text-left w-full">
+                                                  <FileText size={15} className="text-slate-400 shrink-0" /> Generate Claims
+                                                </button>
+                                                <button type="button" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-[13px] text-slate-700 transition-colors text-left w-full">
+                                                  <Send size={15} className="text-slate-400 shrink-0" /> Submit Claims
+                                                </button>
+                                                <button type="button" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-[13px] text-slate-700 transition-colors text-left w-full">
+                                                  <ShieldAlert size={15} className="text-slate-400 shrink-0" /> Override Blocks
+                                                </button>
+                                                <button type="button" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-[13px] font-bold text-slate-900 transition-colors text-left w-full">
+                                                  <CheckCircle size={15} className="text-slate-900 shrink-0" /> Mark Ready
+                                                </button>
+                                                <div className="h-px bg-slate-100 my-1 w-full" />
+                                                <button type="button" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-[13px] text-slate-700 transition-colors text-left w-full">
+                                                  <Download size={15} className="text-slate-400 shrink-0" /> Export
+                                                </button>
+                                              </div>
+                                            </>
+                                          )}
                                   </div>
                                 </div>
 
-                                {/* Detailed Encounter Stats (Compact Mobile) */}
-                                <div className="grid grid-cols-2 gap-y-2.5 gap-x-3 my-2">
-                                  {/* Row 1 */}
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Encounter ID</span>
+                                {/* Redesigned Compact Data Section */}
+                                <div className="flex flex-col gap-4 mt-2 mb-2 px-0.5">
+                                  {/* --- ENCOUNTER DETAILS SECTION --- */}
+                                  <div className="flex flex-col gap-3 w-full py-2">
+                                    
+                                    {/* Row 1: ID & Time (Flex Between) */}
+                                    <div className="flex items-center justify-between pr-1">
+                                      <div className="flex items-center gap-2">
+                                        <FileText size={14} className="text-slate-400 shrink-0" />
+                                        <a href="#" className="text-[13px] font-semibold text-blue-600 hover:underline truncate">enc_002 (Jan 14, 2024)</a>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 text-[12px] text-slate-600 shrink-0">
+                                        <Clock size={13} className="text-slate-400" />
+                                        <span className="font-medium">10:00 - 10:30</span>
+                                      </div>
+                                    </div>
+
+                                    {/* Row 2: Inline Status Badges */}
+                                    <div className="flex items-center gap-4 pl-0.5">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Enc</span>
+                                        <span className="px-2 py-0.5 bg-green-50 text-green-700 border border-green-200/60 rounded-md text-[11px] font-semibold leading-none">Open</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bill</span>
+                                        <span className="px-2 py-0.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-[11px] font-medium leading-none">No claims generated</span>
+                                      </div>
+                                    </div>
+
+                                    {/* Row 3: Divided Providers */}
+                                    <div className="flex items-center text-[12px] text-slate-600 pl-0.5">
+                                      <User size={14} className="text-slate-400 mr-2 shrink-0" />
+                                      <span className="truncate"><span className="font-medium text-slate-700">Provider:</span> Dr. Iyer</span>
+                                      <span className="text-slate-300 mx-2.5">•</span>
+                                      <span className="truncate"><span className="font-medium text-slate-700">Rend:</span> Iyer</span>
+                                    </div>
+
+                                    {/* Row 4: Facility & POS */}
+                                    <div className="flex items-center text-[12px] text-slate-600 pl-0.5 mt-0.5">
+                                      <Building2 size={14} className="text-slate-400 mr-2 shrink-0" />
+                                      <span className="truncate">CMHC Outpatient - 1.0</span>
+                                      <span className="text-slate-300 mx-2.5">•</span>
+                                      <MapPin size={14} className="text-slate-400 mr-2 shrink-0" />
+                                      <span className="truncate">POS: 11 office</span>
+                                    </div>
+
+                                  </div>
+                                  {/* --- END ENCOUNTER DETAILS --- */}
+
+                                  <div className="flex items-center justify-between pt-4 pb-4 mt-1 mb-2.5 border-t border-slate-100 gap-3 -ml-0.5">
                                     <button
                                       type="button"
-                                      onClick={() => handleEncounterClick(enc)}
-                                      className="text-[11.5px] text-blue-600 hover:underline truncate leading-tight text-left"
-                                    >
-                                      {enc.id} ({new Date(enc.dateOfService).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })})
-                                    </button>
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Treatment Time</span>
-                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{enc.treatmentTime || 'N/A'}</span>
-                                  </div>
-
-                                  {/* Row 2 */}
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Provider</span>
-                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{enc.provider}</span>
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Rend. Prov.</span>
-                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{enc.provider.replace(/^Dr\.\s*/i, '')}</span>
-                                  </div>
-
-                                  {/* Row 3 */}
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Facility</span>
-                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{mFacility[enc.department] || 'Community Health Center'}</span>
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Place of Serv.</span>
-                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">11 - Office</span>
-                                  </div>
-
-                                  {/* Row 4 */}
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Enc. Status</span>
-                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{mEncStatus}</span>
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Bill Status</span>
-                                    <span className="text-[11.5px] text-slate-800 font-medium truncate leading-tight">{mBillStatusMap[enc.status] || 'Unbilled'}</span>
-                                  </div>
-
-                                  {/* Row 5 - Fee Sheet & Total */}
-                                  <div className="flex flex-col pt-2 border-t border-slate-100 mt-0.5">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Fee Sheet</span>
-                                    <a
-                                      href="#"
-                                      className="text-[11.5px] text-blue-600 hover:underline truncate w-fit leading-tight"
                                       onClick={(e) => e.preventDefault()}
+                                      className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-300 rounded-lg text-[12.5px] text-blue-600 hover:text-blue-700 hover:bg-slate-50 font-medium transition-colors shrink-0 min-w-0"
                                     >
-                                      View Fee Sheet
-                                    </a>
-                                  </div>
-                                  <div className="flex flex-col pt-2 border-t border-slate-100 mt-0.5 items-start">
-                                    <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-0">Total Amount</span>
-                                    <span className="text-[13px] font-bold text-slate-900 leading-tight tabular-nums">
-                                      ${enc.totalCharges.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
+                                      <FileText size={14} className="shrink-0" /> View Fee Sheet
+                                    </button>
+                                    <div className="flex flex-col items-end shrink-0">
+                                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Total Amount</span>
+                                      <span className="text-[14px] font-bold text-slate-900 leading-none tabular-nums">
+                                        ${enc.totalCharges.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
 
                               {/* ── Accordions (always visible) ── */}
-                              <div className="flex flex-col gap-2 mt-1.5 px-4 pb-3">
+                              <div className="flex flex-col gap-2.5 mt-0 px-4 pb-3">
                                   {/* [3B] Insurance Sub-Cards */}
                                   <div className="flex flex-col">
                                     <button
@@ -1885,7 +2008,7 @@ export const BillingManagerPage: FC = () => {
                                         e.stopPropagation()
                                         setShowInsurance(!showInsurance)
                                       }}
-                                      className="flex items-center justify-between w-full px-3.5 py-1.5 bg-white border border-slate-200/80 rounded-md shadow-sm hover:border-slate-300 active:bg-slate-50 transition-all duration-150 group"
+                                      className="flex items-center justify-between w-full px-3.5 py-2 bg-white border border-slate-300 rounded-md hover:border-slate-400 active:bg-slate-50 transition-all duration-150 group"
                                     >
                                       <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-widest">Insurance &amp; Codes</span>
                                       <div className="flex items-center gap-2">
@@ -1999,7 +2122,7 @@ export const BillingManagerPage: FC = () => {
                                           e.stopPropagation()
                                           setShowForms(!showForms)
                                         }}
-                                        className="flex items-center justify-between w-full px-3.5 py-1.5 bg-white border border-slate-200/80 rounded-md shadow-sm hover:border-slate-300 active:bg-slate-50 transition-all duration-150 group"
+                                        className="flex items-center justify-between w-full px-3.5 py-2 bg-white border border-slate-300 rounded-md hover:border-slate-400 active:bg-slate-50 transition-all duration-150 group"
                                       >
                                         <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-700 uppercase tracking-widest">
                                           <Edit3 size={13} className="text-slate-400" /> Edit Forms
@@ -2035,7 +2158,7 @@ export const BillingManagerPage: FC = () => {
                                           e.stopPropagation()
                                           setShowClaims(!showClaims)
                                         }}
-                                        className="flex items-center justify-between w-full px-3.5 py-1.5 bg-white border border-slate-200/80 rounded-md shadow-sm hover:border-slate-300 active:bg-slate-50 transition-all duration-150 group"
+                                        className="flex items-center justify-between w-full px-3.5 py-2 bg-white border border-slate-300 rounded-md hover:border-slate-400 active:bg-slate-50 transition-all duration-150 group"
                                       >
                                         <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-700 uppercase tracking-widest">
                                           <Clock size={13} className="text-slate-400" /> Claims History
