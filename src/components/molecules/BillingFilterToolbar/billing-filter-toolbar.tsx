@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/atoms/RadioGroup/radio-
 import { Calendar } from '@/components/atoms/Calendar/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/Popover/popover'
 import { format } from 'date-fns'
-import { CalendarIcon, CheckCircleIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { CalendarIcon, CheckCircleIcon, ChevronDownIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
   Select,
@@ -232,6 +232,14 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
     return FILTER_CATEGORIES.filter(c => c.label.toLowerCase().includes(q))
   }, [filterSearch])
 
+  // Collapse mobile category row if it is hidden by search
+  useEffect(() => {
+    if (mobileExpandedCat && !visibleCategories.some(c => c.id === mobileExpandedCat)) {
+      setMobileExpandedCat(null)
+      setMobileDraftValue(undefined)
+    }
+  }, [visibleCategories, mobileExpandedCat])
+
   const draftCat = draftFilter ? CATEGORY_MAP.get(draftFilter) ?? null : null
 
   // ---- Handlers ----
@@ -438,6 +446,21 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
           </button>
         </div>
 
+        {/* ── Search filter categories (below header, above selected criteria) ── */}
+        <div className="px-4 py-2.5 border-b border-slate-100 bg-white flex-shrink-0">
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" aria-hidden />
+            <input
+              type="search"
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              placeholder="Search filters..."
+              autoComplete="off"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50/80 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent focus:bg-white"
+            />
+          </div>
+        </div>
+
         {/* ── Selected Criteria chips ── */}
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 min-h-[68px] flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
@@ -480,7 +503,10 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
 
         {/* ── Category accordion list ── */}
         <div className="flex-1 overflow-y-auto pb-24">
-          {FILTER_CATEGORIES.map(cat => {
+          {visibleCategories.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center px-4 py-10">No filters match your search.</p>
+          ) : (
+            visibleCategories.map((cat) => {
             const hasActiveFilter = mobileCatIds.has(cat.id)
             const isExpanded = mobileExpandedCat === cat.id
             const mobileDraftCat = isExpanded ? cat : null
@@ -514,12 +540,17 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
                       cat={mobileDraftCat}
                       value={mobileDraftValue}
                       onChange={(val) => handleMobileDraftValueChange(mobileDraftCat.id, val)}
+                      onOptionCommitted={() => {
+                        setMobileExpandedCat(null)
+                        setMobileDraftValue(undefined)
+                      }}
                     />
                   </div>
                 )}
               </div>
             )
-          })}
+          })
+          )}
         </div>
 
         {/* ── Fixed footer ── */}
@@ -1110,22 +1141,32 @@ const MobileCardBody: FC<{
   cat: FilterCategory
   value: any
   onChange: (val: any) => void
-}> = ({ cat, value, onChange }) => {
+  /** Called after a discrete option tap (pills / yes-no); accordion can collapse */
+  onOptionCommitted?: () => void
+}> = ({ cat, value, onChange, onOptionCommitted }) => {
+  const commitOption = () => {
+    onOptionCommitted?.()
+  }
+
   switch (cat.template) {
     case 'multiselect': {
+      // Mobile: single-select per category — one option at a time; repeat tap clears
       const selected: string[] = Array.isArray(value) ? value : []
-      const toggle = (opt: string) =>
-        onChange(selected.includes(opt) ? selected.filter(s => s !== opt) : [...selected, opt])
+      const onlySelected = selected[0]
+      const selectSingle = (opt: string) => {
+        onChange(onlySelected === opt ? [] : [opt])
+        commitOption()
+      }
 
       return (
         <div className="flex flex-wrap gap-2">
           {(cat.options ?? []).map(opt => {
-            const active = selected.includes(opt)
+            const active = onlySelected === opt
             return (
               <button
                 key={opt}
                 type="button"
-                onClick={() => toggle(opt)}
+                onClick={() => selectSingle(opt)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
                   active
                     ? 'bg-[#1a73e8] border-[#1a73e8] text-white'
@@ -1153,7 +1194,10 @@ const MobileCardBody: FC<{
             <button
               key={opt.label}
               type="button"
-              onClick={() => onChange(opt.v)}
+              onClick={() => {
+                onChange(opt.v)
+                commitOption()
+              }}
               className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
                 value === opt.v
                   ? 'bg-[#1a73e8] border-[#1a73e8] text-white'
@@ -1187,7 +1231,10 @@ const MobileCardBody: FC<{
             <button
               key={opt}
               type="button"
-              onClick={() => onChange(value === opt ? null : opt)}
+              onClick={() => {
+                onChange(value === opt ? null : opt)
+                commitOption()
+              }}
               className={`px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
                 value === opt
                   ? 'bg-[#1a73e8] border-[#1a73e8] text-white'

@@ -95,13 +95,13 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
     });
   };
 
-  // Mock claims history entries per encounter (with dates)
+  // Mock claims history — V1 format per row: [Date] [Time] [Status]
   const getClaimsHistory = (_encounter: BillingEncounter) => [
-    { id: 'ch1', label: 'Re-opened', date: '01/20/2026' },
-    { id: 'ch2', label: 'Re-opened', date: '01/18/2026' },
-    { id: 'ch3', label: 'Re-opened', date: '01/15/2026' },
-    { id: 'ch4', label: 'Re-opened', date: '01/12/2026' },
-    { id: 'ch5', label: 'Re-opened', date: '01/08/2026' },
+    { id: 'ch1', date: '03/10/2026', time: '15:23', status: 'Re-opened' },
+    { id: 'ch2', date: '03/08/2026', time: '09:41', status: 'Re-opened' },
+    { id: 'ch3', date: '03/05/2026', time: '14:02', status: 'Re-opened' },
+    { id: 'ch4', date: '03/02/2026', time: '11:17', status: 'Re-opened' },
+    { id: 'ch5', date: '02/28/2026', time: '08:55', status: 'Re-opened' },
   ];
 
   // ── Gear (settings) popover state ──────────────────────────────────────────
@@ -368,7 +368,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 
   return (
     <TooltipProvider>
-      <div className={`space-y-1 overflow-y-auto pt-0 ${className}`}>
+      <div className={`space-y-0.5 overflow-y-auto pt-0 ${className}`}>
         <style>
           {`
             .ag-header-cell-center .ag-header-cell-label {
@@ -407,11 +407,11 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                     : 'border-slate-200 hover:border-slate-300 shadow-sm'
                 }`}
               >
-                {/* Card Header — Compact flexbox layout */}
-                <div className="flex items-center justify-between w-full py-2 px-4 bg-white border-b border-slate-200 rounded-t-md">
+                {/* Card Header — high-density row */}
+                <div className="flex items-center justify-between w-full py-1.5 px-3 bg-white border-b border-slate-200 rounded-t-md">
 
                   {/* LEFT — Patient identity (fixed width) */}
-                  <div className="flex items-center gap-2 w-56 shrink-0">
+                  <div className="flex items-center gap-1.5 w-52 shrink-0">
                     <input
                       type="checkbox"
                       id={`encounter-select-${encounter.id}`}
@@ -421,17 +421,17 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                       aria-label={`Select encounter ${encounter.id} for ${encounter.patientName}`}
                     />
 
-                    <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] leading-none font-bold shrink-0 select-none">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] leading-none font-bold shrink-0 select-none">
                       {encounter.patientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
 
                     <div className="flex items-center gap-1 ml-0.5">
                       <div className="relative flex items-center justify-center group cursor-help">
                         <AlertTriangle size={14} className="text-amber-500" style={{ fill: '#fef3c7' }} />
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] pointer-events-none">
+                        <div className="absolute top-full left-0 mt-2 w-64 max-w-[min(16rem,calc(100vw-2rem))] p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
+                          <div className="absolute bottom-full left-3 border-4 border-transparent border-b-slate-800" aria-hidden />
                           <div className="font-semibold text-amber-300 mb-1">[Golden Thread Rule]</div>
                           One or more forms do not meet the golden thread rules: GT
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
                         </div>
                       </div>
                       {/* Alert 2: Override Indicator */}
@@ -440,34 +440,34 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                       ) && (
                         <div className="relative flex items-center justify-center group cursor-help">
                           <AlertTriangle size={14} className="text-red-500 fill-red-100" />
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] pointer-events-none">
+                          <div className="absolute top-full left-0 mt-2 w-64 max-w-[min(16rem,calc(100vw-2rem))] p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
+                            <div className="absolute bottom-full left-3 border-4 border-transparent border-b-slate-800" aria-hidden />
                             <div className="font-semibold text-red-300 mb-1">Override Applied</div>
                             Overridden by: Admin Ensoftek on 25/03/2026 20:04:35
                             <br />
                             <span className="text-slate-300">CANS Assessment Only</span>
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex flex-col truncate ml-0.5">
-                      <span className="text-[14px] font-bold text-slate-900 leading-none truncate">{encounter.patientName}</span>
-                      <span className="text-[11.5px] text-slate-500 truncate leading-none mt-0.5">MRN: {encounter.patientMrn}</span>
+                    <div className="flex flex-col truncate ml-0.5 min-w-0">
+                      <span className="text-[13px] font-bold text-slate-900 leading-tight truncate">{encounter.patientName}</span>
+                      <span className="text-[11px] text-slate-500 truncate leading-tight mt-0.5">MRN: {encounter.patientMrn}</span>
                     </div>
                   </div>
 
-                  <div className="h-8 w-px bg-slate-200 mx-5 shrink-0"></div>
+                  <div className="h-6 w-px bg-slate-200 mx-3 shrink-0"></div>
 
-                  {/* MIDDLE — Data columns */}
-                  <div className="flex items-center gap-7 flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+                  {/* MIDDLE — Data columns: stretch equal height; justify-between pins values to shared baseline with Encounter ID row */}
+                  <div className="flex h-[30px] items-stretch gap-4 flex-1 min-w-0 overflow-x-auto scrollbar-hide">
 
-                    <div className="flex flex-col shrink-0">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Encounter ID</span>
+                    <div className="flex flex-col justify-between self-stretch shrink-0 min-h-0 min-w-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Encounter ID</span>
                       <div className="flex items-center whitespace-nowrap">
                         <button
                           onClick={() => handleEncounterClick(encounter)}
-                          className="text-[12.5px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
+                          className="text-[12px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
                           aria-label={`View details for encounter ${encounter.id}`}
                         >
                           {encounter.id} ({new Date(encounter.dateOfService).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })})
@@ -475,61 +475,61 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                         <span className="text-slate-300 mx-1.5">•</span>
                         <button
                           onClick={() => console.log('View Fee Sheet for', encounter.id)}
-                          className="text-[12.5px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
+                          className="text-[12px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
                         >
                           View Fee Sheet
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex flex-col shrink-0">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Treatment Time</span>
-                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.treatmentTime || '-'}</span>
+                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Treatment Time</span>
+                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.treatmentTime || '-'}</span>
                     </div>
 
-                    <div className="flex flex-col shrink-0">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Provider</span>
-                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider}</span>
+                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Provider</span>
+                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider}</span>
                     </div>
 
-                    <div className="flex flex-col shrink-0">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Rend</span>
-                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider.replace(/^Dr\.\s*/i, '')}</span>
+                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Rend</span>
+                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider.replace(/^Dr\.\s*/i, '')}</span>
                     </div>
 
-                    <div className="flex flex-col shrink-0">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Facility</span>
-                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap" title={getFacilityName(encounter.department)}>{getFacilityName(encounter.department)}</span>
+                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Facility</span>
+                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap" title={getFacilityName(encounter.department)}>{getFacilityName(encounter.department)}</span>
                     </div>
 
-                    <div className="flex flex-col shrink-0">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Enc. Status</span>
-                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounterStatus}</span>
+                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Enc. Status</span>
+                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounterStatus}</span>
                     </div>
 
-                    <div className="flex flex-col shrink-0">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Bill Status</span>
-                      <span className="text-[12.5px] font-medium text-slate-800 leading-none whitespace-nowrap">{billingStatus}</span>
+                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Bill Status</span>
+                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{billingStatus}</span>
                     </div>
 
-                    <div className="flex flex-col shrink-0 min-w-[5rem] items-end text-right">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 leading-none whitespace-nowrap">Amount</span>
-                      <span className="text-[13px] font-bold text-slate-900 leading-none whitespace-nowrap tabular-nums">
+                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-w-[5rem] min-h-0 items-end text-right">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Amount</span>
+                      <span className="text-[12px] font-bold text-slate-900 leading-none whitespace-nowrap tabular-nums">
                         {formatUsd(encounter.totalCharges ?? 0)}
                       </span>
                     </div>
                   </div>
 
                   {/* RIGHT — Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0 pl-3 border-l border-slate-100">
+                  <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-slate-100">
                     <TooltipRoot>
                       <TooltipTrigger asChild>
                         <button
                           type="button"
                           onClick={() => toggleDetails(encounter.id)}
-                          className="p-1.5 text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50 rounded-md transition-colors"
+                          className="p-1 text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50 rounded-md transition-colors"
                           aria-expanded={!collapsedDetailsIds.has(encounter.id)}
-                          aria-label={collapsedDetailsIds.has(encounter.id) ? 'Show billing details' : 'Hide billing details'}
+                          aria-label={collapsedDetailsIds.has(encounter.id) ? 'Show Edit Forms and Claims History' : 'Hide Edit Forms and Claims History'}
                         >
                           <ChevronDownIcon
                             className={`w-4 h-4 transition-transform duration-200 ${collapsedDetailsIds.has(encounter.id) ? '' : 'rotate-180'}`}
@@ -537,13 +537,13 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="text-xs">
-                        <p>{collapsedDetailsIds.has(encounter.id) ? 'Show billing details' : 'Hide billing details'}</p>
+                        <p>{collapsedDetailsIds.has(encounter.id) ? 'Show Edit Forms and Claims History' : 'Hide Edit Forms and Claims History'}</p>
                       </TooltipContent>
                     </TooltipRoot>
                     {/* ── Gear / Settings popover ── */}
                     <div className="relative">
                       <button
-                        className={`p-1.5 rounded-md transition-colors ${posPopoverEncounterId === encounter.id ? 'text-[#1a73e8] bg-blue-50' : 'text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50'}`}
+                        className={`p-1 rounded-md transition-colors ${posPopoverEncounterId === encounter.id ? 'text-[#1a73e8] bg-blue-50' : 'text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50'}`}
                         aria-label="Settings"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -594,7 +594,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                     {/* ── Kebab / More actions menu ── */}
                     <div className="relative">
                       <button
-                        className={`p-1.5 rounded-md transition-colors ${kebabMenuEncounterId === encounter.id ? 'text-[#1a73e8] bg-blue-50' : 'text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50'}`}
+                        className={`p-1 rounded-md transition-colors ${kebabMenuEncounterId === encounter.id ? 'text-[#1a73e8] bg-blue-50' : 'text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50'}`}
                         aria-label="More actions"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -661,27 +661,26 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                   </div>
                 </div>
 
-                {/* Card Body — hidden in collapsed mode (only underlined header details visible) */}
-                {!collapsedDetailsIds.has(encounter.id) && (
-                <div className="px-2 py-1.5 relative" style={{ zIndex: 1 }}>
+                {/* Card body: insurance table always visible; Edit Forms / Claims History toggled by header chevron */}
+                <div className="px-2 py-1 relative" style={{ zIndex: 1 }}>
 
                   {/* Insurance/Billing data table */}
                   <div className="overflow-x-auto -mx-2 md:mx-0 px-2 md:px-0">
-                    <table className="w-full min-w-[800px] text-[11.5px] border-collapse">
+                    <table className="w-full min-w-[800px] text-[11px] border-collapse">
                       <thead className="bg-slate-50 border-y border-slate-200">
                         <tr>
-                          <th className="pl-2 pr-0 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-6"></th>
-                          <th className="pl-0 pr-1 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Insurance Levels</th>
-                          <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-44">Insurance</th>
-                          <th className="px-2 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Billing Type</th>
-                          <th className="px-2 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">X12 Partner</th>
-                          <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Code</th>
-                          <th className="px-2 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Unit</th>
-                          <th className="px-2 py-1.5 text-right text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Unit Price</th>
-                          <th className="px-2 py-1.5 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">POS</th>
-                          <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Diagnosis</th>
-                          <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Rend</th>
-                          <th className="px-2 py-1.5 text-right text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+                          <th className="pl-2 pr-0 py-1 text-center text-[9px] font-semibold text-slate-500 uppercase tracking-wide w-6"></th>
+                          <th className="pl-0 pr-1 py-1 text-center text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Insurance Levels</th>
+                          <th className="px-1.5 py-1 text-left text-[9px] font-semibold text-slate-500 uppercase tracking-wide w-44">Insurance</th>
+                          <th className="px-1.5 py-1 text-center text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Billing Type</th>
+                          <th className="px-1.5 py-1 text-center text-[9px] font-semibold text-slate-500 uppercase tracking-wide">X12 Partner</th>
+                          <th className="px-1.5 py-1 text-left text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Code</th>
+                          <th className="px-1.5 py-1 text-center text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Unit</th>
+                          <th className="px-1.5 py-1 text-right text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Unit Price</th>
+                          <th className="px-1.5 py-1 text-center text-[9px] font-semibold text-slate-500 uppercase tracking-wide">POS</th>
+                          <th className="px-1.5 py-1 text-left text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Diagnosis</th>
+                          <th className="px-1.5 py-1 text-left text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Rend</th>
+                          <th className="px-1.5 py-1 text-right text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -698,7 +697,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             className={`border-b border-slate-100 last:border-0 hover:bg-blue-50/20 transition-colors ${service.hasError ? 'bg-red-50' : 'bg-white'}`}
                           >
                             {/* Status Icon */}
-                            <td className="pl-2 pr-0 py-1 text-center">
+                            <td className="pl-2 pr-0 py-0.5 text-center align-middle">
                               <TooltipRoot>
                                 <TooltipTrigger asChild>
                                   <span className="inline-block cursor-help">
@@ -715,13 +714,13 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </td>
                             
                             {/* Insurance Levels */}
-                            <td className="pl-0 pr-1 py-1 text-center">
+                            <td className="pl-0 pr-1 py-0.5 text-center align-middle">
                               {service.insuranceLevels ? (
                                 <TooltipRoot>
                                   <TooltipTrigger asChild>
                                     <div className="inline-flex items-center border border-slate-200 rounded-md overflow-hidden cursor-help">
                                       {/* Primary - 1 */}
-                                      <div className={`py-0.5 px-1.5 text-[10px] font-medium flex items-center justify-center gap-0.5 min-w-[22px] border-r border-slate-200 ${
+                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] border-r border-slate-200 ${
                                         service.insuranceLevels.primary.billed 
                                           ? 'bg-emerald-50 text-emerald-700' 
                                           : service.insuranceLevels.primary.status === 'not_applicable'
@@ -742,7 +741,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                                       </div>
                                       
                                       {/* Secondary - 2 */}
-                                      <div className={`py-0.5 px-1.5 text-[10px] font-medium flex items-center justify-center gap-0.5 min-w-[22px] border-r border-slate-200 ${
+                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] border-r border-slate-200 ${
                                         service.insuranceLevels.secondary.billed 
                                           ? 'bg-emerald-50 text-emerald-700' 
                                           : service.insuranceLevels.secondary.status === 'not_applicable'
@@ -765,7 +764,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                                       </div>
                                       
                                       {/* Tertiary - 3 */}
-                                      <div className={`py-0.5 px-1.5 text-[10px] font-medium flex items-center justify-center gap-0.5 min-w-[22px] ${
+                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] ${
                                         service.insuranceLevels.tertiary.billed 
                                           ? 'bg-emerald-50 text-emerald-700' 
                                           : service.insuranceLevels.tertiary.status === 'not_applicable'
@@ -807,9 +806,9 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </td>
                             
                             {/* Insurance Select */}
-                            <td className="px-2 py-1.5">
+                            <td className="px-1.5 py-0.5 align-middle">
                               <Select defaultValue="primary">
-                                <SelectTrigger className="h-6 text-[11px] w-full bg-transparent border border-slate-200 text-slate-600 shadow-sm hover:bg-white [&>span]:truncate [&>span]:block [&>span]:overflow-hidden [&>span]:whitespace-nowrap">
+                                <SelectTrigger className="h-5 min-h-0 py-0.5 px-1.5 text-[10px] w-full bg-transparent border border-slate-200 text-slate-600 shadow-sm hover:bg-white [&>span]:truncate [&>span]:block [&>span]:overflow-hidden [&>span]:whitespace-nowrap leading-tight">
                                   <SelectValue placeholder="Select insurance" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -822,16 +821,16 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </td>
                             
                             {/* Billing Type */}
-                            <td className="px-2 py-1.5 text-center text-slate-700">HCFA</td>
+                            <td className="px-1.5 py-0.5 text-center text-slate-700 align-middle">HCFA</td>
                             
                             {/* X12 Partner */}
-                            <td className="px-2 py-1.5 text-center text-slate-700">-</td>
+                            <td className="px-1.5 py-0.5 text-center text-slate-700 align-middle">-</td>
                             
                             {/* CPT Code */}
-                            <td className="px-2 py-1.5">
-                              <div className="flex flex-col">
+                            <td className="px-1.5 py-0.5 align-middle">
+                              <div className="flex flex-col gap-0">
                                 <button
-                                  className="text-[11.5px] leading-tight font-medium text-blue-700 hover:text-blue-900 hover:underline focus:outline-none rounded text-left"
+                                  className="text-[11px] leading-tight font-medium text-blue-700 hover:text-blue-900 hover:underline focus:outline-none rounded text-left"
                                   onClick={() => {
                                     console.log('CPT Code clicked:', service.serviceCode)
                                   }}
@@ -843,27 +842,27 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             </td>
                             
                             {/* Quantity */}
-                            <td className="px-2 py-1.5 text-center text-slate-700">{service.quantity}</td>
+                            <td className="px-1.5 py-0.5 text-center text-slate-700 align-middle">{service.quantity}</td>
                             
                             {/* Unit Price */}
-                            <td className="px-2 py-1.5 text-right text-slate-700">${service.unitPrice.toFixed(2)}</td>
+                            <td className="px-1.5 py-0.5 text-right text-slate-700 align-middle">${service.unitPrice.toFixed(2)}</td>
                             
                             {/* POS */}
-                            <td className="px-2 py-1.5 text-center text-slate-600">{service.placeOfService || '-'}</td>
+                            <td className="px-1.5 py-0.5 text-center text-slate-600 align-middle">{service.placeOfService || '-'}</td>
                             
                             {/* Diagnosis */}
-                            <td className="px-2 py-1.5 text-slate-600">{service.diagnosisCodes?.join(', ') || '-'}</td>
+                            <td className="px-1.5 py-0.5 text-slate-600 align-middle">{service.diagnosisCodes?.join(', ') || '-'}</td>
                             
                             {/* Rendering Provider */}
-                            <td className="px-2 py-1.5 text-slate-700">{encounter.provider.replace(/^Dr\.\s*/i, '')}</td>
+                            <td className="px-1.5 py-0.5 text-slate-700 align-middle">{encounter.provider.replace(/^Dr\.\s*/i, '')}</td>
                             
                             {/* Total */}
-                            <td className="px-2 py-1.5 text-right font-semibold text-slate-800">${service.totalPrice.toFixed(2)}</td>
+                            <td className="px-1.5 py-0.5 text-right font-semibold text-slate-800 align-middle">${service.totalPrice.toFixed(2)}</td>
                           </tr>
                           {service.hasError && service.errorMessage && (
                             <tr className="bg-red-50">
-                              <td colSpan={12} className="px-2 py-1 text-left">
-                                <div className="flex items-center gap-1.5 text-red-700">
+                              <td colSpan={12} className="px-1.5 py-0.5 text-left">
+                                <div className="flex items-center gap-1 text-red-700">
                                   <span className="text-[11px] font-medium">{service.errorMessage}</span>
                                 </div>
                               </td>
@@ -875,19 +874,22 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                       </tbody>
                     </table>
                   </div>
+                </div>
 
+                {!collapsedDetailsIds.has(encounter.id) && (
+                  <div className="px-2 pb-1 relative border-t border-slate-200" style={{ zIndex: 1 }}>
                   {/* ── Split footer: Edit Forms | Claims History ── */}
-                  <div className="w-full grid grid-cols-2 divide-x divide-slate-200 border-t border-slate-200 bg-slate-50/50">
+                  <div className="w-full grid grid-cols-2 divide-x divide-slate-200 bg-slate-50/50">
 
-                    <div className="py-2 px-4 flex flex-col">
-                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    <div className="py-1.5 px-3 flex flex-col">
+                      <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
                         <Edit3 size={12} className="opacity-60" />
                         <span>Edit Forms</span>
                       </div>
-                      <div className="flex flex-wrap gap-x-5 gap-y-1">
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                         <button
                           type="button"
-                          className="flex items-center gap-1 text-[11.5px] text-[#0ea5e9] font-medium hover:bg-blue-50 rounded px-1 -ml-1 transition-colors"
+                          className="flex items-center gap-0.5 text-[11px] text-[#0ea5e9] font-medium hover:bg-blue-50 rounded px-0.5 -ml-0.5 transition-colors"
                           onClick={(e) => e.preventDefault()}
                         >
                           <FileText size={12} className="text-blue-400 shrink-0" />
@@ -895,7 +897,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                         </button>
                         <button
                           type="button"
-                          className="flex items-center gap-1 text-[11.5px] text-[#0ea5e9] font-medium hover:bg-blue-50 rounded px-1 -ml-1 transition-colors"
+                          className="flex items-center gap-0.5 text-[11px] text-[#0ea5e9] font-medium hover:bg-blue-50 rounded px-0.5 -ml-0.5 transition-colors"
                           onClick={(e) => e.preventDefault()}
                         >
                           <FileText size={12} className="text-blue-400 shrink-0" />
@@ -904,28 +906,24 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                       </div>
                     </div>
 
-                    <div className="py-2 px-4 flex flex-col pl-6">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <div className="py-1.5 px-3 flex flex-col pl-4">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
                           <Clock size={12} className="opacity-60 shrink-0" />
                           <span>Claims History</span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">
+                        <span className="text-[9px] font-semibold text-slate-400 bg-white border border-slate-200 px-1 py-0.5 rounded shadow-sm">
                           Last 30 Days
                         </span>
                       </div>
-                      <div className="flex flex-col gap-0 max-h-[65px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                      <div className="flex flex-col gap-0 max-h-[72px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
                         {getClaimsHistory(encounter).map((entry) => (
                           <div
                             key={entry.id}
-                            className="flex items-center justify-between py-0.5 px-1.5 hover:bg-white rounded transition-colors"
+                            className="flex items-center justify-start text-[12px] text-slate-600 py-1 px-1 hover:bg-white rounded transition-colors min-w-0"
                           >
-                            <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium min-w-0">
-                              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                              <span className="truncate">{entry.label}</span>
-                            </div>
-                            <span className="text-[10px] text-slate-400 tabular-nums shrink-0 ml-2">
-                              {entry.date}
+                            <span className="truncate">
+                              {entry.date} {entry.time} {entry.status}
                             </span>
                           </div>
                         ))}
@@ -934,7 +932,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 
                   </div>
 
-                </div>
+                  </div>
                 )}
               </div>
             )

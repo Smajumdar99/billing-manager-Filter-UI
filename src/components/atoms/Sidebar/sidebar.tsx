@@ -185,7 +185,6 @@ const billingNavItems: Array<{
 }> = [
   { icon: "chart-bar", label: "Billing Dashboard" },
   { icon: "file-invoice-dollar", label: "Billing Manager" },
-  { icon: "folder-open", label: "Batch Manager" },
   { 
     icon: "cogs", 
     label: "Masters", 

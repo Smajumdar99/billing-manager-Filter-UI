@@ -143,9 +143,9 @@ function formatDos(dateStr: string): string {
 
 function DataCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>
-      <span className="text-[13px] font-medium text-slate-800">{children}</span>
+    <div className="flex flex-col justify-between self-stretch min-h-0 shrink-0">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">{label}</span>
+      <span className="text-[13px] font-medium text-slate-800 leading-none">{children}</span>
     </div>
   )
 }
@@ -237,12 +237,12 @@ function EncounterRow({
           </div>
         </div>
 
-        {/* MIDDLE — Data columns */}
-        <div className="flex items-center justify-between flex-1 px-8 border-l border-slate-100">
+        {/* MIDDLE — Data columns: stretch + justify-between aligns value baselines with Encounter ID row */}
+        <div className="flex items-stretch justify-between flex-1 px-8 border-l border-slate-100">
 
           {/* Encounter ID */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Encounter ID</span>
+          <div className="flex flex-col justify-between self-stretch shrink-0 min-w-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Encounter ID</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onEncounterClick?.(enc)}

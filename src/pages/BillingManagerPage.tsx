@@ -87,7 +87,6 @@ const mobileSidebarItems: Array<{
 }> = [
   { icon: "chart-bar", label: "Billing Dashboard" },
   { icon: "file-invoice-dollar", label: "Billing Manager" },
-  { icon: "folder-open", label: "Batch Manager" },
   { icon: "cogs", label: "Masters", subItems: [{ label: "Level of Care" }] },
   { icon: "clipboard-list", label: "Claims & Denials" },
   { icon: "exchange-alt", label: "ERA Process" },
@@ -159,7 +158,11 @@ export const BillingManagerPage: FC = () => {
   const [selectedEncounters, setSelectedEncounters] = useState<string[]>([])
   const [showErrorDialog, setShowErrorDialog] = useState<BillingEncounter | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
-  const [currentSort, setCurrentSort] = useState<SortOption | undefined>(undefined)
+  const [currentSort, setCurrentSort] = useState<SortOption | undefined>({
+    field: 'dateOfService',
+    label: 'Encounter Date',
+    direction: 'desc',
+  })
   const [viewMode] = useState<ViewMode>('card')
   const [activeTab, setActiveTab] = useState<'ready' | 'blocked' | 'with_errors' | 'pending_submit'>('ready')
   const [billingTypeFilter, setBillingTypeFilter] = useState<string>('all')
@@ -1301,6 +1304,11 @@ export const BillingManagerPage: FC = () => {
                         </Select>
                       </div>
 
+                      <div
+                        className="h-7 w-px shrink-0 bg-slate-200 self-center"
+                        aria-hidden="true"
+                      />
+
                       {/* Center: Tabs + Total immediately after */}
                       <div className="flex items-center gap-3 min-w-0">
                         <Tabs
@@ -1630,51 +1638,7 @@ export const BillingManagerPage: FC = () => {
                   <div className="bg-white border-b border-gray-200 py-2 px-4">
                     <div className="flex items-center gap-2">
 
-                      {/* ── Status dropdown ── */}
-                      {(() => {
-                        const statusOpts = [
-                          { value: 'ready' as const, label: 'Ready to Bill', count: encounters.filter(e => e.status === 'ready_to_bill' && !e.hasErrors).length },
-                          { value: 'blocked' as const, label: 'Blocked', count: encounters.filter(e => e.hasErrors && e.errorSeverity === 'critical').length },
-                          { value: 'with_errors' as const, label: 'With Errors', count: encounters.filter(e => e.hasErrors).length },
-                          { value: 'pending_submit' as const, label: 'Pending Submit', count: encounters.filter(e => e.status === 'in_review' || e.status === 'authorized').length },
-                        ]
-                        const activeLabel = statusOpts.find(o => o.value === activeTab)
-                        return (
-                          <div className="relative flex-1">
-                            <button
-                              type="button"
-                              onClick={() => { setStatusDropdownOpen(p => !p); setBillingTypeDropdownOpen(false) }}
-                              className="flex items-center justify-between w-full bg-white border border-slate-200 text-slate-800 py-2.5 pl-3 pr-3 rounded-xl font-semibold shadow-sm text-sm gap-1"
-                            >
-                              <span className="truncate">{activeLabel?.label} ({activeLabel?.count})</span>
-                              <ChevronDownIcon className={`w-3.5 h-3.5 flex-shrink-0 text-slate-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                            {statusDropdownOpen && (
-                              <>
-                                <div className="fixed inset-0 z-40" onClick={() => setStatusDropdownOpen(false)} />
-                                <div className="absolute left-0 top-full mt-1 min-w-[160px] w-full z-50 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden py-1">
-                                  {statusOpts.map(opt => (
-                                    <button
-                                      key={opt.value}
-                                      type="button"
-                                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                                        activeTab === opt.value
-                                          ? 'bg-blue-50 text-[#1a73e8] font-medium'
-                                          : 'text-slate-700 hover:bg-slate-50 active:bg-blue-50'
-                                      }`}
-                                      onClick={() => { setActiveTab(opt.value); setStatusDropdownOpen(false) }}
-                                    >
-                                      {opt.label} ({opt.count})
-                                    </button>
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        )
-                      })()}
-
-                      {/* ── Billing Type dropdown ── */}
+                      {/* ── Billing Type dropdown (left) ── */}
                       {(() => {
                         const billingOpts = [
                           { value: 'all', label: 'All', count: encounters.length },
@@ -1701,7 +1665,7 @@ export const BillingManagerPage: FC = () => {
                             {billingTypeDropdownOpen && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setBillingTypeDropdownOpen(false)} />
-                                <div className="absolute right-0 top-full mt-1 min-w-[140px] w-full z-50 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden py-1">
+                                <div className="absolute left-0 top-full mt-1 min-w-[140px] w-full z-50 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden py-1">
                                   {billingOpts.map(opt => (
                                     <button
                                       key={opt.value}
@@ -1712,6 +1676,50 @@ export const BillingManagerPage: FC = () => {
                                           : 'text-slate-700 hover:bg-slate-50 active:bg-blue-50'
                                       }`}
                                       onClick={() => { setBillingTypeFilter(opt.value); setBillingTypeDropdownOpen(false) }}
+                                    >
+                                      {opt.label} ({opt.count})
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )
+                      })()}
+
+                      {/* ── Status dropdown (right) ── */}
+                      {(() => {
+                        const statusOpts = [
+                          { value: 'ready' as const, label: 'Ready to Bill', count: encounters.filter(e => e.status === 'ready_to_bill' && !e.hasErrors).length },
+                          { value: 'blocked' as const, label: 'Blocked', count: encounters.filter(e => e.hasErrors && e.errorSeverity === 'critical').length },
+                          { value: 'with_errors' as const, label: 'With Errors', count: encounters.filter(e => e.hasErrors).length },
+                          { value: 'pending_submit' as const, label: 'Pending Submit', count: encounters.filter(e => e.status === 'in_review' || e.status === 'authorized').length },
+                        ]
+                        const activeLabel = statusOpts.find(o => o.value === activeTab)
+                        return (
+                          <div className="relative flex-1">
+                            <button
+                              type="button"
+                              onClick={() => { setStatusDropdownOpen(p => !p); setBillingTypeDropdownOpen(false) }}
+                              className="flex items-center justify-between w-full bg-white border border-slate-200 text-slate-800 py-2.5 pl-3 pr-3 rounded-xl font-semibold shadow-sm text-sm gap-1"
+                            >
+                              <span className="truncate">{activeLabel?.label} ({activeLabel?.count})</span>
+                              <ChevronDownIcon className={`w-3.5 h-3.5 flex-shrink-0 text-slate-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {statusDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setStatusDropdownOpen(false)} />
+                                <div className="absolute right-0 top-full mt-1 min-w-[160px] w-full z-50 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden py-1">
+                                  {statusOpts.map(opt => (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                                        activeTab === opt.value
+                                          ? 'bg-blue-50 text-[#1a73e8] font-medium'
+                                          : 'text-slate-700 hover:bg-slate-50 active:bg-blue-50'
+                                      }`}
+                                      onClick={() => { setActiveTab(opt.value); setStatusDropdownOpen(false) }}
                                     >
                                       {opt.label} ({opt.count})
                                     </button>
@@ -1773,13 +1781,13 @@ export const BillingManagerPage: FC = () => {
 
                           const mServiceLines = [
                             { id: 's1', insurance: 'Primary: Blue Cross Blue Shield', code: '99213', dx: ['Z00.00'], unit: 1, unitPrice: 120, total: 120, type: 'HCFA', pos: '11', rend: enc.provider.replace(/^Dr\.\s*/i, ''), x12: '-', levels: { p: true, s: false, t: false } },
-                            { id: 's2', insurance: 'Primary: Blue Cross Blue Shield', code: '85025', dx: ['Z00.00'], unit: 1, unitPrice: 25, total: 25, type: 'HCFA', pos: '11', rend: enc.provider.replace(/^Dr\.\s*/i, ''), x12: '-', levels: { p: false, s: false, t: false } },
+                            { id: 's2', insurance: 'Primary: Blue Cross Blue Shield', code: '85025', dx: ['Z00.00'], unit: 1, unitPrice: 25, total: 25, type: 'HCFA', pos: '11', rend: enc.provider.replace(/^Dr\.\s*/i, ''), x12: '-', levels: { p: false, s: false, t: false }, hasError: true, errorMessage: 'Not in Service Plan' },
                           ]
 
                           const mClaimsHistory = [
-                            { id: 'c1', label: 'Re-opened', date: '01/20/2026' },
-                            { id: 'c2', label: 'Re-opened', date: '01/18/2026' },
-                            { id: 'c3', label: 'Re-opened', date: '01/15/2026' },
+                            { id: 'c1', date: '03/10/2026', time: '15:23', status: 'Re-opened' },
+                            { id: 'c2', date: '03/08/2026', time: '09:41', status: 'Re-opened' },
+                            { id: 'c3', date: '03/05/2026', time: '14:02', status: 'Re-opened' },
                           ]
 
                           const showSettings = mobileSettingsOpenId === enc.id
@@ -1795,9 +1803,9 @@ export const BillingManagerPage: FC = () => {
                               className="bg-white border border-slate-100 rounded-xl shadow-sm flex flex-col mx-4 overflow-hidden"
                             >
                               {/* ── Collapsed Header ── */}
-                              <div className="p-4 flex flex-col" style={{ height: '295px' }}>
+                              <div className="px-4 py-3 flex flex-col" style={{ height: '216px' }}>
                                 {/* Row 1: Avatar + Name + actions */}
-                                <div className="flex justify-between items-start border-b border-slate-100 pb-3 mb-3">
+                                <div className="flex justify-between items-start border-b border-slate-100 pb-2 mb-1">
                                   <div className="flex items-center min-w-0 gap-2">
                                     <input
                                       type="checkbox"
@@ -1932,55 +1940,67 @@ export const BillingManagerPage: FC = () => {
                                 </div>
 
                                 {/* Redesigned Compact Data Section */}
-                                <div className="flex flex-col gap-4 mt-2 mb-2 px-0.5">
+                                <div className="flex flex-col gap-4 mt-2 mb-0 px-0.5">
                                   {/* --- ENCOUNTER DETAILS SECTION --- */}
-                                  <div className="flex flex-col gap-3 w-full py-2">
+                                  <div className="flex flex-col gap-4 w-full py-0">
                                     
-                                    {/* Row 1: ID & Time (Flex Between) */}
+                                    {/* Row 1: ID & Time (Bigger Icons) */}
                                     <div className="flex items-center justify-between pr-1">
-                                      <div className="flex items-center gap-2">
-                                        <FileText size={14} className="text-slate-400 shrink-0" />
-                                        <a href="#" className="text-[13px] font-semibold text-blue-600 hover:underline truncate">enc_002 (Jan 14, 2024)</a>
+                                      <div className="flex items-center gap-2.5">
+                                        <FileText size={18} className="text-slate-400 shrink-0" />
+                                        <a href="#" className="text-[14px] font-semibold text-blue-600 hover:underline truncate">enc_002 (Jan 14, 2024)</a>
                                       </div>
-                                      <div className="flex items-center gap-1.5 text-[12px] text-slate-600 shrink-0">
-                                        <Clock size={13} className="text-slate-400" />
+                                      <div className="flex items-center gap-1.5 text-[13px] text-slate-600 shrink-0">
+                                        <Clock size={16} className="text-slate-400" />
                                         <span className="font-medium">10:00 - 10:30</span>
                                       </div>
                                     </div>
 
-                                    {/* Row 2: Inline Status Badges */}
-                                    <div className="flex items-center gap-4 pl-0.5">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Enc</span>
-                                        <span className="px-2 py-0.5 bg-green-50 text-green-700 border border-green-200/60 rounded-md text-[11px] font-semibold leading-none">Open</span>
+                                    {/* Row 2: Larger Inline Status Badges */}
+                                    <div className="flex items-center gap-3 pl-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Enc</span>
+                                        <span className="px-1.5 py-0.5 bg-green-50 text-green-700 border border-green-200/60 rounded text-[11px] font-semibold leading-none">Open</span>
                                       </div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bill</span>
-                                        <span className="px-2 py-0.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-[11px] font-medium leading-none">No claims generated</span>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Bill</span>
+                                        <span className="px-1.5 py-0.5 bg-slate-50 text-slate-700 border border-slate-200 rounded text-[11px] font-medium leading-none">No claims generated</span>
                                       </div>
                                     </div>
 
-                                    {/* Row 3: Divided Providers */}
-                                    <div className="flex items-center text-[12px] text-slate-600 pl-0.5">
-                                      <User size={14} className="text-slate-400 mr-2 shrink-0" />
+                                    {/* Row 3: Divided Providers (Added Rend Icon) */}
+                                    <div className="flex items-center text-[13px] text-slate-600 pl-0.5">
+                                      <svg
+                                        viewBox="0 0 640 640"
+                                        aria-hidden="true"
+                                        className="w-[18px] h-[18px] fill-current text-slate-400 mr-2 shrink-0"
+                                      >
+                                        <path d="M320 112C364.2 112 400 147.8 400 192C400 236.2 364.2 272 320 272C275.8 272 240 236.2 240 192C240 147.8 275.8 112 320 112zM192 192C192 262.7 249.3 320 320 320C390.7 320 448 262.7 448 192C448 121.3 390.7 64 320 64C249.3 64 192 121.3 192 192zM264 486.4L264 432L360 432L360 473C338.8 482.3 324 503.4 324 528L324 552C324 563 333 572 344 572C355 572 364 563 364 552L364 528C364 517 373 508 384 508C395 508 404 517 404 528L404 552C404 563 413 572 424 572C435 572 444 563 444 552L444 528C444 503.4 429.2 482.3 408 473L408 436.3C458.7 450.3 496 496.8 496 552C496 565.3 506.7 576 520 576C533.3 576 544 565.3 544 552C544 459.2 468.8 384 376 384L264 384C171.2 384 96 459.2 96 552C96 565.3 106.7 576 120 576C133.3 576 144 565.3 144 552C144 502.8 173.6 460.5 216 442L216 486.4C201.7 494.7 192 510.2 192 528C192 554.5 213.5 576 240 576C266.5 576 288 554.5 288 528C288 510.2 278.3 494.7 264 486.4z" />
+                                      </svg>
                                       <span className="truncate"><span className="font-medium text-slate-700">Provider:</span> Dr. Iyer</span>
-                                      <span className="text-slate-300 mx-2.5">•</span>
+                                      <span className="text-slate-300 mx-3">•</span>
+                                      <User size={16} className="text-slate-400 mr-1.5 shrink-0" />
                                       <span className="truncate"><span className="font-medium text-slate-700">Rend:</span> Iyer</span>
                                     </div>
 
                                     {/* Row 4: Facility & POS */}
-                                    <div className="flex items-center text-[12px] text-slate-600 pl-0.5 mt-0.5">
-                                      <Building2 size={14} className="text-slate-400 mr-2 shrink-0" />
+                                    <div className="flex items-center text-[13px] text-slate-600 pl-0.5">
+                                      <Building2 size={18} className="text-slate-400 mr-2 shrink-0" />
                                       <span className="truncate">CMHC Outpatient - 1.0</span>
-                                      <span className="text-slate-300 mx-2.5">•</span>
-                                      <MapPin size={14} className="text-slate-400 mr-2 shrink-0" />
+                                      <span className="text-slate-300 mx-3">•</span>
+                                      <MapPin size={16} className="text-slate-400 mr-1.5 shrink-0" />
                                       <span className="truncate">POS: 11 office</span>
                                     </div>
 
                                   </div>
                                   {/* --- END ENCOUNTER DETAILS --- */}
 
-                                  <div className="flex items-center justify-between pt-4 pb-4 mt-1 mb-2.5 border-t border-slate-100 gap-3 -ml-0.5">
+                                </div>
+                              </div>
+
+                              {/* ── Fee Sheet + Accordions (unified group) ── */}
+                              <div className="flex flex-col gap-2 mt-4 w-full px-4 pb-3">
+                                  <div className="flex items-center justify-between gap-3 -ml-0.5">
                                     <button
                                       type="button"
                                       onClick={(e) => e.preventDefault()}
@@ -1995,11 +2015,6 @@ export const BillingManagerPage: FC = () => {
                                       </span>
                                     </div>
                                   </div>
-                                </div>
-                              </div>
-
-                              {/* ── Accordions (always visible) ── */}
-                              <div className="flex flex-col gap-2.5 mt-0 px-4 pb-3">
                                   {/* [3B] Insurance Sub-Cards */}
                                   <div className="flex flex-col">
                                     <button
@@ -2020,7 +2035,14 @@ export const BillingManagerPage: FC = () => {
                                       <div className="mt-2 mb-2 rounded-lg border border-slate-100 bg-slate-50/70 p-2.5">
                                       <div className="flex flex-col gap-3">
                                       {mServiceLines.map((svc) => (
-                                        <div key={svc.id} className="bg-white border border-slate-100 rounded-xl shadow-sm p-3.5 flex flex-col gap-3 mb-0 last:mb-0">
+                                        <div
+                                          key={svc.id}
+                                          className={`rounded-xl shadow-sm p-3.5 flex flex-col gap-3 mb-0 last:mb-0 border ${
+                                            svc.hasError
+                                              ? 'bg-red-50 border-red-100'
+                                              : 'bg-white border-slate-100'
+                                          }`}
+                                        >
                                           <div className="flex items-center justify-between gap-2 min-w-0">
                                             <button
                                               type="button"
@@ -2107,6 +2129,13 @@ export const BillingManagerPage: FC = () => {
                                               <span className="text-[11px] text-slate-700">{svc.x12}</span>
                                             </div>
                                           </div>
+                                          {svc.hasError && svc.errorMessage && (
+                                            <div className="mt-3 pt-3 border-t border-red-100">
+                                              <span className="text-[13px] font-medium text-red-600">
+                                                {svc.errorMessage}
+                                              </span>
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                       </div>
@@ -2164,7 +2193,7 @@ export const BillingManagerPage: FC = () => {
                                           <Clock size={13} className="text-slate-400" /> Claims History
                                         </div>
                                         <div className="flex items-center gap-2">
-                                          <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[9px] font-semibold text-slate-500">Last 30 Days</span>
+                                          <span className="-mt-0.5 bg-slate-100 px-1.5 py-0.5 rounded text-[9px] font-semibold text-slate-500">Last 30 Days</span>
                                           <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showClaims ? 'rotate-180' : ''}`} />
                                         </div>
                                       </button>
@@ -2173,12 +2202,13 @@ export const BillingManagerPage: FC = () => {
                                           <div className="flex flex-col gap-0 overflow-hidden rounded-md border border-slate-100 bg-white">
                                           <div className="flex flex-col max-h-[100px] overflow-y-auto divide-y divide-slate-100 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
                                             {mClaimsHistory.map((entry) => (
-                                              <div key={entry.id} className="flex items-center justify-between py-2.5 px-3">
-                                                <div className="flex items-center gap-2 text-[12px] text-slate-700 font-medium">
-                                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                                                  {entry.label}
-                                                </div>
-                                                <span className="text-[11px] text-slate-400 tabular-nums shrink-0">{entry.date}</span>
+                                              <div
+                                                key={entry.id}
+                                                className="flex items-center justify-start text-[12px] text-slate-600 py-1 px-3 min-w-0"
+                                              >
+                                                <span className="truncate">
+                                                  {entry.date} {entry.time} {entry.status}
+                                                </span>
                                               </div>
                                             ))}
                                           </div>
