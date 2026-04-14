@@ -18,6 +18,58 @@ export type BillingStatus =
   | 'write_off' 
   | 'patient_balance'
 
+/** Queue card Bill Status column — only these three labels are shown in the UI */
+export type BillStatusDisplay = 'Unbilled' | 'Partially Billed' | 'Billing Complete'
+
+/**
+ * Maps workflow status to the three-state bill status shown on cards and filters.
+ */
+export function getBillStatusDisplay(status: BillingStatus): BillStatusDisplay {
+  switch (status) {
+    case 'claim_accepted':
+    case 'paid':
+      return 'Billing Complete'
+    case 'claim_generated':
+    case 'claim_submitted':
+    case 'claim_rejected':
+    case 'write_off':
+    case 'patient_balance':
+      return 'Partially Billed'
+    case 'unauthorized':
+    case 'ready_to_bill':
+    case 'authorized':
+    case 'in_review':
+    default:
+      return 'Unbilled'
+  }
+}
+
+/** Queue card Encounter Status column — only these three labels are shown in the UI */
+export type EncounterStatusDisplay = 'Open' | 'Closed' | 'Closed with errors'
+
+/**
+ * Maps workflow status to the three-state encounter status shown on cards.
+ */
+export function getEncounterStatusDisplay(status: BillingStatus): EncounterStatusDisplay {
+  switch (status) {
+    case 'paid':
+    case 'claim_accepted':
+      return 'Closed'
+    case 'claim_rejected':
+    case 'unauthorized':
+    case 'write_off':
+      return 'Closed with errors'
+    case 'ready_to_bill':
+    case 'authorized':
+    case 'in_review':
+    case 'claim_generated':
+    case 'claim_submitted':
+    case 'patient_balance':
+    default:
+      return 'Open'
+  }
+}
+
 export type BillType = 
   | 'professional' 
   | 'institutional' 
@@ -92,10 +144,14 @@ export interface BillingEncounter {
   patientMrn: string
   dateOfService: string
   treatmentTime?: string // Format: "HH:MM - HH:MM" (e.g., "10:00 - 10:30")
+  /** Optional explicit duration in minutes; if omitted, UI may derive from treatmentTime range */
+  treatmentDurationMinutes?: number
   encounterType: string
   provider: string
   department: string
-  
+  /** Patient program name (card "PROGRAM" column); distinct from facility/site string */
+  program: string
+
   // Insurance and billing details
   primaryPayer: PayerType
   secondaryPayer?: PayerType

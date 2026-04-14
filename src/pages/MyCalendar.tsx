@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
+import { startOfWeek, format } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
 
 import CalendarSidebar from '../components/organisms/CalendarSidebar/calendar-sidebar'
@@ -29,6 +30,8 @@ interface CalendarEvent {
   phoneNumber?: string;
   supervisingProvider?: string;
   personName?: string;
+  /** yyyy-MM-dd — pin event to a specific day in week list view */
+  date?: string;
 }
 
 /**
@@ -232,6 +235,62 @@ const MyCalendar: React.FC = () => {
     }
   ];
 
+  /** Demo “event tape” rows for mobile week view (Monday of the week that contains selectedDate) */
+  const weekTapeDemoEvents = useMemo((): CalendarEvent[] => {
+    const monday = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const d = format(monday, 'yyyy-MM-dd');
+    return [
+      {
+        id: 'tape-lunch-a',
+        title: 'Lunch Break',
+        startTime: '13:15',
+        endTime: '13:45',
+        isAllDay: false,
+        type: 'Provider',
+        category: 'Break',
+        location: 'Break Room',
+        date: d,
+      },
+      {
+        id: 'tape-lunch-b',
+        title: 'Lunch Break',
+        startTime: '13:15',
+        endTime: '13:45',
+        isAllDay: false,
+        type: 'Provider',
+        category: 'Break',
+        location: 'Break Room',
+        date: d,
+      },
+      {
+        id: 'tape-olivia',
+        title: 'Adaptive Skills - Individual',
+        personName: 'Olivia Thompson',
+        startTime: '13:15',
+        endTime: '14:00',
+        isAllDay: false,
+        type: 'Individual',
+        appointmentType: 'Adaptive Skills - Individual',
+        location: 'Office B4',
+        status: 'Confirmed',
+        date: d,
+      },
+      {
+        id: 'tape-supervision',
+        title: 'Supervision',
+        startTime: '14:00',
+        endTime: '15:00',
+        isAllDay: false,
+        type: 'Group',
+        category: 'Supervision',
+        supervisingProvider: 'Case Review - Sarah Wilson',
+        location: 'Room 101',
+        status: 'Confirmed',
+        date: d,
+      },
+    ];
+  }, [selectedDate]);
+
   // Handle navigation from responsive navigation components
   const handleNavigate = (itemName: string) => {
     console.log('Navigate to:', itemName);
@@ -305,7 +364,7 @@ const MyCalendar: React.FC = () => {
             onViewChange={setView}
             onDateChange={setSelectedDate}
             onSettingsClick={handleSettingsClick}
-            events={sampleEvents}
+            events={[...sampleEvents, ...weekTapeDemoEvents]}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             selectedProviders={selectedProviders}

@@ -835,11 +835,15 @@ export const BillingFilterToolbar: FC<BillingFilterToolbarProps> = ({
       {/* ===== Right Side: Bill type (right-aligned) + Action Buttons (children) ===== */}
       <div className="ml-auto flex items-center gap-3 flex-shrink-0">
         {(billingTypeValue != null && onBillingTypeChange && billingTypeOptions.length > 0) && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Bill type</span>
+          <div className="flex items-center">
             <Select value={billingTypeValue} onValueChange={onBillingTypeChange}>
-              <SelectTrigger className="w-[160px] h-8 text-sm bg-slate-50/80 border-gray-200">
-                <SelectValue placeholder="All" />
+              <SelectTrigger className="h-8 min-w-[160px] max-w-[280px] text-sm bg-slate-50/80 border-gray-200">
+                <span className="flex min-w-0 flex-1 items-center overflow-hidden text-left">
+                  <span className="text-gray-500 mr-1 shrink-0">Bill type:</span>
+                  <span className="min-w-0 truncate text-gray-900 font-medium">
+                    <SelectValue placeholder="All" />
+                  </span>
+                </span>
               </SelectTrigger>
               <SelectContent>
                 {billingTypeOptions.map((opt) => (

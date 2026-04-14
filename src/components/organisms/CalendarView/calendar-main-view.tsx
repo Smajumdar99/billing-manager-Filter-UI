@@ -66,6 +66,8 @@ interface Event {
   title: string;
   startTime: string;
   endTime: string;
+  /** ISO date string yyyy-MM-dd — when set, event only appears on that day in week list */
+  date?: string;
   isAllDay?: boolean;
   type?: 'Individual' | 'Group' | 'Provider';
   backgroundColor?: string;
@@ -257,23 +259,23 @@ const DayScheduleTimelineRow: React.FC<{
   const isAllDay = variant === 'allDay';
   return (
     <div
-      className={`flex w-full border-b ${
+      className={`flex w-full border-b pl-2 md:pl-0 ${
         isAllDay ? 'border-gray-200 min-h-[30px] md:min-h-[32px]' : 'border-gray-100 min-h-[44px] md:min-h-0'
       }`}
     >
       <div
-        className={`w-16 shrink-0 md:w-12 md:sticky md:left-0 md:bg-white md:z-10 ${
+        className={`w-10 shrink-0 md:w-12 md:sticky md:left-0 md:bg-white md:z-10 ${
           isAllDay
-            ? 'flex items-center justify-center text-center px-1 md:px-0.5 py-1.5'
-            : 'text-right pr-4 md:pr-1 pt-2 md:py-1.5'
+            ? 'flex items-center justify-center text-center px-0.5 md:px-0.5 py-1.5'
+            : 'text-right pr-2 md:pr-1 pt-2 md:py-1.5'
         }`}
       >
-        <span className="text-xs font-medium text-slate-400 md:text-gray-500 md:font-normal">
+        <span className="text-[10px] font-medium text-slate-400 md:text-xs md:text-gray-500 md:font-normal">
           {timeLabel}
         </span>
       </div>
       <div
-        className={`flex-1 flex flex-col gap-2 border-l border-slate-200 pl-4 md:border-l-0 md:pl-0 md:gap-0 md:relative ${
+        className={`flex-1 flex flex-col gap-2 border-l border-slate-200 pl-3 pr-4 md:border-l-0 md:pl-0 md:pr-0 md:gap-0 md:relative ${
           isAllDay ? 'pb-2 pt-1.5 md:pb-0' : 'pb-3 pt-1.5 md:pb-0 md:pt-0 md:min-h-[40px]'
         }`}
       >
@@ -1477,141 +1479,257 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white">
       {/* Mobile-Responsive Calendar Header */}
-      <div className="flex items-center justify-between px-3.5 md:px-6 py-2.5 border-b border-gray-200">
-        {/* Left side - Mobile: compact so filter/search fit in same row */}
-        <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1 md:flex-initial">
-          {/* Mobile hamburger menu - only visible on mobile */}
+      <div className="flex flex-row items-center justify-between w-full px-4 py-2 bg-white border-b border-gray-200">
+        {/* Left Column: Tools & Search */}
+        <div className="flex-1 flex flex-row items-center justify-start gap-3">
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
             title="Menu"
           >
             <Bars3Icon className="w-5 h-5 text-gray-600" />
           </button>
-          
-          {/* Profile image - smaller on mobile */}
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden">
-            <img 
-              src="/profile-placeholder.jpg" 
-              alt="Profile" 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Fallback for image loading error
-                const target = e.target as HTMLImageElement;
-                target.src = 'https://images.unsplash.com/photo-1745433972680-6f4d34b602c3?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+
+          {/* Desktop: Search button */}
+          <div className="hidden md:block" ref={searchOverlayRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setHasSearched(false);
+                setIsSearchModalOpen(true);
               }}
-            />
+              className="relative flex items-center justify-center w-9 h-9 border rounded-lg transition-colors text-gray-700 border-gray-300 hover:bg-gray-50"
+              aria-label="Search"
+            >
+              <MagnifyingGlassIcon className="w-4 h-4" />
+            </button>
           </div>
-          
-          {/* Date with navigation arrows and view button */}
-          <div className="flex items-center min-w-0 flex-1">
-            {/* Left arrow */}
-            {view !== 'agenda' && (
-              <button
-                onClick={goToPrevDate}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-                aria-label="Previous"
-              >
-                <ArrowLeftIcon className="w-4 h-4 text-gray-600" />
-              </button>
-            )}
-            
-            <div className="flex items-center pr-2 md:pr-3 min-w-0 flex-1 md:flex-initial">
-              {/* Date display - compact on mobile so filter/search icons fit */}
-              {view === 'agenda' ? (
-                <div className="flex items-center gap-1 md:gap-2 min-w-0 w-full">
-                  <div className="flex items-center gap-0.5 md:gap-1 min-w-0 flex-1">
-                    <label className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap flex-shrink-0 hidden sm:inline">From:</label>
-                    <input
-                      type="date"
-                      value={format(agendaDateRange.startDate, 'yyyy-MM-dd')}
-                      onChange={handleStartDateChange}
-                      aria-label="From date"
-                      className="flex-1 min-w-0 max-w-[100px] md:max-w-none px-1.5 md:px-2 py-0.5 md:py-1 text-xs md:text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+
+          {/* Desktop: Filter toggle button with dropdown */}
+          <div className="relative hidden md:block" ref={filterDropdownRef}>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`relative flex items-center justify-center w-9 h-9 border rounded-lg transition-colors ${
+                showFilters || hasActiveFilters()
+                  ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
+                  : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <FunnelIcon className="w-4 h-4" />
+              {hasActiveFilters() && (
+                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {[filters.personAppts, filters.providerReserv, filters.groupAppts, filters.nextHours].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+
+            {showFilters && (
+              <div className="absolute left-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-2rem)]">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <FunnelIcon className="w-4 h-4 text-gray-600" />
+                    <h3 className="text-sm font-semibold text-gray-800">Filter by:</h3>
+                    {hasActiveFilters() && view === 'agenda' && (
+                      <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">
+                        {agendaData.length}
+                      </span>
+                    )}
+                    {hasActiveFilters() && view !== 'agenda' && (
+                      <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">
+                        {myCalendarFilteredEvents.length}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-0.5 md:gap-1 min-w-0 flex-1">
-                    <label className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap flex-shrink-0 hidden sm:inline">To:</label>
-                    <input
-                      type="date"
-                      value={format(agendaDateRange.endDate, 'yyyy-MM-dd')}
-                      onChange={handleEndDateChange}
-                      aria-label="To date"
-                      className="flex-1 min-w-0 max-w-[100px] md:max-w-none px-1.5 md:px-2 py-0.5 md:py-1 text-xs md:text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:bg-blue-50 px-2 py-1 rounded"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="p-3">
+                  <div className="space-y-1">
+                    <label className="flex items-center justify-between cursor-pointer hover:bg-blue-50 px-2 py-1.5 rounded group transition-colors">
+                      <div className="flex items-center">
+                        <UserIcon className="w-4 h-4 text-gray-500 group-hover:text-blue-600 mr-2 transition-colors" />
+                        <input
+                          type="checkbox"
+                          checked={filters.personAppts}
+                          onChange={(e) => setFilters(prev => ({ ...prev, personAppts: e.target.checked }))}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1 mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Person appointments only</span>
+                      </div>
+                      {filters.personAppts && <CheckIcon className="w-4 h-4 text-blue-600" />}
+                    </label>
+                    <label className="flex items-center justify-between cursor-pointer hover:bg-green-50 px-2 py-1.5 rounded group transition-colors">
+                      <div className="flex items-center">
+                        <UserGroupIcon className="w-4 h-4 text-gray-500 group-hover:text-green-600 mr-2 transition-colors" />
+                        <input
+                          type="checkbox"
+                          checked={filters.groupAppts}
+                          onChange={(e) => setFilters(prev => ({ ...prev, groupAppts: e.target.checked }))}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500 focus:ring-1 mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Group appointments only</span>
+                      </div>
+                      {filters.groupAppts && <CheckIcon className="w-4 h-4 text-green-600" />}
+                    </label>
+                    <label className="flex items-center justify-between cursor-pointer hover:bg-purple-50 px-2 py-1.5 rounded group transition-colors">
+                      <div className="flex items-center">
+                        <Cog6ToothIcon className="w-4 h-4 text-gray-500 group-hover:text-purple-600 mr-2 transition-colors" />
+                        <input
+                          type="checkbox"
+                          checked={filters.providerReserv}
+                          onChange={(e) => setFilters(prev => ({ ...prev, providerReserv: e.target.checked }))}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:ring-1 mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Provider reservations only</span>
+                      </div>
+                      {filters.providerReserv && <CheckIcon className="w-4 h-4 text-purple-600" />}
+                    </label>
+                    <div className="hover:bg-orange-50 px-2 py-1.5 rounded group transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <ClockIcon className="w-4 h-4 text-gray-500 group-hover:text-orange-600 mr-2 transition-colors" />
+                          <input
+                            type="checkbox"
+                            checked={filters.nextHours}
+                            onChange={(e) => setFilters(prev => ({ ...prev, nextHours: e.target.checked }))}
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-1 mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Appointments in next</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          {filters.nextHours && <CheckIcon className="w-4 h-4 text-orange-600 mr-1" />}
+                          <select
+                            value={filters.hoursValue}
+                            onChange={(e) => setFilters(prev => ({ ...prev, hoursValue: parseInt(e.target.value) }))}
+                            className={`text-xs border rounded px-1.5 py-0.5 font-medium min-w-[40px] ${
+                              filters.nextHours 
+                                ? 'border-orange-300 text-gray-700 bg-white focus:ring-orange-500 focus:border-orange-500' 
+                                : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                            }`}
+                            disabled={!filters.nextHours}
+                          >
+                            <option value={1}>1</option>
+                            <option value={2}>2</option>
+                            <option value={3}>3</option>
+                            <option value={4}>4</option>
+                            <option value={6}>6</option>
+                            <option value={8}>8</option>
+                            <option value={12}>12</option>
+                            <option value={24}>24</option>
+                          </select>
+                          <span className={`text-xs font-medium ${
+                            filters.nextHours ? 'text-gray-600' : 'text-gray-400'
+                          }`}>
+                            hours
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  className="text-sm md:text-lg font-bold text-slate-800 hover:text-[#1a73e8] px-2 py-1 rounded-md whitespace-nowrap md:text-xl md:font-semibold md:text-gray-800 md:hover:text-gray-800"
-                  aria-label="Change date"
-                >
-                  {getHeaderDate()}
-                </button>
-              )}
-              
-              {/* Show only the relevant button based on current view */}
-              <div className="ml-3">
-                {view === 'day' && (
-                  <button 
-                    onClick={goToToday}
-                    className="hidden md:flex items-center px-2.5 py-0.5 text-xs font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                  >
-                    Today
-                  </button>
-                )}
-                {view === 'week' && (
-                  <button 
-                    onClick={goToToday}
-                    className="hidden md:flex items-center px-2.5 py-0.5 text-xs font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                  >
-                    This Week
-                  </button>
-                )}
-                {view === 'month' && (
-                  <button 
-                    onClick={goToToday}
-                    className="hidden md:flex items-center px-2.5 py-0.5 text-xs font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                  >
-                    This Month
-                  </button>
-                )}
               </div>
-            </div>
-            
-            {/* Right arrow */}
-            {view !== 'agenda' && (
-              <button
-                onClick={goToNextDate}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="Next"
-              >
-                <ArrowRightIcon className="w-4 h-4 text-gray-600" />
-              </button>
             )}
           </div>
         </div>
+
+        {/* Center Column: Date Navigation */}
+        <div className="flex flex-row items-center justify-center gap-1.5 md:gap-4 min-w-0">
+          {view !== 'agenda' && (
+            <button
+              onClick={goToPrevDate}
+              className="shrink-0 p-1 md:p-2 rounded-full hover:bg-gray-100 transition-colors min-w-[28px] min-h-[28px] md:min-w-[32px] md:min-h-[32px] flex items-center justify-center"
+              aria-label="Previous"
+            >
+              <ArrowLeftIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-600" />
+            </button>
+          )}
+
+          <div className="flex items-center gap-1.5 md:gap-3 min-w-0">
+            {view === 'agenda' ? (
+              <div className="flex items-center gap-1 md:gap-2 min-w-0">
+                <div className="flex items-center gap-0.5 md:gap-1 min-w-0">
+                  <label className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap shrink-0 hidden sm:inline">From:</label>
+                  <input
+                    type="date"
+                    value={format(agendaDateRange.startDate, 'yyyy-MM-dd')}
+                    onChange={handleStartDateChange}
+                    aria-label="From date"
+                    className="min-w-0 max-w-[100px] md:max-w-none px-1.5 md:px-2 py-0.5 md:py-1 text-xs md:text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="flex items-center gap-0.5 md:gap-1 min-w-0">
+                  <label className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap shrink-0 hidden sm:inline">To:</label>
+                  <input
+                    type="date"
+                    value={format(agendaDateRange.endDate, 'yyyy-MM-dd')}
+                    onChange={handleEndDateChange}
+                    aria-label="To date"
+                    className="min-w-0 max-w-[100px] md:max-w-none px-1.5 md:px-2 py-0.5 md:py-1 text-xs md:text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            ) : (
+              <span className="text-xs font-bold text-purple-600 md:text-lg md:font-bold md:text-slate-800 lg:text-xl whitespace-nowrap">
+                {getHeaderDate()}
+              </span>
+            )}
+
+            {view === 'day' && (
+              <button
+                onClick={goToToday}
+                className="hidden md:inline-flex shrink-0 text-xs md:text-sm px-2 py-1 md:px-3 font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+              >
+                Today
+              </button>
+            )}
+            {view === 'week' && (
+              <button
+                onClick={goToToday}
+                className="hidden md:inline-flex shrink-0 text-xs md:text-sm px-2 py-1 md:px-3 font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+              >
+                This Week
+              </button>
+            )}
+            {view === 'month' && (
+              <button
+                onClick={goToToday}
+                className="hidden md:inline-flex shrink-0 text-xs md:text-sm px-2 py-1 md:px-3 font-medium rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+              >
+                This Month
+              </button>
+            )}
+          </div>
+
+          {view !== 'agenda' && (
+            <button
+              onClick={goToNextDate}
+              className="shrink-0 p-1 md:p-2 rounded-full hover:bg-gray-100 transition-colors min-w-[28px] min-h-[28px] md:min-w-[32px] md:min-h-[32px] flex items-center justify-center"
+              aria-label="Next"
+            >
+              <ArrowRightIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-600" />
+            </button>
+          )}
+        </div>
         
-        {/* Middle section - Hidden on mobile, shown on desktop */}
-        <div className="hidden md:flex flex-1 max-w-4xl mx-8">
-          <div className="flex items-center space-x-2">
-            <div className="relative min-w-0 flex-1 md:min-w-[18rem]" ref={searchOverlayRef}>
+        {/* Middle section - removed (search/filter moved to left column) */}
+        <div className="hidden">
+          <div>
+            <div>
               <button
                 type="button"
-                onClick={() => {
-                  setHasSearched(false);
-                  setIsSearchModalOpen(true);
-                }}
-                className="flex items-center gap-2 w-full max-w-md px-3 py-1.5 bg-white border border-blue-400 rounded-md text-slate-500 text-[13px] text-left hover:bg-slate-50 transition-colors"
+                disabled
+                className="hidden"
               >
-                <Search size={16} className="text-blue-500" />
-                <span>Search appointments or click for advanced search...</span>
+                <MagnifyingGlassIcon className="w-4 h-4" />
               </button>
             </div>
             
             {/* Filter toggle button with dropdown (desktop only; mobile has its own dropdown) */}
-            <div className="relative hidden md:block" ref={filterDropdownRef}>
+            <div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
             className={`relative flex items-center justify-center w-9 h-9 border rounded-lg transition-colors ${
@@ -1753,8 +1871,8 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </div>
         </div>
         
-        {/* Right side - Filter and Search (never shrink so they always show) */}
-        <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
+        {/* Right Column: Views & Settings */}
+        <div className="flex-1 flex flex-row items-center justify-end gap-3">
           {/* Mobile: Filter icon with dropdown (same Filter by options as desktop) */}
           <div className="relative md:hidden" ref={mobileFilterDropdownRef}>
             <button
@@ -1894,7 +2012,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           </button>
           
           {/* Provider/Room/Patient selector */}
-          <div className="hidden md:block w-40 mr-4">
+          <div className="hidden md:block w-40">
             <Select 
               value={activeTab}
               onValueChange={(value: 'provider' | 'room' | 'patient') => onTabChange(value)}
@@ -2689,13 +2807,24 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
         </div>
       )}
       
-      {/* Mobile Active Provider Banner - shows active provider above the view switcher on mobile */}
+      {/* Provider Banner - shows avatar + provider name + badge */}
       {activeProvider && (
-        <div className={`md:hidden ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-1.5`}>
-          <div className="flex items-center justify-center gap-2">
+        <div className={`${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-2`}>
+          <div className="flex flex-row items-center justify-center gap-3 w-full">
+            <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden shrink-0 ring-2 ring-white shadow-sm">
+              <img 
+                src="/profile-placeholder.jpg" 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'https://images.unsplash.com/photo-1745433972680-6f4d34b602c3?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+                }}
+              />
+            </div>
             <h3 className={`text-sm font-semibold ${activeTab === 'provider' ? 'text-blue-900' : 'text-green-900'} truncate`}>{activeProvider.label}</h3>
             {activeTab === 'provider' && activeProvider.clientCount > 0 && (
-              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 font-medium">
+              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 font-medium shrink-0">
                 {activeProvider.clientCount} clients
               </span>
             )}
@@ -2728,7 +2857,6 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
             >
               <option value="day">Day</option>
               <option value="week">Week</option>
-              <option value="month">Month</option>
               <option value="agenda">Agenda</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">
@@ -2747,7 +2875,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
       </div>
       
       {/* Calendar Body - Conditional layout based on provider layout mode */}
-      <div className="flex-1 overflow-hidden bg-white smart-scrollbar calendar-main-scroll w-full min-w-0">
+      <div className="flex-1 overflow-y-auto overflow-x-clip bg-white smart-scrollbar calendar-main-scroll w-full min-w-0">
         {effectiveLayoutMode === 'columns' && view === 'day' && (activeTab === 'provider' ? displayProviders.length > 0 : displayPatients.length > 0) ? (
           <div className="h-full flex">
             {(activeTab === 'provider' ? displayProviders : displayPatients).map((entity, _) => (
@@ -2761,22 +2889,6 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                 }`}
                 style={{ minWidth: (activeTab === 'provider' ? displayProviders : displayPatients).length > 2 ? '300px' : 'auto' }}
               >
-                {/* Entity Header - hidden on mobile (shown via mobile banner above) */}
-                <div className={`hidden md:block sticky top-0 z-20 ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-4 py-2`}>
-                  <div className="flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <h3 className={`text-sm font-semibold ${activeTab === 'provider' ? 'text-blue-900' : 'text-green-900'} truncate`}>{entity.label}</h3>
-                        {activeTab === 'provider' && 'clientCount' in entity && (entity as Provider).clientCount > 0 && (
-                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 font-medium">
-                            {(entity as Provider).clientCount} clients
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
                 {/* Provider Day Calendar Content */}
                 <div className="h-full overflow-y-auto smart-scrollbar calendar-main-scroll">
                   {/* All-day events */}
@@ -2823,22 +2935,6 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
           <div className="h-full overflow-y-auto">
             {(activeTab === 'provider' ? displayProviders : displayPatients).map((entity, _) => (
               <div key={entity.id} className="border-b border-gray-200 last:border-b-0">
-                {/* Entity Header - hidden on mobile (shown via mobile banner above) */}
-                <div className={`hidden md:block sticky top-0 z-20 ${activeTab === 'provider' ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200' : 'bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200'} px-6 py-3`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {activeTab === 'provider' ? <UserIcon className="w-5 h-5 text-blue-600" /> : <UserIcon className="w-5 h-5 text-green-600" />}
-                      <div className="flex items-center gap-2">
-                        <h3 className={`text-lg font-semibold ${activeTab === 'provider' ? 'text-blue-900' : 'text-green-900'}`}>{entity.label}</h3>
-                        {activeTab === 'provider' && 'clientCount' in entity && (entity as Provider).clientCount > 0 && (
-                          <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full border border-blue-200 font-medium">
-                            {(entity as Provider).clientCount} clients
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 
                 {/* Provider Calendar Content */}
                 <div className="min-h-[600px] bg-white">
@@ -2899,6 +2995,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                       events={myCalendarFilteredEvents}
                       timeSlots={timeSlots}
                       onEditEvent={handleEditEvent}
+                      onDateChange={onDateChange}
                     />
                   ) : (
                     <MonthView 
@@ -2972,6 +3069,7 @@ export const CalendarMainView: React.FC<CalendarMainViewProps> = ({
                   events={myCalendarFilteredEvents}
                   timeSlots={timeSlots}
                   onEditEvent={handleEditEvent}
+                  onDateChange={onDateChange}
                 />
               </div>
             ) : (

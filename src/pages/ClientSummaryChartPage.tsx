@@ -1,5 +1,4 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout'
 import { PlusIcon, Cog6ToothIcon, PlusCircleIcon, ArrowsPointingOutIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { NotificationCenter } from '@/components/widgets/NotificationCenter/notification-center';
@@ -17,6 +16,7 @@ import { Button } from '@/components/atoms/Button/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/atoms/Dialog/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { CreditCard, FileSignature, GripVertical } from 'lucide-react';
 import 'react-grid-layout/css/styles.css'
 
 // Create responsive grid layout component
@@ -90,9 +90,9 @@ const availableWidgets: WidgetConfig[] = [
   {
     id: 'billing',
     type: 'billing',
-    title: 'Billing',
+    title: 'Quick actions',
     component: BillingWidget,
-    defaultSize: { w: 6, h: 8 } // 6 columns wide, 8 rows tall
+    defaultSize: { w: 6, h: 1 } // quick-actions (compact single row)
   }
 ]
 
@@ -121,7 +121,6 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
   externalRemoveWidget,
   onWidgetExpandStateChange
 }, ref) => {
-  const navigate = useNavigate()
   
   // Use external active widgets if provided, otherwise fallback to internal state
   const [internalActiveWidgets, setInternalActiveWidgets] = useState<string[]>(['notification-center', 'functional-status', 'diagnosis', 'demographics', 'insurance', 'billing'])
@@ -142,7 +141,7 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
       { i: 'diagnosis', x: 6, y: 0, w: 3, h: 8, minW: 3, minH: 6 },
       { i: 'demographics', x: 0, y: 8, w: 6, h: 8, minW: 4, minH: 6 },
       { i: 'insurance', x: 6, y: 8, w: 3, h: 8, minW: 3, minH: 6 },
-      { i: 'billing', x: 0, y: 16, w: 3, h: 8, minW: 3, minH: 6 },
+      { i: 'billing', x: 0, y: 16, w: 3, h: 1, minW: 3, minH: 1 },
       { i: 'medications', x: 3, y: 16, w: 3, h: 8, minW: 3, minH: 6 },
       { i: 'problems', x: 6, y: 16, w: 3, h: 8, minW: 3, minH: 6 }
     ],
@@ -152,7 +151,7 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
       { i: 'diagnosis', x: 8, y: 0, w: 4, h: 8, minW: 3, minH: 6 },
       { i: 'demographics', x: 0, y: 8, w: 8, h: 8, minW: 4, minH: 6 },
       { i: 'insurance', x: 8, y: 8, w: 4, h: 8, minW: 3, minH: 6 },
-      { i: 'billing', x: 0, y: 16, w: 4, h: 8, minW: 3, minH: 6 },
+      { i: 'billing', x: 0, y: 16, w: 4, h: 1, minW: 3, minH: 1 },
       { i: 'medications', x: 4, y: 16, w: 4, h: 8, minW: 3, minH: 6 },
       { i: 'problems', x: 8, y: 16, w: 4, h: 8, minW: 3, minH: 6 }
     ],
@@ -162,7 +161,7 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
       { i: 'diagnosis', x: 0, y: 16, w: 9, h: 8, minW: 9, minH: 6 },
       { i: 'demographics', x: 0, y: 24, w: 9, h: 8, minW: 9, minH: 6 },
       { i: 'insurance', x: 0, y: 32, w: 9, h: 8, minW: 9, minH: 6 },
-      { i: 'billing', x: 0, y: 40, w: 9, h: 8, minW: 9, minH: 6 },
+      { i: 'billing', x: 0, y: 40, w: 9, h: 1, minW: 9, minH: 1 },
       { i: 'medications', x: 0, y: 48, w: 9, h: 8, minW: 9, minH: 6 },
       { i: 'problems', x: 0, y: 56, w: 9, h: 8, minW: 9, minH: 6 }
     ]
@@ -339,6 +338,7 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
             if (found) break
           }
           
+          const isBillingQuickActions = widgetId === 'billing'
           newLayouts[breakpoint] = [
             ...layout,
             {
@@ -348,7 +348,7 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
               w: widgetWidth,
               h: widget.defaultSize.h,
               minW: breakpoint === 'sm' ? 12 : 4,
-              minH: 6
+              minH: isBillingQuickActions ? 1 : 6
             }
           ]
         })
@@ -521,61 +521,32 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
             </Button>
           </div>
         )
-      case 'billing':
-        const billingLinks = [
-          { label: 'Payments Receipts', onClick: () => console.log('Payments Receipts') },
-          { label: 'Statement', onClick: () => navigate('/statements') },
-          { label: 'Prior Authorization', onClick: () => console.log('Prior Authorization') },
-          { label: 'New Payment', onClick: () => setIsNewPaymentDialogOpen(true) },
-          { label: 'Credit cards on file', onClick: () => setIsCreditCardsDialogOpen(true) },
-          { label: 'Write Off', onClick: () => console.log('Write Off') },
-        ];
-        
-        // Show first 2-3 links directly, rest in "More" dropdown
-        const visibleLinks = billingLinks.slice(0, 2);
-        const hiddenLinks = billingLinks.slice(2);
-        
-        return (
-          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50 flex-wrap min-w-0">
-            {visibleLinks.map((link) => (
-              <Button
-                key={link.label}
-                onClick={link.onClick}
-                variant="link"
-                className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal whitespace-nowrap"
-              >
-                {link.label}
-              </Button>
-            ))}
-            {hiddenLinks.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="link"
-                    className="gap-2 shrink-0 text-primary hover:brightness-110 h-auto py-2 text-sm font-normal whitespace-nowrap"
-                  >
-                    More
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {hiddenLinks.map((link) => (
-                    <DropdownMenuItem
-                      key={link.label}
-                      onClick={link.onClick}
-                      className="cursor-pointer"
-                    >
-                      {link.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        )
       default:
         return null
     }
   }
+
+  /** Action buttons row (shared by grid tile and maximize dialog). */
+  const renderBillingQuickActionsButtons = () => (
+    <div className="flex flex-row items-center gap-3 w-full">
+      <button
+        type="button"
+        className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-4 py-3 text-[14px] font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+        onClick={() => console.log('Authorization')}
+      >
+        <FileSignature size={16} className="shrink-0 text-slate-500" />
+        Authorization
+      </button>
+      <button
+        type="button"
+        className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-4 py-3 text-[14px] font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+        onClick={() => setIsNewPaymentDialogOpen(true)}
+      >
+        <CreditCard size={16} className="shrink-0 text-white" />
+        New Payment
+      </button>
+    </div>
+  )
 
   /**
    * Render individual widget with proper Widget wrapper
@@ -586,6 +557,39 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
 
     const WidgetComponent = widget.component
     const isCollapsed = collapsedWidgets.has(widgetId)
+
+    if (widget.type === 'billing') {
+      if (isCollapsed) {
+        return <div key={widgetId} className="h-max min-h-0" aria-hidden />
+      }
+      return (
+        <div
+          key={widgetId}
+          className={cn(
+            'relative bg-white rounded-xl border border-slate-200 w-full h-fit self-start p-5 pl-12',
+            isEditMode && 'ring-2 ring-blue-500 ring-opacity-50'
+          )}
+        >
+          <div
+            className="widget-drag-handle absolute top-3 left-3 cursor-grab text-slate-400 active:cursor-grabbing hover:text-slate-600"
+            aria-hidden
+          >
+            <GripVertical size={18} />
+          </div>
+          {renderBillingQuickActionsButtons()}
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={() => removeWidget(widgetId)}
+              className="absolute top-3 right-3 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-sm text-white transition-colors hover:bg-red-600"
+              title="Remove widget"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )
+    }
 
     return (
       <div 
@@ -718,7 +722,7 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
             onLayoutChange={handleLayoutChange}
             breakpoints={breakpoints}
             cols={cols}
-            rowHeight={60}
+            rowHeight={90}
             isDraggable={true}
             isResizable={isEditMode}
             draggableHandle=".widget-drag-handle"
@@ -739,10 +743,20 @@ const ClientSummaryChartPage = forwardRef<ClientSummaryChartPageRef, ClientSumma
               {maximizedWidget && availableWidgets.find(w => w.id === maximizedWidget)?.title}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-auto px-6">
+          <div className="flex-1 overflow-auto px-6 py-6">
             {maximizedWidget && (() => {
               const widget = availableWidgets.find(w => w.id === maximizedWidget)
               if (!widget) return null
+              if (widget.type === 'billing') {
+                return (
+                  <div className="relative flex items-center h-fit w-full max-w-4xl bg-white p-5 pl-12 rounded-xl border border-slate-200">
+                    <div className="absolute top-3 left-3 text-slate-400" aria-hidden>
+                      <GripVertical size={18} />
+                    </div>
+                    {renderBillingQuickActionsButtons()}
+                  </div>
+                )
+              }
               const WidgetComponent = widget.component
               return (
                 <div className="h-full [&_.space-y-2]:pt-0">

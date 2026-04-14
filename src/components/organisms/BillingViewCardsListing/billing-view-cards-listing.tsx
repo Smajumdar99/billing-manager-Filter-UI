@@ -1,9 +1,35 @@
 import { Dispatch, FC, SetStateAction, useState, useCallback, useEffect } from 'react'
-import { BillingEncounter } from '@/types/billing-manager'
-import { ChevronDownIcon } from '@heroicons/react/24/outline'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faExclamationTriangle, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons'
-import { AlertTriangle, Edit3, Clock, FileText } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import {
+  BillingEncounter,
+  type BillStatusDisplay,
+  type EncounterStatusDisplay,
+  getBillStatusDisplay,
+  getEncounterStatusDisplay,
+} from '@/types/billing-manager'
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  CurrencyDollarIcon,
+} from '@heroicons/react/24/outline'
+import {
+  AlertTriangle,
+  Edit3,
+  Clock,
+  FileText,
+  Send,
+  ShieldAlert,
+  RefreshCw,
+  Settings,
+  Users,
+  CheckCircle,
+  RotateCcw,
+  XCircle,
+  Play,
+  Download,
+  Plus,
+} from 'lucide-react'
+import { BuildingLightFullIcon } from '@/assets/icons/BuildingLightFullIcon'
 import {
   TooltipProvider,
   TooltipRoot,
@@ -42,6 +68,29 @@ export interface BillingViewCardsListingProps {
 // Service line item interface for billing
 const formatUsd = (amount: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
+
+/** Duration label for Treatment Time row (shown as parenthesized secondary text beside the range). */
+function formatTreatmentDurationLabel(encounter: BillingEncounter): string | null {
+  if (
+    encounter.treatmentDurationMinutes != null &&
+    Number.isFinite(encounter.treatmentDurationMinutes)
+  ) {
+    const m = Math.max(0, Math.round(encounter.treatmentDurationMinutes))
+    if (m === 0) return null
+    return m === 1 ? '1 min' : `${m} mins`
+  }
+  const range = encounter.treatmentTime?.trim()
+  if (!range || range === '-') return null
+  const normalized = range.replace(/[–—]/g, '-')
+  const match = normalized.match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/)
+  if (!match) return null
+  const start = parseInt(match[1], 10) * 60 + parseInt(match[2], 10)
+  const end = parseInt(match[3], 10) * 60 + parseInt(match[4], 10)
+  let diff = end - start
+  if (diff <= 0) diff += 24 * 60
+  if (diff <= 0) return null
+  return diff === 1 ? '1 min' : `${diff} mins`
+}
 
 interface ServiceLineItem {
   id: string
@@ -95,43 +144,47 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
     });
   };
 
-  // Mock claims history — V1 format per row: [Date] [Time] [Status]
-  const getClaimsHistory = (_encounter: BillingEncounter) => [
+  // Mock activity log — V1 format per row: [Date] [Time] [Status]
+  const getActivityLog = (_encounter: BillingEncounter) => [
     { id: 'ch1', date: '03/10/2026', time: '15:23', status: 'Re-opened' },
     { id: 'ch2', date: '03/08/2026', time: '09:41', status: 'Re-opened' },
     { id: 'ch3', date: '03/05/2026', time: '14:02', status: 'Re-opened' },
     { id: 'ch4', date: '03/02/2026', time: '11:17', status: 'Re-opened' },
     { id: 'ch5', date: '02/28/2026', time: '08:55', status: 'Re-opened' },
-  ];
-
-  // ── Gear (settings) popover state ──────────────────────────────────────────
-  const [posPopoverEncounterId, setPosPopoverEncounterId] = useState<string | null>(null);
-  const [posValues, setPosValues] = useState<Record<string, string>>({});
-  const POS_OPTIONS = [
-    { value: '11', label: '11 - Office' },
-    { value: '12', label: '12 - Home' },
-    { value: '21', label: '21 - Inpatient Hospital' },
-    { value: '22', label: '22 - On Campus-Outpatient' },
-    { value: '23', label: '23 - Emergency Room' },
-    { value: '31', label: '31 - Skilled Nursing Facility' },
-    { value: '32', label: '32 - Nursing Facility' },
+    { id: 'ch6', date: '02/25/2026', time: '16:40', status: 'Re-opened' },
+    { id: 'ch7', date: '02/22/2026', time: '10:12', status: 'Re-opened' },
+    { id: 'ch8', date: '02/18/2026', time: '13:05', status: 'Re-opened' },
+    { id: 'ch9', date: '02/14/2026', time: '09:22', status: 'Re-opened' },
+    { id: 'ch10', date: '02/10/2026', time: '14:51', status: 'Re-opened' },
+    { id: 'ch11', date: '02/06/2026', time: '11:08', status: 'Re-opened' },
+    { id: 'ch12', date: '02/01/2026', time: '08:33', status: 'Re-opened' },
+    { id: 'ch13', date: '01/28/2026', time: '15:17', status: 'Re-opened' },
+    { id: 'ch14', date: '01/24/2026', time: '12:44', status: 'Re-opened' },
+    { id: 'ch15', date: '01/20/2026', time: '10:29', status: 'Re-opened' },
   ];
 
   // ── Kebab (more actions) menu state ────────────────────────────────────────
   const [kebabMenuEncounterId, setKebabMenuEncounterId] = useState<string | null>(null);
-  const KEBAB_ACTIONS = [
-    { id: 'add',      icon: '+',  label: 'Add & Justify',    bold: false },
-    { id: 'generate', icon: '📄', label: 'Generate Claims',  bold: false },
-    { id: 'submit',   icon: '→',  label: 'Submit Claims',    bold: false },
-    { id: 'override', icon: '🛡', label: 'Override Blocks',  bold: false },
-    { id: 'ready',    icon: '✓',  label: 'Mark Ready',       bold: true  },
-    { id: 'export',   icon: '📄', label: 'Export',           bold: false },
+  const KEBAB_ACTIONS: { id: string; label: string; icon: React.ReactNode; dividerBefore?: boolean }[] = [
+    { id: 'add_justify',            label: 'Add & Justify',          icon: <Plus size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'generate_claims',        label: 'Generate Claims',        icon: <FileText size={16} className="text-slate-400 shrink-0" />, dividerBefore: true },
+    { id: 'generate_submit_claims', label: 'Generate & Submit Claims', icon: <Send size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'check_errors',           label: 'Check Errors',           icon: <AlertTriangle size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'override',               label: 'Override',               icon: <ShieldAlert size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'rebill',                 label: 'Rebill',                 icon: <RefreshCw size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'set_bill_type',          label: 'Set Bill Type',          icon: <Settings size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'set_bill_to',            label: 'Set Bill-To',            icon: <Users size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'mark_as_cleared',        label: 'Mark as Cleared',        icon: <CheckCircle size={16} className="text-slate-400 shrink-0" />, dividerBefore: true },
+    { id: 'reopen',                 label: 'Re-Open',                icon: <RotateCcw size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'remove_rebill',          label: 'Remove Re-bill',         icon: <XCircle size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'apply_post_primary',     label: 'Apply Post Primary Rules', icon: <Play size={16} className="text-slate-400 shrink-0" /> },
+    { id: 'set_pos',                label: 'Set POS',                icon: <BuildingLightFullIcon className="h-4 w-4 shrink-0 text-slate-400" />, dividerBefore: true },
+    { id: 'export',                 label: 'Export',                 icon: <Download size={16} className="text-slate-400 shrink-0" /> },
   ];
 
   // Close any open popup when clicking outside
   useEffect(() => {
     const handleDocClick = () => {
-      setPosPopoverEncounterId(null);
       setKebabMenuEncounterId(null);
     };
     document.addEventListener('click', handleDocClick);
@@ -157,48 +210,26 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
     return encounter.status === 'claim_generated'
   }
 
-  // Helper function to get encounter status
-  const getEncounterStatus = (encounter: BillingEncounter) => {
-    if (encounter.status === 'claim_rejected' || encounter.status === 'unauthorized') {
-      return 'Closed on Error'
+  const encounterStatusBadgeClassName = (label: EncounterStatusDisplay): string => {
+    switch (label) {
+      case 'Open':
+        return 'bg-green-50 text-green-700 border border-green-200'
+      case 'Closed':
+        return 'bg-gray-100 text-gray-700 border border-gray-200'
+      case 'Closed with errors':
+        return 'bg-red-50 text-red-700 border border-red-200'
     }
-    if (encounter.status === 'paid' || encounter.status === 'claim_accepted') {
-      return 'Closed'
-    }
-    return 'Open'
   }
 
-  // Helper function to get billing status
-  const getBillingStatus = (encounter: BillingEncounter) => {
-    const statusMap: Record<string, string> = {
-      'unauthorized': 'Unbilled',
-      'ready_to_bill': 'No claims generated',
-      'in_review': 'No claims generated',
-      'claim_generated': 'Claims generated but not submitted',
-      'claim_submitted': 'Claims generated but not submitted',
-      'claim_accepted': 'Billed',
-      'paid': 'Billed',
-      'claim_rejected': 'Denied',
-      'write_off': 'Denied'
+  const billStatusBadgeClassName = (label: BillStatusDisplay): string => {
+    switch (label) {
+      case 'Unbilled':
+        return 'bg-gray-100 text-gray-700'
+      case 'Partially Billed':
+        return 'bg-blue-50 text-blue-700'
+      case 'Billing Complete':
+        return 'bg-green-50 text-green-700'
     }
-    return statusMap[encounter.status] || 'Unbilled'
-  }
-
-  // Helper function to get facility name
-  const getFacilityName = (department: string) => {
-    const facilityMap: Record<string, string> = {
-      'Cardiology': 'Community Health Center',
-      'Emergency': 'CMHC Outpatient - 1.0',
-      'Neurology': 'Community Health Center',
-      'Radiology': 'CMHC Outpatient - 1.0',
-      'Orthopedics': 'Community Health Center',
-      'Internal Medicine': 'CMHC Outpatient - 1.0',
-      'Pathology': 'Community Health Center',
-      'Obstetrics': 'CMHC Outpatient - 1.0',
-      'Preventive Medicine': 'Community Health Center',
-      'Critical Care': 'CMHC Outpatient - 1.0'
-    }
-    return facilityMap[department] || 'Community Health Center'
   }
 
   // Helper function to format amount
@@ -368,7 +399,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 
   return (
     <TooltipProvider>
-      <div className={`space-y-0.5 overflow-y-auto pt-0 ${className}`}>
+      <div className={`flex flex-col gap-2.5 overflow-y-auto pt-0 ${className}`}>
         <style>
           {`
             .ag-header-cell-center .ag-header-cell-label {
@@ -395,9 +426,15 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
         ) : (
           encounters.map((encounter) => {
             const isSelected = selectedEncounters.includes(encounter.id)
-            const encounterStatus = getEncounterStatus(encounter)
-            const billingStatus = getBillingStatus(encounter)
-            
+            const encounterStatus = getEncounterStatusDisplay(encounter.status)
+            const billingStatus = getBillStatusDisplay(encounter.status)
+            const dateOfServiceFormatted = new Date(encounter.dateOfService).toLocaleDateString('en-US', {
+              month: 'short',
+              day: '2-digit',
+              year: 'numeric',
+            })
+            const treatmentDurationLabel = formatTreatmentDurationLabel(encounter)
+
             return (
               <div
                 key={encounter.id}
@@ -407,9 +444,35 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                     : 'border-slate-200 hover:border-slate-300 shadow-sm'
                 }`}
               >
-                {/* Card Header — high-density row */}
-                <div className="flex items-center justify-between w-full py-1.5 px-3 bg-white border-b border-slate-200 rounded-t-md">
+                {/* Card Header — CSS Grid: thin left status bar + flexible middle + fixed action column */}
+                <div className="grid w-full grid-cols-[1.625rem_minmax(0,1fr)_max-content] items-stretch bg-white border-b border-slate-200 rounded-t-md">
+                  {/* Far-left vertical status bar — golden thread above override (Schedule-style strip) */}
+                  <div className="flex flex-col items-center gap-1 justify-start pt-2 pb-1.5 border-r border-slate-200 bg-slate-50/70 shrink-0 self-stretch">
+                    <div className="relative flex items-center justify-center group cursor-help shrink-0">
+                      <AlertTriangle size={14} className="text-amber-500" style={{ fill: '#fef3c7' }} />
+                      <div className="absolute top-full left-0 mt-2 w-64 max-w-[min(16rem,calc(100vw-2rem))] p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
+                        <div className="absolute bottom-full left-3 border-4 border-transparent border-b-slate-800" aria-hidden />
+                        <div className="font-semibold text-amber-300 mb-1">[Golden Thread Rule]</div>
+                        One or more forms do not meet the golden thread rules: GT
+                      </div>
+                    </div>
+                    {overriddenEncounterIds.some(
+                      (oid) => String(oid).trim() === String(encounter.id).trim()
+                    ) && (
+                      <div className="relative flex items-center justify-center group cursor-help shrink-0">
+                        <AlertTriangle size={14} className="text-red-500 fill-red-100" />
+                        <div className="absolute top-full left-0 mt-2 w-64 max-w-[min(16rem,calc(100vw-2rem))] p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
+                          <div className="absolute bottom-full left-3 border-4 border-transparent border-b-slate-800" aria-hidden />
+                          <div className="font-semibold text-red-300 mb-1">Override Applied</div>
+                          Overridden by: Admin Ensoftek on 25/03/2026 20:04:35
+                          <br />
+                          <span className="text-slate-300">CANS Assessment Only</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
+                  <div className="flex items-center justify-between min-w-0 py-1.5 px-3">
                   {/* LEFT — Patient identity (fixed width) */}
                   <div className="flex items-center gap-1.5 w-52 shrink-0">
                     <input
@@ -425,103 +488,134 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                       {encounter.patientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
 
-                    <div className="flex items-center gap-1 ml-0.5">
-                      <div className="relative flex items-center justify-center group cursor-help">
-                        <AlertTriangle size={14} className="text-amber-500" style={{ fill: '#fef3c7' }} />
-                        <div className="absolute top-full left-0 mt-2 w-64 max-w-[min(16rem,calc(100vw-2rem))] p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
-                          <div className="absolute bottom-full left-3 border-4 border-transparent border-b-slate-800" aria-hidden />
-                          <div className="font-semibold text-amber-300 mb-1">[Golden Thread Rule]</div>
-                          One or more forms do not meet the golden thread rules: GT
-                        </div>
-                      </div>
-                      {/* Alert 2: Override Indicator */}
-                      {overriddenEncounterIds.some(
-                        (oid) => String(oid).trim() === String(encounter.id).trim()
-                      ) && (
-                        <div className="relative flex items-center justify-center group cursor-help">
-                          <AlertTriangle size={14} className="text-red-500 fill-red-100" />
-                          <div className="absolute top-full left-0 mt-2 w-64 max-w-[min(16rem,calc(100vw-2rem))] p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
-                            <div className="absolute bottom-full left-3 border-4 border-transparent border-b-slate-800" aria-hidden />
-                            <div className="font-semibold text-red-300 mb-1">Override Applied</div>
-                            Overridden by: Admin Ensoftek on 25/03/2026 20:04:35
-                            <br />
-                            <span className="text-slate-300">CANS Assessment Only</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
                     <div className="flex flex-col truncate ml-0.5 min-w-0">
-                      <span className="text-[13px] font-bold text-slate-900 leading-tight truncate">{encounter.patientName}</span>
-                      <span className="text-[11px] text-slate-500 truncate leading-tight mt-0.5">MRN: {encounter.patientMrn}</span>
+                      <Link
+                        to={`/chart/${encounter.patientId}`}
+                        className="text-[13px] font-bold text-slate-900 leading-tight truncate block min-w-0 hover:text-blue-600 hover:underline transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-1 rounded-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {encounter.patientName}
+                      </Link>
+                      <div className="mt-0.5 flex flex-col gap-px leading-tight">
+                        <span className="text-[11px] text-slate-500 truncate">PID: {encounter.patientId}</span>
+                        <span className="text-[11px] text-slate-500 truncate">External ID: {encounter.patientMrn}</span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="h-6 w-px bg-slate-200 mx-3 shrink-0"></div>
 
-                  {/* MIDDLE — Data columns: stretch equal height; justify-between pins values to shared baseline with Encounter ID row */}
-                  <div className="flex h-[30px] items-stretch gap-4 flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+                  {/* MIDDLE — Data columns (items-start: short columns must not center vertically vs tall Encounter ID cell) */}
+                  <div className="flex items-start gap-4 flex-1 min-w-0 overflow-x-auto scrollbar-hide">
 
-                    <div className="flex flex-col justify-between self-stretch shrink-0 min-h-0 min-w-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Encounter ID</span>
-                      <div className="flex items-center whitespace-nowrap">
+                    <div className="flex flex-col shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Encounter ID</span>
+                      <div className="flex items-center h-8 whitespace-nowrap">
                         <button
                           onClick={() => handleEncounterClick(encounter)}
                           className="text-[12px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
                           aria-label={`View details for encounter ${encounter.id}`}
                         >
-                          {encounter.id} ({new Date(encounter.dateOfService).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })})
-                        </button>
-                        <span className="text-slate-300 mx-1.5">•</span>
-                        <button
-                          onClick={() => console.log('View Fee Sheet for', encounter.id)}
-                          className="text-[12px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
-                        >
-                          View Fee Sheet
+                          {encounter.id}
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Treatment Time</span>
-                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.treatmentTime || '-'}</span>
+                    <div className="flex flex-col shrink-0 min-h-0" style={{ width: 80 }}>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Fee Sheet</span>
+                      <div className="flex items-center h-8">
+                        <button
+                          type="button"
+                          onClick={() => console.log('View Fee Sheet for', encounter.id)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                        >
+                          <FileText size={12} className="shrink-0" aria-hidden />
+                          View
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Provider</span>
-                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider}</span>
+                    <div className="flex flex-col shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Date of Service</span>
+                      <div className="flex items-center h-8">
+                        <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{dateOfServiceFormatted}</span>
+                      </div>
                     </div>
 
-                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Rend</span>
-                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider.replace(/^Dr\.\s*/i, '')}</span>
+                    <div className="flex flex-col shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Treatment Time</span>
+                      <div className="flex items-center h-8">
+                        {encounter.treatmentTime ? (
+                          <div className="flex min-w-0 flex-row items-baseline gap-2 whitespace-nowrap">
+                            <span className="text-[12px] font-medium text-slate-800 leading-none">{encounter.treatmentTime}</span>
+                            {treatmentDurationLabel ? (
+                              <span className="text-xs text-gray-500 leading-none">({treatmentDurationLabel})</span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">-</span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Facility</span>
-                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap" title={getFacilityName(encounter.department)}>{getFacilityName(encounter.department)}</span>
+                    <div className="flex flex-col shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Provider</span>
+                      <div className="flex items-center h-8">
+                        <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider}</span>
+                      </div>
                     </div>
 
-                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Enc. Status</span>
-                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounterStatus}</span>
+                    <div className="flex flex-col shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Rend</span>
+                      <div className="flex items-center h-8">
+                        <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{encounter.provider.replace(/^Dr\.\s*/i, '')}</span>
+                      </div>
                     </div>
 
-                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-h-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Bill Status</span>
-                      <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap">{billingStatus}</span>
+                    <div className="flex flex-col shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Program</span>
+                      <div className="flex items-center h-8">
+                        <span className="text-[12px] font-medium text-slate-800 leading-none whitespace-nowrap" title={encounter.program}>{encounter.program}</span>
+                      </div>
                     </div>
 
-                    <div className="flex h-[28px] flex-col justify-between self-stretch shrink-0 min-w-[5rem] min-h-0 items-end text-right">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none whitespace-nowrap">Amount</span>
-                      <span className="text-[12px] font-bold text-slate-900 leading-none whitespace-nowrap tabular-nums">
-                        {formatUsd(encounter.totalCharges ?? 0)}
-                      </span>
+                    <div className="flex flex-col shrink-0 min-h-0 min-w-0 max-w-[11rem]">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">ENC. STATUS</span>
+                      <div className="flex items-center h-8">
+                        <span
+                          className={`inline-flex w-fit max-w-full items-center rounded-md px-2 py-1 text-xs font-medium leading-snug text-left ${encounterStatusBadgeClassName(encounterStatus)}`}
+                        >
+                          {encounterStatus}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col shrink-0 min-h-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Bill Status</span>
+                      <div className="flex items-center h-8">
+                        <span
+                          className={`inline-flex w-fit max-w-full items-center rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap ${billStatusBadgeClassName(billingStatus)}`}
+                        >
+                          {billingStatus}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col shrink-0 min-w-[5rem] min-h-0 items-end text-right">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 leading-none whitespace-nowrap">Amount</span>
+                      <div className="flex items-center justify-end h-8">
+                        <span className="text-[12px] font-bold text-slate-900 leading-none whitespace-nowrap tabular-nums">
+                          {formatUsd(encounter.totalCharges ?? 0)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* RIGHT — Actions */}
-                  <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-slate-100">
+                  </div>
+                  {/* end of grid column 2 (patient + data) */}
+
+                  {/* Grid column 3 — Actions (max-content track, never clips) */}
+                  <div className="flex items-center gap-1 shrink-0 px-2 border-l border-slate-100 overflow-visible">
                     <TooltipRoot>
                       <TooltipTrigger asChild>
                         <button
@@ -529,7 +623,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                           onClick={() => toggleDetails(encounter.id)}
                           className="p-1 text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50 rounded-md transition-colors"
                           aria-expanded={!collapsedDetailsIds.has(encounter.id)}
-                          aria-label={collapsedDetailsIds.has(encounter.id) ? 'Show Edit Forms and Claims History' : 'Hide Edit Forms and Claims History'}
+                          aria-label={collapsedDetailsIds.has(encounter.id) ? 'Show Edit Forms and Activity' : 'Hide Edit Forms and Activity'}
                         >
                           <ChevronDownIcon
                             className={`w-4 h-4 transition-transform duration-200 ${collapsedDetailsIds.has(encounter.id) ? '' : 'rotate-180'}`}
@@ -537,59 +631,9 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="text-xs">
-                        <p>{collapsedDetailsIds.has(encounter.id) ? 'Show Edit Forms and Claims History' : 'Hide Edit Forms and Claims History'}</p>
+                        <p>{collapsedDetailsIds.has(encounter.id) ? 'Show Edit Forms and Activity' : 'Hide Edit Forms and Activity'}</p>
                       </TooltipContent>
                     </TooltipRoot>
-                    {/* ── Gear / Settings popover ── */}
-                    <div className="relative">
-                      <button
-                        className={`p-1 rounded-md transition-colors ${posPopoverEncounterId === encounter.id ? 'text-[#1a73e8] bg-blue-50' : 'text-slate-400 hover:text-[#1a73e8] hover:bg-blue-50'}`}
-                        aria-label="Settings"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPosPopoverEncounterId(posPopoverEncounterId === encounter.id ? null : encounter.id);
-                          setKebabMenuEncounterId(null);
-                        }}
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </button>
-
-                      {posPopoverEncounterId === encounter.id && (
-                        <div
-                          className="absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* POS selector */}
-                          <p className="text-xs font-semibold text-slate-700 mb-2">Place of Service (POS)</p>
-                          <Select
-                            value={posValues[encounter.id] ?? (encounter.serviceLines?.[0]?.placeOfService ?? '11')}
-                            onValueChange={(val) => setPosValues(prev => ({ ...prev, [encounter.id]: val }))}
-                          >
-                            <SelectTrigger className="h-9 text-sm w-full">
-                              <SelectValue placeholder="Select POS" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {POS_OPTIONS.map(opt => (
-                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          {/* Additional Info */}
-                          <div className="mt-4">
-                            <p className="text-xs font-semibold text-slate-700 mb-2">Additional Info</p>
-                            <div className="space-y-1 text-xs text-[#1a73e8]">
-                              <p>Treatment Time: {encounter.treatmentTime || '10:00 – 10:30 AM'}</p>
-                              <p>Referring Provider: Dr. Smith</p>
-                              <p>Authorization: AUTH123456</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
 
                     {/* ── Kebab / More actions menu ── */}
                     <div className="relative">
@@ -599,7 +643,6 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                         onClick={(e) => {
                           e.stopPropagation();
                           setKebabMenuEncounterId(kebabMenuEncounterId === encounter.id ? null : encounter.id);
-                          setPosPopoverEncounterId(null);
                         }}
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -609,48 +652,21 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 
                       {kebabMenuEncounterId === encounter.id && (
                         <div
-                          className="absolute right-0 top-full mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 overflow-hidden"
+                          className="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-[100] py-1.5 max-h-56 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {KEBAB_ACTIONS.map((action, idx) => (
+                          {KEBAB_ACTIONS.map((action) => (
                             <div key={action.id}>
-                              {/* Separator before Export */}
-                              {idx === 5 && <div className="my-1 border-t border-slate-100" />}
+                              {action.dividerBefore && <div className="my-1.5 border-t border-slate-100 mx-3" />}
                               <button
                                 type="button"
-                                className={`w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-slate-50 transition-colors text-left ${action.bold ? 'font-semibold text-slate-900' : 'text-slate-700'}`}
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-gray-100 transition-colors text-left"
                                 onClick={() => {
                                   console.log(action.id, encounter.id);
                                   setKebabMenuEncounterId(null);
                                 }}
                               >
-                                {/* Icon column */}
-                                {action.id === 'add'      && <span className="w-4 text-center font-bold text-slate-500 text-base leading-none">+</span>}
-                                {action.id === 'generate' && (
-                                  <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                  </svg>
-                                )}
-                                {action.id === 'submit'   && (
-                                  <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                  </svg>
-                                )}
-                                {action.id === 'override' && (
-                                  <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                                  </svg>
-                                )}
-                                {action.id === 'ready'    && (
-                                  <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                )}
-                                {action.id === 'export'   && (
-                                  <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                  </svg>
-                                )}
+                                {action.icon}
                                 {action.label}
                               </button>
                             </div>
@@ -661,7 +677,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                   </div>
                 </div>
 
-                {/* Card body: insurance table always visible; Edit Forms / Claims History toggled by header chevron */}
+                {/* Card body: insurance table always visible; Edit Forms / Activity toggled by header chevron */}
                 <div className="px-2 py-1 relative" style={{ zIndex: 1 }}>
 
                   {/* Insurance/Billing data table */}
@@ -700,10 +716,10 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             <td className="pl-2 pr-0 py-0.5 text-center align-middle">
                               <TooltipRoot>
                                 <TooltipTrigger asChild>
-                                  <span className="inline-block cursor-help">
-                                    <FontAwesomeIcon 
-                                      icon={faFileInvoiceDollar} 
-                                      className={`w-3.5 h-3.5 ${isServiceBilled ? 'text-green-600' : 'text-gray-400'}`}
+                                  <span className="inline-flex cursor-help bg-transparent">
+                                    <CurrencyDollarIcon
+                                      className={`w-3.5 h-3.5 shrink-0 ${isServiceBilled ? 'text-green-600' : 'text-gray-400'}`}
+                                      aria-hidden
                                     />
                                   </span>
                                 </TooltipTrigger>
@@ -720,68 +736,56 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                                   <TooltipTrigger asChild>
                                     <div className="inline-flex items-center border border-slate-200 rounded-md overflow-hidden cursor-help">
                                       {/* Primary - 1 */}
-                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] border-r border-slate-200 ${
+                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] border-r border-slate-200 bg-transparent ${
                                         service.insuranceLevels.primary.billed 
-                                          ? 'bg-emerald-50 text-emerald-700' 
+                                          ? 'text-emerald-700' 
                                           : service.insuranceLevels.primary.status === 'not_applicable'
-                                          ? 'bg-slate-100 text-slate-400'
-                                          : 'bg-amber-50 text-amber-700'
+                                          ? 'text-slate-400'
+                                          : 'text-amber-700'
                                       }`}>
                                         {service.insuranceLevels.primary.billed && (
-                                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 448 512">
-                                            <path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/>
-                                          </svg>
+                                          <CheckIcon className="w-2.5 h-2.5 shrink-0 text-emerald-600" aria-hidden />
                                         )}
                                         {!service.insuranceLevels.primary.billed && service.insuranceLevels.primary.status !== 'not_applicable' && (
-                                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 512 512">
-                                            <path d="M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
-                                          </svg>
+                                          <CheckIcon className="w-2.5 h-2.5 shrink-0 text-amber-600" aria-hidden />
                                         )}
                                         1
                                       </div>
                                       
                                       {/* Secondary - 2 */}
-                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] border-r border-slate-200 ${
+                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] border-r border-slate-200 bg-transparent ${
                                         service.insuranceLevels.secondary.billed 
-                                          ? 'bg-emerald-50 text-emerald-700' 
+                                          ? 'text-emerald-700' 
                                           : service.insuranceLevels.secondary.status === 'not_applicable'
-                                          ? 'bg-slate-100 text-slate-400'
+                                          ? 'text-slate-400'
                                           : service.insuranceLevels.primary.billed
-                                          ? 'bg-amber-50 text-amber-700'
-                                          : 'bg-slate-100 text-slate-400'
+                                          ? 'text-amber-700'
+                                          : 'text-slate-400'
                                       }`}>
                                         {service.insuranceLevels.secondary.billed && (
-                                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 448 512">
-                                            <path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/>
-                                          </svg>
+                                          <CheckIcon className="w-2.5 h-2.5 shrink-0 text-emerald-600" aria-hidden />
                                         )}
                                         {!service.insuranceLevels.secondary.billed && service.insuranceLevels.secondary.status !== 'not_applicable' && service.insuranceLevels.primary.billed && (
-                                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 512 512">
-                                            <path d="M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
-                                          </svg>
+                                          <CheckIcon className="w-2.5 h-2.5 shrink-0 text-amber-600" aria-hidden />
                                         )}
                                         2
                                       </div>
                                       
                                       {/* Tertiary - 3 */}
-                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] ${
+                                      <div className={`py-0 px-1 text-[9px] font-medium flex items-center justify-center gap-0.5 min-w-[20px] bg-transparent ${
                                         service.insuranceLevels.tertiary.billed 
-                                          ? 'bg-emerald-50 text-emerald-700' 
+                                          ? 'text-emerald-700' 
                                           : service.insuranceLevels.tertiary.status === 'not_applicable'
-                                          ? 'bg-slate-100 text-slate-400'
+                                          ? 'text-slate-400'
                                           : service.insuranceLevels.secondary.billed
-                                          ? 'bg-amber-50 text-amber-700'
-                                          : 'bg-slate-100 text-slate-400'
+                                          ? 'text-amber-700'
+                                          : 'text-slate-400'
                                       }`}>
                                         {service.insuranceLevels.tertiary.billed && (
-                                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 448 512">
-                                            <path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/>
-                                          </svg>
+                                          <CheckIcon className="w-2.5 h-2.5 shrink-0 text-emerald-600" aria-hidden />
                                         )}
                                         {!service.insuranceLevels.tertiary.billed && service.insuranceLevels.tertiary.status !== 'not_applicable' && service.insuranceLevels.secondary.billed && (
-                                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 512 512">
-                                            <path d="M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
-                                          </svg>
+                                          <CheckIcon className="w-2.5 h-2.5 shrink-0 text-amber-600" aria-hidden />
                                         )}
                                         3
                                       </div>
@@ -851,7 +855,27 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                             <td className="px-1.5 py-0.5 text-center text-slate-600 align-middle">{service.placeOfService || '-'}</td>
                             
                             {/* Diagnosis */}
-                            <td className="px-1.5 py-0.5 text-slate-600 align-middle">{service.diagnosisCodes?.join(', ') || '-'}</td>
+                            <td className="px-1.5 py-0.5 align-middle">
+                              {service.diagnosisCodes && service.diagnosisCodes.length > 0 ? (
+                                <button
+                                  type="button"
+                                  className="text-left bg-transparent border-0 p-0 m-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                                  onClick={() => console.log('Diagnosis edit:', encounter.id, service.id)}
+                                >
+                                  <span className="text-[11px] text-slate-700 font-medium border-b border-dashed border-gray-400 hover:text-blue-600 hover:border-blue-600 transition-colors cursor-pointer">
+                                    {service.diagnosisCodes.join(', ')}
+                                  </span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer focus:outline-none"
+                                  onClick={() => console.log('Diagnosis add/justify:', encounter.id, service.id)}
+                                >
+                                  + Add/Justify
+                                </button>
+                              )}
+                            </td>
                             
                             {/* Rendering Provider */}
                             <td className="px-1.5 py-0.5 text-slate-700 align-middle">{encounter.provider.replace(/^Dr\.\s*/i, '')}</td>
@@ -878,7 +902,7 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
 
                 {!collapsedDetailsIds.has(encounter.id) && (
                   <div className="px-2 pb-1 relative border-t border-slate-200" style={{ zIndex: 1 }}>
-                  {/* ── Split footer: Edit Forms | Claims History ── */}
+                  {/* ── Split footer: Edit Forms | Activity ── */}
                   <div className="w-full grid grid-cols-2 divide-x divide-slate-200 bg-slate-50/50">
 
                     <div className="py-1.5 px-3 flex flex-col">
@@ -907,17 +931,12 @@ export const BillingViewCardsListing: FC<BillingViewCardsListingProps> = ({
                     </div>
 
                     <div className="py-1.5 px-3 flex flex-col pl-4">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
-                          <Clock size={12} className="opacity-60 shrink-0" />
-                          <span>Claims History</span>
-                        </div>
-                        <span className="text-[9px] font-semibold text-slate-400 bg-white border border-slate-200 px-1 py-0.5 rounded shadow-sm">
-                          Last 30 Days
-                        </span>
+                      <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
+                        <Clock size={12} className="opacity-60 shrink-0" />
+                        <span>Activity</span>
                       </div>
-                      <div className="flex flex-col gap-0 max-h-[72px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
-                        {getClaimsHistory(encounter).map((entry) => (
+                      <div className="flex flex-col gap-0 max-h-[120px] overflow-y-auto scroll-smooth pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                        {getActivityLog(encounter).map((entry) => (
                           <div
                             key={entry.id}
                             className="flex items-center justify-start text-[12px] text-slate-600 py-1 px-1 hover:bg-white rounded transition-colors min-w-0"

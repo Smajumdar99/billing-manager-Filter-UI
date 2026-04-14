@@ -17,17 +17,28 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   BanknotesIcon,
-  PaperAirplaneIcon,
-  ShieldCheckIcon,
-  CheckCircleIcon,
   PencilSquareIcon,
-  DocumentArrowDownIcon,
-  PlusCircleIcon,
   ChevronDownIcon,
   Cog6ToothIcon,
   EllipsisVerticalIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
+import {
+  FileText,
+  Send,
+  AlertTriangle,
+  ShieldAlert,
+  RefreshCw,
+  Settings,
+  Users,
+  CheckCircle as CheckCircleLucide,
+  RotateCcw,
+  XCircle,
+  Play,
+  Download,
+  Plus,
+} from 'lucide-react'
+import { BuildingLightFullIcon } from '@/assets/icons/BuildingLightFullIcon'
 
 export interface BillingQueueTableProps {
   encounters: BillingEncounter[]
@@ -143,7 +154,7 @@ function formatDos(dateStr: string): string {
 
 function DataCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col justify-between self-stretch min-h-0 shrink-0">
+    <div className="flex flex-col gap-1 min-h-0 shrink-0">
       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">{label}</span>
       <span className="text-[13px] font-medium text-slate-800 leading-none">{children}</span>
     </div>
@@ -237,11 +248,11 @@ function EncounterRow({
           </div>
         </div>
 
-        {/* MIDDLE — Data columns: stretch + justify-between aligns value baselines with Encounter ID row */}
-        <div className="flex items-stretch justify-between flex-1 px-8 border-l border-slate-100">
+        {/* MIDDLE — Data columns (items-start so labels align when Encounter ID column is taller) */}
+        <div className="flex items-start justify-between flex-1 px-8 border-l border-slate-100">
 
           {/* Encounter ID */}
-          <div className="flex flex-col justify-between self-stretch shrink-0 min-w-0">
+          <div className="flex flex-col gap-1 shrink-0 min-w-0">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Encounter ID</span>
             <div className="flex items-center gap-2">
               <button
@@ -303,29 +314,54 @@ function EncounterRow({
                 <EllipsisVerticalIcon className="w-4 h-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 max-h-56 overflow-y-auto z-[100] scrollbar-thin scrollbar-thumb-gray-300">
               <DropdownMenuItem onClick={() => console.log('Add & Justify:', enc.id)}>
-                <PlusCircleIcon className="w-4 h-4 mr-2" /> Add &amp; Justify
+                <Plus className="w-4 h-4 mr-2 shrink-0" /> Add &amp; Justify
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onGenerateClaim(enc)} disabled={!enc.canGenerateClaim}>
-                <BanknotesIcon className="w-4 h-4 mr-2" /> Generate Claims
+                <FileText className="w-4 h-4 mr-2 shrink-0" /> Generate Claims
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => console.log('Submit Claims:', enc.id)} disabled={!enc.canSubmitClaim}>
-                <PaperAirplaneIcon className="w-4 h-4 mr-2" /> Submit Claims
+              <DropdownMenuItem onClick={() => console.log('Generate & Submit Claims:', enc.id)}>
+                <Send className="w-4 h-4 mr-2 shrink-0" /> Generate &amp; Submit Claims
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => console.log('Check Errors:', enc.id)}>
+                <AlertTriangle className="w-4 h-4 mr-2 shrink-0" /> Check Errors
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => console.log('Override Blocks:', enc.id)}
+                onClick={() => console.log('Override:', enc.id)}
                 disabled={!enc.canOverride || !enc.hasErrors}
               >
-                <ShieldCheckIcon className="w-4 h-4 mr-2" /> Override Blocks
+                <ShieldAlert className="w-4 h-4 mr-2 shrink-0" /> Override
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => console.log('Mark Ready:', enc.id)}>
-                <CheckCircleIcon className="w-4 h-4 mr-2" /> Mark Ready
+              <DropdownMenuItem onClick={() => console.log('Rebill:', enc.id)}>
+                <RefreshCw className="w-4 h-4 mr-2 shrink-0" /> Rebill
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => console.log('Set Bill Type:', enc.id)}>
+                <Settings className="w-4 h-4 mr-2 shrink-0" /> Set Bill Type
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => console.log('Set Bill-To:', enc.id)}>
+                <Users className="w-4 h-4 mr-2 shrink-0" /> Set Bill-To
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => console.log('Mark as Cleared:', enc.id)}>
+                <CheckCircleLucide className="w-4 h-4 mr-2 shrink-0" /> Mark as Cleared
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => console.log('Re-Open:', enc.id)}>
+                <RotateCcw className="w-4 h-4 mr-2 shrink-0" /> Re-Open
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => console.log('Remove Re-bill:', enc.id)}>
+                <XCircle className="w-4 h-4 mr-2 shrink-0" /> Remove Re-bill
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => console.log('Apply Post Primary Rules:', enc.id)}>
+                <Play className="w-4 h-4 mr-2 shrink-0" /> Apply Post Primary Rules
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => console.log('Set POS:', enc.id)}>
+                <BuildingLightFullIcon className="w-4 h-4 mr-2 shrink-0" /> Set POS
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => console.log('Export:', enc.id)}>
-                <DocumentArrowDownIcon className="w-4 h-4 mr-2" /> Export
+                <Download className="w-4 h-4 mr-2 shrink-0" /> Export
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
