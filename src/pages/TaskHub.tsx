@@ -2,6 +2,21 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { TopNavigationBar, MainNavigationBar } from '../components/old-ui';
 import { PlusIcon, XMarkIcon, ChatBubbleLeftIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import {
+  Filter,
+  ArrowUpDown,
+  AlertTriangle,
+  FileText,
+  Pill,
+  Clock,
+  Bell,
+  User,
+  Cake,
+  MessageSquare,
+  CalendarDays,
+  ClipboardList,
+  Sparkles,
+} from 'lucide-react';
 import TaskHubDashboard from '../components/TaskHubDashboard';
 import AllTasksSection from '../components/AllTasksSection';
 import TaskDetailsPanel from '../components/TaskDetailsPanel';
@@ -685,75 +700,36 @@ const TaskHub: React.FC = () => {
     const progressPercent = Math.min(100, count * 10);
     const alphabet = String.fromCharCode(65 + index);
     
-    // Icon mapping based on label
     const getIcon = () => {
       switch (label) {
-        case 'Expedite Queue':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          );
-        case 'Suggested Actions':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          );
-        case 'Agenda':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          );
-        case 'FYI Zone':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          );
+        case 'Urgent Tasks':
+          return <AlertTriangle className="w-3.5 h-3.5 text-red-500" />;
         case 'Review Forms':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          );
+          return <FileText className="w-3.5 h-3.5 text-slate-500" />;
+        case 'Review Prescriptions':
         case 'Prescriptions':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 013 6.586V4a2 2 0 0114 0v8.586a2 2 0 01-.293.707l-.548.547z" />
-            </svg>
-          );
-        case 'Assigned to Me':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          );
+          return <Pill className="w-3.5 h-3.5 text-slate-500" />;
+        case 'Pending Too Long':
         case 'Aging Tasks':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          );
-        case 'Transaction Reviews':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          );
+          return <Clock className="w-3.5 h-3.5 text-slate-500" />;
+        case 'All Reminders':
+        case 'Suggested Actions':
+          return <Bell className="w-3.5 h-3.5 text-slate-500" />;
         case 'Tasks Created by Me':
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
-          );
+        case 'Assigned to Me':
+          return <User className="w-3.5 h-3.5 text-slate-500" />;
+        case 'Birthdays':
+        case 'FYI Zone':
+          return <Cake className="w-3.5 h-3.5 text-slate-500" />;
+        case 'Messages':
+          return <MessageSquare className="w-3.5 h-3.5 text-slate-500" />;
+        case 'Agenda':
+          return <CalendarDays className="w-3.5 h-3.5 text-slate-500" />;
+        case 'Treatment Reviews':
+        case 'Transaction Reviews':
+          return <ClipboardList className="w-3.5 h-3.5 text-slate-500" />;
         default:
-          return (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
-          );
+          return <FileText className="w-3.5 h-3.5 text-slate-400" />;
       }
     };
     
@@ -761,44 +737,28 @@ const TaskHub: React.FC = () => {
       <div
         ref={ref}
         className={cn(
-          'relative rounded-xl border-2 border-white ring-2 ring-inset ring-white/80',
-          getPastelGradient(index),
+          'relative rounded-lg border border-slate-200/80 bg-white',
           isSelected ? 'ring-2 ring-blue-300 scale-[1.02] z-10' : '',
-          'hover:scale-[1.03] hover:border-blue-200 hover:z-10 transition-all duration-200 cursor-pointer group p-3 h-full flex flex-col'
+          'hover:shadow-md hover:border-slate-300 hover:z-10 transition-all duration-200 cursor-pointer group px-3 py-2 h-full flex flex-col gap-1'
         )}
         tabIndex={0}
         aria-label={label}
         data-testid={`task-block-${id}`}
       >
-        {/* White overlay for ultra-light pastel effect with frosted hover */}
-        <div className="absolute inset-0 rounded-xl bg-white/70 pointer-events-none z-0 group-hover:bg-white/80" />
-        {/* Header with icon and label */}
-        <div className="flex items-center gap-2 z-10 relative">
-          <div className={`w-7 h-7 rounded-full ${colors.iconBg} flex items-center justify-center`}>
+        <div className="flex items-center gap-1.5">
+          <div className={`w-5 h-5 rounded-md ${colors.iconBg} flex items-center justify-center shrink-0`}>
             <div className={colors.icon}>
               {getIcon()}
             </div>
           </div>
-          <span className="text-gray-800 font-medium text-sm md:text-xs lg:text-sm text-left line-clamp-2">
+          <span className="text-slate-700 font-medium text-xs leading-tight text-left line-clamp-2">
             {label}
           </span>
         </div>
-        
-        {/* Bottom section with count and priority */}
-        <div className="mt-2 flex justify-between items-end z-10 relative">
-          {/* Count display */}
-          <div>
-            {/* Count display: bold for critical, normal for others */}
-            <span
-              className={cn(
-                "text-3xl",
-                criticality === "critical" ? "font-bold" : "font-normal",
-                colors.number
-              )}
-            >
-              {count}
-            </span>
-          </div>
+        <div className="flex justify-between items-end">
+          <span className={cn('text-2xl font-bold leading-none', colors.number)}>
+            {count}
+          </span>
         </div>
       </div>
     );
@@ -924,17 +884,17 @@ const TaskHub: React.FC = () => {
         }`}>
           <div className="max-w-8xl mx-auto">
             {/* Smart Categorisation and Smart Assist Sections */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:gap-8 mb-6 md:mb-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:gap-8 lg:items-start mb-4 md:mb-5">
               {/* Smart Categorisation Section */}
               <div className={`w-full ${selectedBlockId ? 'lg:w-full' : 'lg:w-2/3'}`}>
-                <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
                   <h2 className="text-lg font-semibold text-gray-800">Open Tasks</h2>
                   <div className="flex items-center gap-2 relative overflow-visible">
                     {/* The parent div for Filter/Sort buttons is now relative and overflow-visible to contain dropdowns */}
-                    <Menubar className="bg-white border border-gray-200 rounded-md shadow-none px-4 mx-2">
+                    <Menubar className="bg-white border border-slate-200 rounded-lg shadow-none px-2 mx-2">
                       {/* Filter Menubar */}
                       <MenubarMenu>
-                        <MenubarTrigger className="text-xs px-2 py-1 text-gray-600">Filter</MenubarTrigger>
+                        <MenubarTrigger className="flex items-center justify-center px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 rounded-md transition-colors"><Filter className="w-3.5 h-3.5 mr-1.5" />Filter</MenubarTrigger>
                         <MenubarContent align="end" className="min-w-[12rem]">
                           {/* Count-based filters grouped under 'Items Count' */}
                           <MenubarLabel>Items Count</MenubarLabel>
@@ -970,7 +930,7 @@ const TaskHub: React.FC = () => {
                       </MenubarMenu>
                       {/* Sort Menubar */}
                       <MenubarMenu>
-                        <MenubarTrigger className="text-xs px-2 py-1 text-gray-600">Sort</MenubarTrigger>
+                        <MenubarTrigger className="flex items-center justify-center px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 rounded-md transition-colors"><ArrowUpDown className="w-3.5 h-3.5 mr-1.5" />Sort</MenubarTrigger>
                         <MenubarContent align="end" className="min-w-[12rem]">
                           <MenubarLabel>Sort by:</MenubarLabel>
                           <MenubarRadioGroup value={sortCriteria} onValueChange={handleSortChange}>
@@ -999,207 +959,133 @@ const TaskHub: React.FC = () => {
                 </div>
                 
                 {/* Task Blocks Grid - Now with priority-based categorization */}
-                <div className="space-y-2 md:space-y-4">
+                <div className="flex flex-col gap-3">
                   {/* High Priority Section */}
-                  <div>
-                    <h3 className="text-base font-medium text-red-700 mb-1 flex items-center gap-2 px-2 md:px-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                        High Priority
-                      </div>
+                  <div className="bg-red-50/60 rounded-xl px-2.5 py-2">
+                    <h3 className="text-sm mb-1.5 flex items-center gap-2 px-0.5">
+                      <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[10px] font-bold">High Priority</span>
                       {filteredAndSortedBlocks.filter(block => block.criticality === 'critical' || block.criticality === 'high').length > 0 && (
-                        <span className="text-sm text-gray-500">
-                          ({filteredAndSortedBlocks.filter(block => block.criticality === 'critical' || block.criticality === 'high').length} items)
+                        <span className="text-[10px] text-slate-500">
+                          {filteredAndSortedBlocks.filter(block => block.criticality === 'critical' || block.criticality === 'high').length} items
                         </span>
                       )}
                     </h3>
-                    <div className="relative group">
-                      <div className="absolute inset-0 pointer-events-none" />
-                      <div className="overflow-x-auto scrollbar-hide relative" ref={highPriorityRef}>
-                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
-                          {filteredAndSortedBlocks
-                            .filter(block => block.criticality === 'critical' || block.criticality === 'high')
-                            .map((block, index) => (
-                              <div
-                                key={block.id}
-                                onClick={() => handleTaskClick(block.id)}
-                                className="cursor-pointer w-full sm:w-[180px] md:w-[220px] flex-shrink-0 p-0.5"
-                              >
-                                <TaskBlockComponent
-                                  {...block}
-                                  index={index}
-                                  isSelected={selectedBlockId === block.id}
-                                />
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-
-                      {/* Show scroll controls only on tablet and above */}
-                      {scrollableContainers.high && (
-                        <>
-                          <div className="hidden sm:block absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          
-                          <button 
-                            onClick={() => handleScroll('left', highPriorityRef)}
-                            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                    <div className="flex flex-wrap gap-2 w-full">
+                      {filteredAndSortedBlocks
+                        .filter(block => block.criticality === 'critical' || block.criticality === 'high')
+                        .map((block, index) => (
+                          <div
+                            key={block.id}
+                            onClick={() => handleTaskClick(block.id)}
+                            className="cursor-pointer flex-1 min-w-[140px] max-w-[220px]"
                           >
-                            <ChevronLeftIcon className="w-5 h-5" />
-                          </button>
-                          <button 
-                            onClick={() => handleScroll('right', highPriorityRef)}
-                            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
-                          >
-                            <ChevronRightIcon className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
+                            <TaskBlockComponent
+                              {...block}
+                              index={index}
+                              isSelected={selectedBlockId === block.id}
+                            />
+                          </div>
+                        ))}
                     </div>
                   </div>
 
                   {/* Medium Priority Section */}
-                  <div>
-                    <h3 className="text-base font-medium text-amber-700 mb-1 flex items-center gap-2 px-2 md:px-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                        Medium Priority
-                      </div>
+                  <div className="bg-amber-50/60 rounded-xl px-2.5 py-2">
+                    <h3 className="text-sm mb-1.5 flex items-center gap-2 px-0.5">
+                      <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Medium Priority</span>
                       {filteredAndSortedBlocks.filter(block => block.criticality === 'medium').length > 0 && (
-                        <span className="text-sm text-gray-500">
-                          ({filteredAndSortedBlocks.filter(block => block.criticality === 'medium').length} items)
+                        <span className="text-[10px] text-slate-500">
+                          {filteredAndSortedBlocks.filter(block => block.criticality === 'medium').length} items
                         </span>
                       )}
                     </h3>
-                    <div className="relative group">
-                      <div className="absolute inset-0 pointer-events-none" />
-                      <div className="overflow-x-auto scrollbar-hide relative" ref={mediumPriorityRef}>
-                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
-                          {filteredAndSortedBlocks
-                            .filter(block => block.criticality === 'medium')
-                            .map((block, index) => (
-                              <div
-                                key={block.id}
-                                onClick={() => handleTaskClick(block.id)}
-                                className="cursor-pointer w-full sm:w-[180px] md:w-[220px] flex-shrink-0 p-0.5"
-                              >
-                                <TaskBlockComponent
-                                  {...block}
-                                  index={index}
-                                  isSelected={selectedBlockId === block.id}
-                                />
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-
-                      {/* Show scroll controls only on tablet and above */}
-                      {scrollableContainers.medium && (
-                        <>
-                          <div className="hidden sm:block absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-                          
-                          <button 
-                            onClick={() => handleScroll('left', mediumPriorityRef)}
-                            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
+                    <div className="flex flex-wrap gap-2 w-full">
+                      {filteredAndSortedBlocks
+                        .filter(block => block.criticality === 'medium')
+                        .map((block, index) => (
+                          <div
+                            key={block.id}
+                            onClick={() => handleTaskClick(block.id)}
+                            className="cursor-pointer flex-1 min-w-[140px] max-w-[220px]"
                           >
-                            <ChevronLeftIcon className="w-5 h-5" />
-                          </button>
-                          <button 
-                            onClick={() => handleScroll('right', mediumPriorityRef)}
-                            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-50 hover:scale-110 transition-all duration-200 z-20"
-                          >
-                            <ChevronRightIcon className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
+                            <TaskBlockComponent
+                              {...block}
+                              index={index}
+                              isSelected={selectedBlockId === block.id}
+                            />
+                          </div>
+                        ))}
                     </div>
                   </div>
 
                   {/* Low Priority Section */}
-                  <div>
-                    <h3 className="text-base font-medium text-green-700 mb-1 flex items-center gap-2 px-2 md:px-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                        Low Priority
-                      </div>
+                  <div className="bg-green-50/50 rounded-xl px-2.5 py-2">
+                    <h3 className="text-sm mb-1.5 flex items-center gap-2 px-0.5">
+                      <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Low Priority</span>
                       {filteredAndSortedBlocks.filter(block => block.criticality === 'low' && block.id !== 'agenda' && block.id !== 'messages').length > 0 && (
-                        <span className="text-sm text-gray-500">
-                          ({filteredAndSortedBlocks.filter(block => block.criticality === 'low' && block.id !== 'agenda' && block.id !== 'messages').length} items)
+                        <span className="text-[10px] text-slate-500">
+                          {filteredAndSortedBlocks.filter(block => block.criticality === 'low' && block.id !== 'agenda' && block.id !== 'messages').length} items
                         </span>
                       )}
                     </h3>
-                    <div className="relative group">
-                      <div className="absolute inset-0 pointer-events-none" />
-                      <div className="overflow-x-auto scrollbar-hide relative" ref={lowPriorityRef}>
-                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
-                          {filteredAndSortedBlocks
-                            .filter(block => block.criticality === 'low' && block.id !== 'agenda' && block.id !== 'messages')
-                            .map((block, index) => (
-                              <div
-                                key={block.id}
-                                onClick={() => handleTaskClick(block.id)}
-                                className="cursor-pointer w-full sm:w-[180px] md:w-[220px] flex-shrink-0 p-0.5"
-                              >
-                                <TaskBlockComponent
-                                  {...block}
-                                  index={index}
-                                  isSelected={selectedBlockId === block.id}
-                                />
-                              </div>
-                            ))}
-                        </div>
-                      </div>
+                    <div className="flex flex-wrap gap-2 w-full">
+                      {filteredAndSortedBlocks
+                        .filter(block => block.criticality === 'low' && block.id !== 'agenda' && block.id !== 'messages')
+                        .map((block, index) => (
+                          <div
+                            key={block.id}
+                            onClick={() => handleTaskClick(block.id)}
+                            className="cursor-pointer flex-1 min-w-[140px] max-w-[220px]"
+                          >
+                            <TaskBlockComponent
+                              {...block}
+                              index={index}
+                              isSelected={selectedBlockId === block.id}
+                            />
+                          </div>
+                        ))}
                     </div>
                   </div>
 
                   {/* Everything Else Section */}
-                  <div>
-                    <h3 className="text-base font-medium text-blue-700 mb-1 flex items-center gap-2 px-2 md:px-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        Everything Else
-                      </div>
+                  <div className="bg-blue-50/40 rounded-xl px-2.5 py-2">
+                    <h3 className="text-sm mb-1.5 flex items-center gap-2 px-0.5">
+                      <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Everything Else</span>
                       {filteredAndSortedBlocks.filter(block => block.id === 'agenda' || block.id === 'messages').length > 0 && (
-                        <span className="text-sm text-gray-500">
-                          ({filteredAndSortedBlocks.filter(block => block.id === 'agenda' || block.id === 'messages').length} items)
+                        <span className="text-[10px] text-slate-500">
+                          {filteredAndSortedBlocks.filter(block => block.id === 'agenda' || block.id === 'messages').length} items
                         </span>
                       )}
                     </h3>
-                    <div className="relative group">
-                      <div className="absolute inset-0  pointer-events-none" />
-                      <div className="overflow-x-auto scrollbar-hide relative">
-                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:gap-4 pb-2 md:pb-4 px-2 pt-2">
-                          {filteredAndSortedBlocks
-                            .filter(block => block.id === 'agenda' || block.id === 'messages')
-                            .map((block, index) => (
-                              <div
-                                key={block.id}
-                                onClick={() => handleTaskClick(block.id)}
-                                className="cursor-pointer w-full sm:w-[180px] md:w-[220px] flex-shrink-0 p-0.5"
-                              >
-                                <TaskBlockComponent
-                                  {...block}
-                                  index={index}
-                                  isSelected={selectedBlockId === block.id}
-                                />
-                              </div>
-                            ))}
-                        </div>
-                      </div>
+                    <div className="flex flex-wrap gap-2 w-full">
+                      {filteredAndSortedBlocks
+                        .filter(block => block.id === 'agenda' || block.id === 'messages')
+                        .map((block, index) => (
+                          <div
+                            key={block.id}
+                            onClick={() => handleTaskClick(block.id)}
+                            className="cursor-pointer flex-1 min-w-[140px] max-w-[220px]"
+                          >
+                            <TaskBlockComponent
+                              {...block}
+                              index={index}
+                              isSelected={selectedBlockId === block.id}
+                            />
+                          </div>
+                        ))}
                     </div>
                   </div>
 
-                  {/* Add New Block Button - Horizontal layout */}
+                  {/* Add New Block Button */}
                   <div 
                     onClick={() => setShowAddBlockModal(true)}
-                    className="relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white/50 flex items-center h-[60px] cursor-pointer hover:border-blue-300 hover:bg-white hover:shadow-sm transition-all duration-300 group mt-8 w-[220px] p-0.5"
+                    className="relative overflow-hidden rounded-lg border border-dashed border-slate-300 bg-white/50 flex items-center h-9 cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-all duration-200 group mt-2 w-[160px]"
                   >
-                    <div className="flex items-center gap-3 px-4">
-                      <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors flex-shrink-0">
-                        <PlusIcon className="h-4 w-4 text-blue-500" />
+                    <div className="flex items-center gap-1.5 px-2.5">
+                      <div className="w-5 h-5 bg-blue-50 rounded-md flex items-center justify-center group-hover:bg-blue-100 transition-colors flex-shrink-0">
+                        <PlusIcon className="h-3.5 w-3.5 text-blue-500" />
                       </div>
-                      <h3 className="text-sm font-medium text-gray-700">Add New Label</h3>
+                      <span className="text-xs font-medium text-slate-600">Add New Label</span>
                     </div>
                   </div>
                 </div>
@@ -1221,119 +1107,99 @@ const TaskHub: React.FC = () => {
               {/* Smart Assist Section - Hide when details panel is open */}
               {!selectedBlockId && (
                 <div className="w-full lg:w-1/3">
-                  <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 h-full">
-                    <div className="p-3 border-b border-gray-200 bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                            <span className="text-orange-500 text-xs">🧠</span>
-                          </div>
-                          <h2 className="text-base font-medium text-gray-800">Smart Assist</h2>
+                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4 h-full">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
+                          <Sparkles className="w-3.5 h-3.5 text-white" />
                         </div>
-                        <div className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                          AI-Powered
-                        </div>
+                        <h2 className="text-sm font-semibold text-slate-900">Smart Assist</h2>
                       </div>
+                      <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                        AI-Powered
+                      </span>
                     </div>
                     
-                    <div className="p-4 overflow-y-auto flex-1" style={{ height: 'calc(100% - 57px)' }}>
-                      <div className="space-y-3">
+                    <div className="flex flex-col overflow-y-auto flex-1">
                         {/* Risk Identified */}
-                        <div className="bg-white rounded-md shadow-sm overflow-hidden border border-gray-200">
-                          {/* Removed colored vertical bar for minimal look */}
-                          <div className="p-3 w-full">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                              </div>
-                              <h3 className="text-sm font-medium text-gray-800">Risk Identified</h3>
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 mb-3 shadow-sm flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="bg-red-50 text-red-500 p-1.5 rounded-full flex items-center justify-center shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
                             </div>
-                            <p className="text-xs text-gray-600">
-                              You have 4 overdue high-priority tasks from last week
-                            </p>
+                            <h3 className="text-sm font-semibold text-slate-800">Risk Identified</h3>
                           </div>
+                          <p className="text-[13px] text-slate-600 leading-relaxed">
+                            You have 4 overdue high-priority tasks from last week
+                          </p>
                         </div>
                         
                         {/* Task Recommendation */}
-                        <div className="bg-white rounded-md shadow-sm overflow-hidden border border-gray-200">
-                          {/* Removed colored vertical bar for minimal look */}
-                          <div className="p-3 w-full">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                              </div>
-                              <h3 className="text-sm font-medium text-gray-800">Task Recommendation</h3>
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 mb-3 shadow-sm flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="bg-blue-50 text-blue-500 p-1.5 rounded-full flex items-center justify-center shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
                             </div>
-                            <p className="text-xs text-gray-600">
-                              Based on your schedule, now would be a good time to review patient assessments
-                            </p>
+                            <h3 className="text-sm font-semibold text-slate-800">Task Recommendation</h3>
                           </div>
+                          <p className="text-[13px] text-slate-600 leading-relaxed">
+                            Based on your schedule, now would be a good time to review patient assessments
+                          </p>
                         </div>
                         
                         {/* Productivity Update */}
-                        <div className="bg-white rounded-md shadow-sm overflow-hidden border border-gray-200">
-                          {/* Removed colored vertical bar for minimal look */}
-                          <div className="p-3 w-full">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </div>
-                              <h3 className="text-sm font-medium text-gray-800">Productivity Update</h3>
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 mb-3 shadow-sm flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="bg-green-50 text-green-500 p-1.5 rounded-full flex items-center justify-center shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
                             </div>
-                            <p className="text-xs text-gray-600">
-                              You cleared 10 tasks today — great job!
-                            </p>
+                            <h3 className="text-sm font-semibold text-slate-800">Productivity Update</h3>
                           </div>
+                          <p className="text-[13px] text-slate-600 leading-relaxed">
+                            You cleared 10 tasks today — great job!
+                          </p>
                         </div>
                         
                         {/* Pattern Detected */}
-                        <div className="bg-white rounded-md shadow-sm overflow-hidden border border-gray-200">
-                          {/* Removed colored vertical bar for minimal look */}
-                          <div className="p-3 w-full">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                              </div>
-                              <h3 className="text-sm font-medium text-gray-800">Pattern Detected</h3>
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 mb-3 shadow-sm flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="bg-purple-50 text-purple-500 p-1.5 rounded-full flex items-center justify-center shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                              </svg>
                             </div>
-                            <p className="text-xs text-gray-600">
-                              You often delay Rx renewals — want to batch them?
-                            </p>
+                            <h3 className="text-sm font-semibold text-slate-800">Pattern Detected</h3>
                           </div>
+                          <p className="text-[13px] text-slate-600 leading-relaxed">
+                            You often delay Rx renewals — want to batch them?
+                          </p>
                         </div>
                         
                         {/* Follow-up Needed */}
-                        <div className="bg-white rounded-md shadow-sm overflow-hidden border border-gray-200">
-                          {/* Removed colored vertical bar for minimal look */}
-                          <div className="p-3 w-full">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </div>
-                              <h3 className="text-sm font-medium text-gray-800">Follow-up Needed</h3>
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 mb-3 shadow-sm flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="bg-amber-50 text-amber-500 p-1.5 rounded-full flex items-center justify-center shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
                             </div>
-                            <p className="text-xs text-gray-600">
-                              3 urgent messages haven't been responded to
-                            </p>
+                            <h3 className="text-sm font-semibold text-slate-800">Follow-up Needed</h3>
                           </div>
+                          <p className="text-[13px] text-slate-600 leading-relaxed">
+                            3 urgent messages haven't been responded to
+                          </p>
                         </div>
                       </div>
-                      
-                      
                     </div>
                   </div>
-                </div>
               )}
+
             </div>
             
             {/* Quick Glance Section - Temporarily hidden
@@ -1346,8 +1212,8 @@ const TaskHub: React.FC = () => {
             </div>
             */}
             
-            {/* All Tasks Section */}
-            <div className="mb-6">
+            {/* All Tasks Section — wrapper spacing only; AllTasksSection internals unchanged */}
+            <div className="mb-6 mt-4">
               <AllTasksSection />
             </div>
           </div>
@@ -1806,5 +1672,4 @@ const TaskHub: React.FC = () => {
     </div>
   );
 };
-
 export default TaskHub;
