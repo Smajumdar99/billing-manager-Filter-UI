@@ -6,13 +6,15 @@ import TopNavigationBar from '@/components/old-ui/TopNavigationBar'
 import MainNavigationBar from '@/components/old-ui/MainNavigationBar'
 import { Sidebar } from '@/components/atoms/Sidebar/sidebar'
 import { Button } from '@/components/atoms/Button/button'
-import { PanelLeft, PanelLeftOpen, Filter, Search } from 'lucide-react'
+import { Filter, Search, ChevronDown, Download, Plus } from 'lucide-react'
 import { Input } from '@/components/atoms/Input/input'
 import { Checkbox } from '@/components/atoms/Checkbox/checkbox'
 import { Label } from '@/components/atoms/Label/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/Select/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/Popover/popover'
 import { DataTable } from '@/components/organisms/DataTable'
-import type { ColDef } from 'ag-grid-community'
+import type { ColDef, ColumnMenuTab } from 'ag-grid-community'
+import './claims-denials-ag-grid.css'
 
 /**
  * ClaimsDenialsPage Component
@@ -30,7 +32,7 @@ export const ClaimsDenialsPage: FC = () => {
   const [activeSidebarItem, setActiveSidebarItem] = useState('Claims & Denials')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<'claims' | 'denials'>('claims')
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false)
+  const [payersPopoverOpen, setPayersPopoverOpen] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   
@@ -40,6 +42,8 @@ export const ClaimsDenialsPage: FC = () => {
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [dateRange, setDateRange] = useState<string>('30')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
   const [selectedPayers, setSelectedPayers] = useState<string[]>([])
   
   // Available payers for filter
@@ -101,10 +105,23 @@ export const ClaimsDenialsPage: FC = () => {
     () => [
       {
         headerName: '',
-        width: 50,
+        colId: 'selection',
+        width: 48,
+        minWidth: 48,
+        maxWidth: 48,
         checkboxSelection: true,
         headerCheckboxSelection: true,
-        pinned: 'left'
+        pinned: 'left',
+        sortable: false,
+        filter: false,
+        resizable: false,
+        flex: 0,
+        menuTabs: [] as ColumnMenuTab[],
+        suppressMenu: true,
+        cellClass: 'claims-denials-selection-col',
+        headerClass: 'claims-denials-selection-col',
+        cellStyle: { textAlign: 'center' },
+        headerStyle: { textAlign: 'center' }
       },
       {
         headerName: 'Claim ID',
@@ -246,12 +263,26 @@ export const ClaimsDenialsPage: FC = () => {
     )
   }
 
+  const handleDateRangeChange = (value: string) => {
+    setDateRange(value)
+    if (value !== 'custom') {
+      setCustomStartDate('')
+      setCustomEndDate('')
+    }
+  }
+
   // Clear all filters
   const clearFilters = () => {
     setStatusFilter('all')
     setDateRange('30')
+    setCustomStartDate('')
+    setCustomEndDate('')
     setSelectedPayers([])
     setSearchQuery('')
+  }
+
+  const handleApplyFilters = () => {
+    setPayersPopoverOpen(false)
   }
 
   return (
@@ -286,12 +317,12 @@ export const ClaimsDenialsPage: FC = () => {
         />
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Header with Tabs */}
-          <div className="border-b border-gray-200 bg-white">
-            <div className="flex items-center justify-between px-6 py-4">
+          <div className="border-b border-gray-200 bg-white shrink-0">
+            <div className="flex min-h-[48px] items-center justify-between px-6 py-2">
               <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-semibold text-gray-900">Claims & Denials</h1>
+                <h1 className="text-lg font-semibold text-gray-900">Claims & Denials</h1>
                 <div className="flex items-center rounded-md bg-gray-100 p-1">
                   <button
                     onClick={() => setActiveTab('claims')}
@@ -316,138 +347,140 @@ export const ClaimsDenialsPage: FC = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="flex h-7 items-center justify-center">
+                  <Download className="h-4 w-4 mr-2 shrink-0" aria-hidden />
                   <span>Export</span>
                 </Button>
-                <Button variant="default" size="sm" className="flex items-center gap-2">
+                <Button variant="default" size="sm" className="flex h-7 items-center justify-center">
+                  <Plus className="h-4 w-4 mr-2 shrink-0" aria-hidden />
                   <span>New Claim</span>
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="flex h-[calc(100vh-180px)]">
-            {/* Filters Sidebar */}
-            <div className={`${filtersCollapsed ? 'w-12' : 'w-80'} bg-white border-r border-gray-200 flex flex-col transition-all duration-200`}>
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                {!filtersCollapsed && <h3 className="text-sm font-medium text-gray-700">Filters</h3>}
-                <button 
-                  onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-                  className="p-1 rounded-md hover:bg-gray-100"
-                  title={filtersCollapsed ? 'Expand filters' : 'Collapse filters'}
-                >
-                  {filtersCollapsed ? (
-                    <PanelLeftOpen className="h-4 w-4 text-gray-500" />
-                  ) : (
-                    <PanelLeft className="h-4 w-4 text-gray-500" />
-                  )}
-                </button>
+          <div className="flex flex-col w-full flex-1 min-h-0 px-4 pb-4 pt-3">
+            {/* Horizontal filter bar */}
+            <div className="flex flex-wrap items-center gap-3 w-full mb-3 p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+              <div className="relative w-64 shrink-0">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <Input
+                  placeholder="Search claims..."
+                  className="pl-9 h-9 text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
 
-              {!filtersCollapsed && (
-                <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                  {/* Search */}
-                  <div className="space-y-2">
-                    <Label>Search</Label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                      <Input
-                        placeholder="Search claims..."
-                        className="pl-9"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                  </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[160px] h-9 text-sm shrink-0">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="submitted">Submitted</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="denied">Denied</SelectItem>
+                  <SelectItem value="appealed">Appealed</SelectItem>
+                </SelectContent>
+              </Select>
 
-                  {/* Status Filter */}
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="submitted">Submitted</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="denied">Denied</SelectItem>
-                        <SelectItem value="appealed">Appealed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <Select value={dateRange} onValueChange={handleDateRangeChange}>
+                <SelectTrigger className="w-[160px] h-9 text-sm shrink-0">
+                  <SelectValue placeholder="Date range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">Last 7 days</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
+                  <SelectItem value="90">Last 90 days</SelectItem>
+                  <SelectItem value="365">Last year</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
+                </SelectContent>
+              </Select>
 
-                  {/* Date Range */}
-                  <div className="space-y-2">
-                    <Label>Date Range</Label>
-                    <Select value={dateRange} onValueChange={setDateRange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select date range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="7">Last 7 days</SelectItem>
-                        <SelectItem value="30">Last 30 days</SelectItem>
-                        <SelectItem value="90">Last 90 days</SelectItem>
-                        <SelectItem value="365">Last year</SelectItem>
-                        <SelectItem value="custom">Custom range</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Payers */}
-                  <div className="space-y-2">
-                    <Label>Payers</Label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
-                      {payers.map((payer) => (
-                        <div key={payer} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`payer-${payer}`} 
-                            checked={selectedPayers.includes(payer)}
-                            onCheckedChange={() => togglePayer(payer)}
-                          />
-                          <Label htmlFor={`payer-${payer}`} className="text-sm font-normal">
-                            {payer}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col space-y-2 pt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={clearFilters}
-                    >
-                      Clear Filters
-                    </Button>
-                    <Button 
-                      variant="default" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => setMobileFiltersOpen(false)}
-                    >
-                      Apply Filters
-                    </Button>
-                  </div>
+              {dateRange === 'custom' && (
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+                  <input
+                    type="date"
+                    aria-label="Start date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="h-9 px-3 py-1 border border-slate-200 rounded-md text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-500">to</span>
+                  <input
+                    type="date"
+                    aria-label="End date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="h-9 px-3 py-1 border border-slate-200 rounded-md text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               )}
+
+              <Popover open={payersPopoverOpen} onOpenChange={setPayersPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 gap-1.5 text-sm shrink-0"
+                  >
+                    Payers
+                    {selectedPayers.length > 0 ? (
+                      <span className="text-slate-500">({selectedPayers.length})</span>
+                    ) : null}
+                    <ChevronDown className="h-4 w-4 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-3">
+                  <p className="text-xs font-medium text-slate-700 mb-2">Select payers</p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {payers.map((payer) => (
+                      <div key={payer} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`payer-popover-${payer}`}
+                          checked={selectedPayers.includes(payer)}
+                          onCheckedChange={() => togglePayer(payer)}
+                        />
+                        <Label htmlFor={`payer-popover-${payer}`} className="text-sm font-normal cursor-pointer">
+                          {payer}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <div className="ml-auto flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearFilters()
+                    setPayersPopoverOpen(false)
+                  }}
+                  className="text-sm text-slate-500 hover:text-slate-700 px-2 py-1.5 rounded-md transition-colors"
+                >
+                  Clear
+                </button>
+                <Button variant="default" size="sm" className="h-9 text-sm" onClick={handleApplyFilters}>
+                  Apply Filters
+                </Button>
+              </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 overflow-auto p-6">
+            {/* Main content — full width */}
+            <div className="flex-1 overflow-auto w-full min-h-0">
               {activeTab === 'claims' ? (
-                <div>
+                <div className="w-full">
                   <h2 className="text-lg font-medium text-gray-900 mb-4">Claims</h2>
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <p className="text-gray-500">No claims found. Create a new claim to get started.</p>
                   </div>
                 </div>
               ) : (
-                <div>
+                <div className="w-full">
                   <h2 className="text-lg font-medium text-gray-900 mb-4">Denials</h2>
                   <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <div className="p-4 border-b border-gray-100">
@@ -456,7 +489,11 @@ export const ClaimsDenialsPage: FC = () => {
                       </div>
                     </div>
                     <div className="p-4">
-                      <DataTable rowData={filteredDeniedClaims} columnDefs={deniedClaimsColumnDefs} />
+                      <DataTable
+                        className="claims-denials-ag-grid"
+                        rowData={filteredDeniedClaims}
+                        columnDefs={deniedClaimsColumnDefs}
+                      />
                     </div>
                   </div>
                 </div>
@@ -532,7 +569,7 @@ export const ClaimsDenialsPage: FC = () => {
               {/* Date Range */}
               <div className="space-y-2">
                 <Label>Date Range</Label>
-                <Select value={dateRange} onValueChange={setDateRange}>
+                <Select value={dateRange} onValueChange={handleDateRangeChange}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select date range" />
                   </SelectTrigger>
@@ -544,6 +581,25 @@ export const ClaimsDenialsPage: FC = () => {
                     <SelectItem value="custom">Custom range</SelectItem>
                   </SelectContent>
                 </Select>
+                {dateRange === 'custom' && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1 animate-in fade-in slide-in-from-left-2 duration-200">
+                    <input
+                      type="date"
+                      aria-label="Start date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="h-9 px-3 py-1 border border-slate-200 rounded-md text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-slate-500">to</span>
+                    <input
+                      type="date"
+                      aria-label="End date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="h-9 px-3 py-1 border border-slate-200 rounded-md text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Payers */}

@@ -1,0 +1,44 @@
+/* Claims & Denials — selection column: center checkboxes in AG Grid (internal DOM) */
+.claims-denials-ag-grid .ag-header-cell.claims-denials-selection-col,
+.claims-denials-ag-grid .ag-cell.claims-denials-selection-col {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  text-align: center;
+}
+
+.claims-denials-ag-grid .ag-header-cell.claims-denials-selection-col .ag-header-cell-comp-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.claims-denials-ag-grid .ag-header-cell.claims-denials-selection-col .ag-header-select-all.ag-labeled,
+.claims-denials-ag-grid .ag-header-cell.claims-denials-selection-col .ag-labeled.ag-label-align-right {
+  justify-content: center !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100%;
+}
+
+.claims-denials-ag-grid .ag-cell.claims-denials-selection-col .ag-cell-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100%;
+  margin: 0;
+}
+
+.claims-denials-ag-grid .ag-cell.claims-denials-selection-col .ag-selection-checkbox {
+  margin: 0 !important;
+}
+
+.claims-denials-ag-grid .ag-cell.claims-denials-selection-col .ag-checkbox-input-wrapper,
+.claims-denials-ag-grid .ag-header-cell.claims-denials-selection-col .ag-checkbox-input-wrapper {
+  margin: 0 !important;
+}
+
+.claims-denials-ag-grid .ag-cell.claims-denials-selection-col .ag-input-field-input.ag-checkbox-input,
+.claims-denials-ag-grid .ag-header-cell.claims-denials-selection-col .ag-input-field-input.ag-checkbox-input {
+  margin: 0 !important;
+}
